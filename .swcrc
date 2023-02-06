@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json.schemastore.org/swcrc",
+  "module": {
+    "type": "es6"
+  },
+  "jsc": {
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true
+    },
+    "transform": {
+      "react": {
+        "runtime": "classic"
+      }
+    },
+    "keepClassNames": true
+  },
+  "env": {
+    "targets": "defaults and not IE 11"
+  },
+  "isModule": true
+}

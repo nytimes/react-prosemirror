@@ -1,0 +1,22 @@
+# Compiled code
+/dist/*
+
+# We need to check in the package.json for /dist/cjs so that
+# consumers know to treat it as cjs
+!/dist/cjs
+/dist/cjs/*
+!/dist/cjs/package.json
+
+# Yarn PnP artifacts
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Various tooling caches
+node_modules
+.eslintcache
+tsconfig.buildinfo

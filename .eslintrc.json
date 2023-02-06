@@ -1,0 +1,84 @@
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:import/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "prettier"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": false
+  },
+  "rules": {
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        "additionalHooks": "(useEditorViewLayoutEffect|useEditorViewEvent|useDeferredLayoutEffect$)"
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "alphabetize": {
+          "order": "asc"
+        },
+        "groups": ["builtin", "external", "parent", "sibling", "index"],
+        "newlines-between": "always",
+        "warnOnUnassignedImports": true
+      }
+    ],
+    "sort-imports": [
+      "error",
+      {
+        "allowSeparatedGroups": true,
+        "ignoreDeclarationSort": true
+      }
+    ],
+    "no-inner-declarations": "off"
+  },
+  "settings": {
+    "import/extensions": [".js", ".jsx", ".ts", ".tsx"],
+    "import/external-module-folders": [".yarn"],
+    "import/parsers": {
+      "@typescript-eslint/parser": [".ts", ".tsx"]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true // always try to resolve types under `<root>@types` directory even it doesn't contain any source code, like `@types/unist`
+      }
+    },
+    "react": {
+      "version": "detect"
+    }
+  },
+  "overrides": [
+    {
+      "files": ["src/**/__tests__/**/*"],
+      "extends": ["plugin:jest/recommended", "plugin:jest/style"],
+      "env": {
+        "jest": true,
+        "node": true
+      },
+      "rules": {
+        "jest/consistent-test-it": ["error"],
+        "jest/no-commented-out-tests": "warn",
+        "jest/no-conditional-expect": "warn",
+        "jest/no-done-callback": "warn",
+        "jest/no-mocks-import": "warn",
+        "jest/no-standalone-expect": "warn",
+        "jest/require-top-level-describe": "warn",
+        "jest/valid-title": "warn"
+      }
+    },
+    {
+      "files": ["**/*.cjs"],
+      "env": {
+        "commonjs": true
+      }
+    }
+  ]
+}
