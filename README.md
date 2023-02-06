@@ -1,4 +1,4 @@
-# ProseMirror React
+# React ProseMirror
 
 A fully featured library for safely integrating ProseMirror and React.
 
