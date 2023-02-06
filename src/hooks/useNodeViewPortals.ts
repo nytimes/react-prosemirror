@@ -3,6 +3,15 @@ import { createPortal } from "react-dom";
 
 import { RegisterElement } from "../nodeViews/createReactNodeViewConstructor";
 
+/**
+ * Provides an array of React portals and a callback for registering
+ * new portals.
+ *
+ * The `registerPortal` callback is meant to be passed to
+ * `createNodeViewConstructor` as the `registerElement` argument. The
+ * `portals` array should be passed as children to the `ProseMirror`
+ * component.
+ */
 export function useNodeViewPortals() {
   const [portals, setPortals] = useState<ReactPortal[]>([]);
 

@@ -30,6 +30,7 @@
     "dev": "yarn build -- --watch",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",
+    "fix:toc": "markdown-toc -i README.md",
     "fix": "concurrently -P 'npm:fix:* {@}' --",
     "test": "jest"
   },
@@ -56,6 +57,7 @@
     "jest": "^29.0.0",
     "jest-environment-jsdom": "^29.4.1",
     "lint-staged": "^13.1.0",
+    "markdown-toc": "^1.2.0",
     "prettier": "^2.8.3",
     "prosemirror-model": "^1.18.3",
     "prosemirror-state": "^1.4.2",

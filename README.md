@@ -2,6 +2,29 @@
 
 A fully featured library for safely integrating ProseMirror and React.
 
+<!-- toc -->
+
+- [The Problem](#the-problem)
+- [The Solution](#the-solution)
+  * [Rendering ProseMirror Views within React](#rendering-prosemirror-views-within-react)
+    + [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect)
+    + [`useEditorViewEvent`](#useeditorviewevent)
+    + [`useEditorView`, `EditorViewContext` and `DeferredLayoutEffectsProvider`](#useeditorview-editorviewcontext-and-deferredlayouteffectsprovider)
+  * [Building NodeViews with React](#building-nodeviews-with-react)
+- [API](#api)
+  * [`ProseMirror`](#prosemirror)
+  * [`EditorViewContext`](#editorviewcontext)
+  * [`DeferredLayoutEffectsProvider`](#deferredlayouteffectsprovider)
+  * [`useDeferredLayoutEffect`](#usedeferredlayouteffect)
+  * [`useEditorState`](#useeditorstate)
+  * [`useEditorView`](#useeditorview)
+  * [`useEditorViewEvent`](#useeditorviewevent-1)
+  * [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect-1)
+  * [`useNodeViewPortals`](#usenodeviewportals)
+  * [`createReactNodeViewConstructor`](#createreactnodeviewconstructor)
+
+<!-- tocstop -->
+
 ## The Problem
 
 React is a framework for developing reactive user interfaces. To make updates
@@ -301,8 +324,268 @@ function ProseMirrorEditor() {
 }
 ```
 
-The unfortunate implication of this pattern is that the React components must be
-rendered as React Portals, and therefore rendered _into_ an existing DOM
-element. This results in an additional layer of nesting that's not strictly
-necessary to render the NodeViews. In practice, this is likely rarely, if ever,
-going to cause any issues, but it is worth keeping in mind.
+## API
+
+### `ProseMirror`
+
+```tsx
+type ProseMirror = (props: {
+  dispatchTransaction: (tr: Transaction) => void;
+  editorProps: EditorProps;
+  editorState: EditorState;
+  mount: HTMLElement | null;
+  children?: ReactNode | null;
+}) => JSX.Element;
+```
+
+Renders the ProseMirror View onto a DOM mount.
+
+The `mount` prop must be an actual HTMLElement instance. The JSX element
+representing the mount should be passed as a child to the ProseMirror component.
+
+Example usage:
+
+```tsx
+function MyProseMirrorField() {
+  const [mount, setMount] = useState(null);
+
+  return (
+    <ProseMirror mount={mount}>
+      <div ref={setMount} />
+    </ProseMirror>
+  );
+}
+```
+
+### `EditorViewContext`
+
+```tsx
+type EditorViewContext = React.Context<{
+  editorView: EditorView | null;
+  editorState: EditorState | null;
+}>;
+
+Provides the EditorView, as well as the current EditorState. Should not be
+consumed directly; instead see [`useEditorState`](#useeditorstate),
+[`useEditorViewEvent`](#useeditorviewevent), and
+[`useEditorViewLayoutEffect`](#useeditorviewlayouteffect).
+```
+
+See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
+usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
+you don't need to use this context directly.
+
+### `DeferredLayoutEffectsProvider`
+
+```tsx
+type DeferredLayoutEffectsProvider = (props: {
+  children: React.ReactNode;
+}) => JSX.Element;
+```
+
+Provides a deferral point for deferred layout effects. All effects registered
+with `useDeferredLayoutEffect` by children of this provider will execute _after_
+all effects registered by `useLayoutEffect` by children of this provider.
+
+See [ProseMirror.tsx](./src/components/ProseMirror.tsx) for example usage. Note
+that if you are using the [`ProseMirror`](#prosemirror) component, you don't
+need to use this context directly.
+
+### `useDeferredLayoutEffect`
+
+```tsx
+type useDeferredlayoutEffect = (
+  effect: React.EffectCallback,
+  deps?: React.DependencyList
+) => void;
+```
+
+Like `useLayoutEffect`, but all effect executions are run _after_ the
+`DeferredLayoutEffectsProvider` layout effects phase.
+
+This hook allows child components to enqueue layout effects that won't be safe
+to run until after a parent component's layout effects have run.
+
+Note that components that use this hook must be descendants of the
+[`DeferredLayoutEffectsProvider`](#deferredlayouteffectsprovider) component.
+
+### `useEditorState`
+
+```tsx
+type useEditorState = () => EditorState | null;
+```
+
+Provides access to the current EditorState value.
+
+### `useEditorView`
+
+```tsx
+type useEditorView = <T extends HTMLElement = HTMLElement>(
+  mount: T | null,
+  props: DirectEditorProps
+) => EditorView | null;
+```
+
+Creates, mounts, and manages a ProseMirror `EditorView`.
+
+All state and props updates are executed in a layout effect. To ensure that the
+EditorState and EditorView are never out of sync, it's important that the
+EditorView produced by this hook is only accessed through the
+`useEditorViewEvent` and `useEditorViewLayoutEffect` hooks.
+
+See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
+usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
+you don't need to use this hook directly.
+
+### `useEditorViewEvent`
+
+```tsx
+type useEditorViewEvent = <T extends unknown[]>(
+  callback: (view: EditorView | null, ...args: T) => void
+) => void;
+```
+
+Returns a stable function reference to be used as an event handler callback.
+
+The callback will be called with the EditorView instance as its first argument.
+
+This hook is dependent on both the `EditorViewContext.Provider` and the
+`DeferredLayoutEffectProvider`. It can only be used in a component that is
+mounted as a child of both of these providers.
+
+### `useEditorViewLayoutEffect`
+
+```tsx
+type useEditorViewLayoutEffect = (
+  effect: (editorView: EditorView | null) => void | (() => void),
+  dependencies?: React.DependencyList
+) => void;
+```
+
+Registers a layout effect to run after the EditorView has been updated with the
+latest EditorState and Decorations.
+
+Effects can take an EditorView instance as an argument. This hook should be used
+to execute layout effects that depend on the EditorView, such as for positioning
+DOM nodes based on ProseMirror positions.
+
+Layout effects registered with this hook still fire synchronously after all DOM
+mutations, but they do so _after_ the EditorView has been updated, even when the
+EditorView lives in an ancestor component.
+
+Example usage:
+
+```tsx
+import { useEditorViewLayoutEffect } from 'prosemirror-react';
+
+export function SelectionWidget() {
+  const [selectionCoords, setSelectionCoords] = useState()
+
+  useEditorViewLayoutEffect((view) => {
+    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+  })
+
+  return (
+    <div
+      style={{
+        position: 'absolute';
+        left: selectionCoords.left;
+        top: selectionCoords.top;
+      }}
+    />
+  )
+}
+```
+
+### `useNodeViewPortals`
+
+```tsx
+type useNodeViewPortals = () => {
+  portals: React.ReactPortal[];
+  registerPortal: (
+    children: React.ReactNode,
+    container: Element | DocumentFragment,
+    key?: string | null | undefined
+  ) => () => void;
+};
+```
+
+Provides an array of React portals and a callback for registering new portals.
+
+The `registerPortal` callback is meant to be passed to
+`createNodeViewConstructor` as the `registerElement` argument. The `portals`
+array should be passed as children to the `ProseMirror` component.
+
+Example usage:
+
+```tsx
+function ProseMirrorEditor() {
+  const { portals, registerPortal } = useNodeViewPortals();
+  const [mount, setMount] = useState()
+
+  const nodeViews: EditorProps['nodeViews'] = useMemo(() => ({
+    paragraph: createReactNodeViewConstructor(
+      Paragraph,
+      registerPortal,
+      () => ({
+        dom: document.createElement('div'),
+        contentDOM: document.createElement('span');
+      })
+    ),
+  }), [registerPortal]);
+
+  return (
+    <ProseMirror
+      mount={mount}
+      editorState={EditorState.create({ schema })}
+      editorProps={{ nodeViews }}
+    >
+      <div ref={setMount} />
+      {portals}
+    </ProseMirror>
+  );
+}
+```
+
+### `createReactNodeViewConstructor`
+
+```tsx
+type createReactNodeViewConstructor = (
+  ReactComponent: React.ComponentType<{
+    decorations: readonly Decoration[];
+    getPos: () => number;
+    node: Node;
+    children: React.ReactNode;
+    isSelected: boolean;
+  }>,
+  registerElement: (
+    children: React.ReactNode,
+    container: Element | DocumentFragment,
+    key?: string | null | undefined
+  ) => () => void,
+  innerConstructor: (
+    node: Node,
+    editorView: EditorView,
+    getPos: () => number,
+    decorations: readonly Decoration[]
+  ) => Partial<Omit<NodeView, "update">> & Pick<NodeView, "dom">
+) => (
+  node: Node,
+  editorView: EditorView,
+  getPos: () => number,
+  decorations: readonly Decoration[]
+) => NodeView;
+```
+
+Factory function for creating nodeViewConstructors that render as React
+components.
+
+`ReactComponent` can be any React component that takes `NodeViewComponentProps`.
+It will be passed all of the arguments to the `nodeViewConstructor` except for
+`editorView`. NodeView components that need access directly to the EditorView
+should use the `useEditorViewEvent` and `useEditorViewLayoutEffect` hooks to
+ensure safe access.
+
+For contentful Nodes, the NodeView component will also be passed a `children`
+prop containing an empty element. ProseMirror will render content nodes into
+this element.

@@ -19,4 +19,5 @@ module.exports = {
   // For markdown, HTML, and YAML files, we just run Prettier. ESLint doesn't have
   // anything to say about these.
   "*.{md,yml,html}": "prettier --write",
+  "README.md": () => "yarn fix:toc",
 };
