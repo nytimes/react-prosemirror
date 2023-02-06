@@ -28,6 +28,11 @@ steps:
     commands:
       - yarn check:types
 
+  - name: Version
+    image: node:18-alpine
+    commands:
+      - yarn version check
+
 trigger:
   event:
     # Running on push will ensure that code is
