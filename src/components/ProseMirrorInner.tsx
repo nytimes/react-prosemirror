@@ -1,18 +1,16 @@
-import type { EditorState, Transaction } from "prosemirror-state";
-import type { EditorProps } from "prosemirror-view";
+import type { EditorState } from "prosemirror-state";
+import type { DirectEditorProps } from "prosemirror-view";
 import React from "react";
 import type { ReactNode } from "react";
 
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 
-export interface ProseMirrorProps {
-  dispatchTransaction: (tr: Transaction) => void;
-  editorProps: EditorProps;
-  editorState: EditorState;
+export type ProseMirrorProps = DirectEditorProps & {
   mount: HTMLElement | null;
   children?: ReactNode | null;
-}
+  editorState: EditorState;
+};
 
 /**
  * Renders the ProseMirror View onto a DOM mount.
@@ -38,9 +36,9 @@ export interface ProseMirrorProps {
 export function ProseMirrorInner({
   children,
   dispatchTransaction,
-  editorProps,
   editorState,
   mount,
+  ...editorProps
 }: ProseMirrorProps) {
   const editorView = useEditorView(mount, {
     ...editorProps,

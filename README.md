@@ -315,7 +315,7 @@ function ProseMirrorEditor() {
     <ProseMirror
       mount={mount}
       editorState={EditorState.create({ schema })}
-      editorProps={{ nodeViews }}
+      nodeViews={nodeViews}
     >
       <div ref={setMount} />
       {portals}
@@ -538,7 +538,7 @@ function ProseMirrorEditor() {
     <ProseMirror
       mount={mount}
       editorState={EditorState.create({ schema })}
-      editorProps={{ nodeViews }}
+      nodeViews={nodeViews}
     >
       <div ref={setMount} />
       {portals}

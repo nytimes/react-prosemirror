@@ -41,64 +41,6 @@ interface NodeViewWrapperRef {
   setIsSelected: Dispatch<SetStateAction<boolean>>;
 }
 
-/**
- * Wrapper component to provide some imperative handles for updating
- * and re-rendering its child. Takes and renders an arbitrary ElementType
- * that expects NodeViewComponentProps as props.
- */
-const NodeViewWrapper = forwardRef<NodeViewWrapperRef, NodeViewWrapperProps>(
-  function NodeViewWrapper(
-    {
-      elementType: ElementType,
-      contentDOMElementType: ContentDOMElementType,
-      initialState,
-      getPos,
-    }: NodeViewWrapperProps,
-    ref
-  ) {
-    const [node, setNode] = useState<Node>(initialState.node);
-    const [decorations, setDecorations] = useState<readonly Decoration[]>(
-      initialState.decorations
-    );
-    const [isSelected, setIsSelected] = useState<boolean>(
-      initialState.isSelected
-    );
-
-    const [contentDOMWrapper, setContentDOMWrapper] =
-      useState<HTMLElement | null>(null);
-
-    useImperativeHandle(
-      ref,
-      () => ({
-        node,
-        contentDOMWrapper: contentDOMWrapper,
-        setNode,
-        setDecorations,
-        setIsSelected,
-      }),
-      [node, contentDOMWrapper]
-    );
-
-    return (
-      <ElementType
-        getPos={getPos}
-        node={node}
-        decorations={decorations}
-        isSelected={isSelected}
-      >
-        {ContentDOMElementType && (
-          <ContentDOMElementType
-            // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
-            ref={(contentDOMWrapper: HTMLElement | null) => {
-              setContentDOMWrapper(contentDOMWrapper);
-            }}
-          />
-        )}
-      </ElementType>
-    );
-  }
-);
-
 export type UnregisterElement = () => void;
 
 export type RegisterElement = (
@@ -151,6 +93,67 @@ export function createReactNodeViewConstructor(
     const contentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
       | keyof ReactHTML
       | undefined;
+
+    /**
+     * Wrapper component to provide some imperative handles for updating
+     * and re-rendering its child. Takes and renders an arbitrary ElementType
+     * that expects NodeViewComponentProps as props.
+     */
+    const NodeViewWrapper = forwardRef<
+      NodeViewWrapperRef,
+      NodeViewWrapperProps
+    >(function NodeViewWrapper(
+      {
+        elementType: ElementType,
+        contentDOMElementType: ContentDOMElementType,
+        initialState,
+        getPos,
+      }: NodeViewWrapperProps,
+      ref
+    ) {
+      const [node, setNode] = useState<Node>(initialState.node);
+      const [decorations, setDecorations] = useState<readonly Decoration[]>(
+        initialState.decorations
+      );
+      const [isSelected, setIsSelected] = useState<boolean>(
+        initialState.isSelected
+      );
+
+      const [contentDOMWrapper, setContentDOMWrapper] =
+        useState<HTMLElement | null>(null);
+
+      useImperativeHandle(
+        ref,
+        () => ({
+          node,
+          contentDOMWrapper: contentDOMWrapper,
+          setNode,
+          setDecorations,
+          setIsSelected,
+        }),
+        [node, contentDOMWrapper]
+      );
+
+      return (
+        <ElementType
+          getPos={getPos}
+          node={node}
+          decorations={decorations}
+          isSelected={isSelected}
+        >
+          {ContentDOMElementType && (
+            <ContentDOMElementType
+              // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
+              ref={(contentDOMWrapper: HTMLElement | null) => {
+                setContentDOMWrapper(contentDOMWrapper);
+              }}
+            />
+          )}
+        </ElementType>
+      );
+    });
+
+    NodeViewWrapper.displayName = `NodeView(${ReactComponent.displayName})`;
 
     const element = (
       <NodeViewWrapper
