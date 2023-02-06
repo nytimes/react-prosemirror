@@ -2,6 +2,20 @@
 
 A fully featured library for safely integrating ProseMirror and React.
 
+## Installation
+
+npm:
+
+```sh
+npm install react-prosemirror
+```
+
+yarn:
+
+```sh
+yarn add react-prosemirror
+```
+
 <!-- toc -->
 
 - [The Problem](#the-problem)
