@@ -271,20 +271,18 @@ using `useEditorView`.
 The other way to integrate React and ProseMirror is to have ProseMirror render
 NodeViews using React components. This is somewhat more complex than the
 previous section. This library provides a factory for creating NodeView
-constructors from React components, the creatively named
-`createReactNodeViewConstructor`.
+constructors from React components, the `useNodeViews` hook.
 
-`createReactNodeViewConstructor` takes a React component, a `registerElement`
-callback, and a NodeView constructor as arguments. The NodeView constructor must
-return at least a `dom` attribute, but can also return any other NodeView
-attributes, aside from the `update` method. Here's an example of its usage:
+`useNodeViews` takes map from node name to a record containing a NodeView
+constructor and a React component. The NodeView constructor must return at least
+a `dom` attribute, but can also return any other NodeView attributes, aside from
+the `update` method. Here's an example of its usage:
 
 ```tsx
 import { EditorState } from 'prosemirror-state';
 import { schema } from 'prosemirror-schema-basic';
 import {
-  createReactNodeViewConstructor,
-  useNodeViewPortals
+  useNodeViews
 } from 'prosemirror-react';
 
 type Props = {
@@ -300,19 +298,12 @@ function Paragraph({ children }: Props) {
 }
 
 function ProseMirrorEditor() {
-  // useNodeViewPortals is a custom hook provided by prosemirror-react
-  // that uses React Portals to implement the registerElement interface
-  // required by createReactNodeViewConstructor.
-  const { portals, registerPortal } = useNodeViewPortals();
-  const [mount, setMount] = useState()
-
-  const nodeViews: EditorProps['nodeViews'] = useMemo(() => ({
-    paragraph: createReactNodeViewConstructor(
-      Paragraph,
-      registerPortal,
+  const { nodeViews, renderNodeViews } = useNodeViews({
+    paragraph: {
+      component: Paragraph,
       // This is a standard NodeView constructor. It will be called with
       // the node, editorView, getPos, and decorations.
-      () => ({
+      constructor: () => ({
         // We render the Paragraph component itself into a div element
         dom: document.createElement('div'),
         // We render the paragraph node's ProseMirror contents into
@@ -320,10 +311,10 @@ function ProseMirrorEditor() {
         // component.
         contentDOM: document.createElement('span');
       })
-    ),
-    // registerPortal is stable, so this nodeViews object will be a
-    // stable reference as well
-  }), [registerPortal]);
+    }
+  });
+
+  const [mount, setMount] = useState()
 
   return (
     <ProseMirror
@@ -332,7 +323,7 @@ function ProseMirrorEditor() {
       nodeViews={nodeViews}
     >
       <div ref={setMount} />
-      {portals}
+      {renderNodeViews()}
     </ProseMirror>
   );
 }

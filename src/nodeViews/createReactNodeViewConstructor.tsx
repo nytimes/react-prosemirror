@@ -47,6 +47,13 @@ export type RegisterElement = (
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
+export type PartialNodeViewConstructor = (
+  node: Node,
+  editorView: EditorView,
+  getPos: () => number,
+  decorations: readonly Decoration[]
+) => Partial<Omit<NodeView, "update">> & Pick<NodeView, "dom">;
+
 /**
  * Factory function for creating nodeViewConstructors that
  * render as React components.
@@ -66,12 +73,7 @@ export type RegisterElement = (
 export function createReactNodeViewConstructor(
   ReactComponent: ComponentType<NodeViewComponentProps>,
   registerElement: RegisterElement,
-  innerConstructor: (
-    node: Node,
-    editorView: EditorView,
-    getPos: () => number,
-    decorations: readonly Decoration[]
-  ) => Partial<Omit<NodeView, "update">> & Pick<NodeView, "dom">
+  innerConstructor: PartialNodeViewConstructor
 ) {
   function nodeViewConstructor(
     node: Node,
