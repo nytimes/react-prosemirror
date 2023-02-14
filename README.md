@@ -34,8 +34,7 @@ yarn add react-prosemirror
   * [`useEditorView`](#useeditorview)
   * [`useEditorViewEvent`](#useeditorviewevent-1)
   * [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect-1)
-  * [`useNodeViewPortals`](#usenodeviewportals)
-  * [`createReactNodeViewConstructor`](#createreactnodeviewconstructor)
+  * [`useNodeViews`](#usenodeviews)
 
 <!-- tocstop -->
 
@@ -270,20 +269,18 @@ using `useEditorView`.
 
 The other way to integrate React and ProseMirror is to have ProseMirror render
 NodeViews using React components. This is somewhat more complex than the
-previous section. This library provides a factory for creating NodeView
-constructors from React components, the `useNodeViews` hook.
+previous section. This library provides a `useNodeViews` hook, a factory for
+augmenting NodeView constructors with React components.
 
-`useNodeViews` takes map from node name to a record containing a NodeView
-constructor and a React component. The NodeView constructor must return at least
-a `dom` attribute, but can also return any other NodeView attributes, aside from
-the `update` method. Here's an example of its usage:
+`useNodeViews` takes a map from node name to an extended NodeView constructor.
+The NodeView constructor must return at least a `dom` attribute and a
+`component` attribute, but can also return any other NodeView attributes, aside
+from the `update` method. Here's an example of its usage:
 
 ```tsx
-import { EditorState } from 'prosemirror-state';
-import { schema } from 'prosemirror-schema-basic';
-import {
-  useNodeViews
-} from 'prosemirror-react';
+import { EditorState } from "prosemirror-state";
+import { schema } from "prosemirror-schema-basic";
+import { useNodeViews } from "prosemirror-react";
 
 type Props = {
   children: ReactNode;
@@ -293,28 +290,24 @@ type Props = {
 // its children. The actual children will be constructed by ProseMirror and
 // passed in here.
 function Paragraph({ children }: Props) {
-  const onClick = useEditorViewEvent((view) => view.dispatch(whatever))
+  const onClick = useEditorViewEvent((view) => view.dispatch(whatever));
   return <p onClick={onClick}>{children}</p>;
 }
 
 function ProseMirrorEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews({
-    paragraph: {
+    paragraph: () => ({
       component: Paragraph,
-      // This is a standard NodeView constructor. It will be called with
-      // the node, editorView, getPos, and decorations.
-      constructor: () => ({
-        // We render the Paragraph component itself into a div element
-        dom: document.createElement('div'),
-        // We render the paragraph node's ProseMirror contents into
-        // a span, which will be passed as children to the Paragraph
-        // component.
-        contentDOM: document.createElement('span');
-      })
-    }
+      // We render the Paragraph component itself into a div element
+      dom: document.createElement("div"),
+      // We render the paragraph node's ProseMirror contents into
+      // a span, which will be passed as children to the Paragraph
+      // component.
+      contentDOM: document.createElement("span"),
+    }),
   });
 
-  const [mount, setMount] = useState()
+  const [mount, setMount] = useState();
 
   return (
     <ProseMirror
@@ -502,95 +495,49 @@ export function SelectionWidget() {
 }
 ```
 
-### `useNodeViewPortals`
+### `useNodeViews`
 
 ```tsx
-type useNodeViewPortals = () => {
-  portals: React.ReactPortal[];
-  registerPortal: (
-    children: React.ReactNode,
-    container: Element | DocumentFragment,
-    key?: string | null | undefined
-  ) => () => void;
+/**
+ * Extension of ProseMirror's NodeViewConstructor type to include
+ * `component`, the React component to used render the NodeView.
+ * All properties other than `component` and `dom` are optional.
+ *
+ * Unlike ProseMirror's NodeViewConstructor, this function will
+ * not be passed any arguments. Instead, `node`, `getPos`, and
+ * `decorations` will be passed as props to the React component,
+ * and `view` should only be accessed via the above React hooks.
+ */
+type InnerNodeViewConstructor = () => {
+  dom: HTMLElement | null;
+  component: React.ComponentType<NodeViewComponentProps>;
+  contentDOM?: HTMLElement | null;
+  selectNode?: () => void;
+  deselectNode?: () => void;
+  setSelection?:
+    | (anchor: number, head: number, root: Document | ShadowRoot) => void;
+  stopEvent?: (event: Event) => boolean;
+  ignoreMutation?: (mutation: MutationRecord) => boolean;
+  destroy?: () => void;
+};
+
+type useNodeViews = (nodeViews: Record<string, InnerNodeViewConstructor>) => {
+  nodeViews: Record<string, NodeViewConstructor>;
+  renderNodeViews: () => ReactElement[];
 };
 ```
 
-Provides an array of React portals and a callback for registering new portals.
-
-The `registerPortal` callback is meant to be passed to
-`createNodeViewConstructor` as the `registerElement` argument. The `portals`
-array should be passed as children to the `ProseMirror` component.
-
-Example usage:
-
-```tsx
-function ProseMirrorEditor() {
-  const { portals, registerPortal } = useNodeViewPortals();
-  const [mount, setMount] = useState()
-
-  const nodeViews: EditorProps['nodeViews'] = useMemo(() => ({
-    paragraph: createReactNodeViewConstructor(
-      Paragraph,
-      registerPortal,
-      () => ({
-        dom: document.createElement('div'),
-        contentDOM: document.createElement('span');
-      })
-    ),
-  }), [registerPortal]);
-
-  return (
-    <ProseMirror
-      mount={mount}
-      editorState={EditorState.create({ schema })}
-      nodeViews={nodeViews}
-    >
-      <div ref={setMount} />
-      {portals}
-    </ProseMirror>
-  );
-}
-```
-
-### `createReactNodeViewConstructor`
-
-```tsx
-type createReactNodeViewConstructor = (
-  ReactComponent: React.ComponentType<{
-    decorations: readonly Decoration[];
-    getPos: () => number;
-    node: Node;
-    children: React.ReactNode;
-    isSelected: boolean;
-  }>,
-  registerElement: (
-    children: React.ReactNode,
-    container: Element | DocumentFragment,
-    key?: string | null | undefined
-  ) => () => void,
-  innerConstructor: (
-    node: Node,
-    editorView: EditorView,
-    getPos: () => number,
-    decorations: readonly Decoration[]
-  ) => Partial<Omit<NodeView, "update">> & Pick<NodeView, "dom">
-) => (
-  node: Node,
-  editorView: EditorView,
-  getPos: () => number,
-  decorations: readonly Decoration[]
-) => NodeView;
-```
-
-Factory function for creating nodeViewConstructors that render as React
+Hook for creating and rendering NodeViewConstructors that are powered by React
 components.
 
-`ReactComponent` can be any React component that takes `NodeViewComponentProps`.
-It will be passed all of the arguments to the `nodeViewConstructor` except for
-`editorView`. NodeView components that need access directly to the EditorView
-should use the `useEditorViewEvent` and `useEditorViewLayoutEffect` hooks to
-ensure safe access.
+`component` can be any React component that takes `NodeViewComponentProps`. It
+will be passed as props all of the arguments to the `nodeViewConstructor` except
+for `editorView`. NodeView components that need access directly to the
+EditorView should use the `useEditorViewEvent` and `useEditorViewLayoutEffect`
+hooks to ensure safe access.
 
 For contentful Nodes, the NodeView component will also be passed a `children`
 prop containing an empty element. ProseMirror will render content nodes into
-this element.
+this element. Like in ProseMirror, the existence of a `contentDOM` attribute
+determines whether a NodeView is contentful (i.e. the NodeView has editable
+content that should be managed by ProseMirror).

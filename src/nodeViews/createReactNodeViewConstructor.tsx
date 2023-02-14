@@ -8,7 +8,7 @@ import React, {
   useImperativeHandle,
   useState,
 } from "react";
-import type { ComponentType, ElementType, ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 export interface NodeViewComponentProps {
@@ -26,8 +26,6 @@ interface NodeViewWrapperState {
 }
 
 interface NodeViewWrapperProps {
-  elementType: ElementType<NodeViewComponentProps>;
-  contentDOMElementType?: keyof ReactHTML;
   editorView: EditorView;
   getPos: () => number;
   initialState: NodeViewWrapperState;
@@ -47,12 +45,10 @@ export type RegisterElement = (
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
-export type PartialNodeViewConstructor = (
-  node: Node,
-  editorView: EditorView,
-  getPos: () => number,
-  decorations: readonly Decoration[]
-) => Partial<Omit<NodeView, "update">> & Pick<NodeView, "dom">;
+export type InnerNodeView = Partial<Omit<NodeView, "update">> &
+  Pick<NodeView, "dom"> & { component: ComponentType<NodeViewComponentProps> };
+
+export type InnerNodeViewConstructor = () => InnerNodeView;
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -71,9 +67,8 @@ export type PartialNodeViewConstructor = (
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  ReactComponent: ComponentType<NodeViewComponentProps>,
-  registerElement: RegisterElement,
-  innerConstructor: PartialNodeViewConstructor
+  innerConstructor: InnerNodeViewConstructor,
+  registerElement: RegisterElement
 ) {
   function nodeViewConstructor(
     node: Node,
@@ -81,18 +76,13 @@ export function createReactNodeViewConstructor(
     getPos: () => number,
     decorations: readonly Decoration[]
   ): NodeView {
-    const innerNodeView = innerConstructor(
-      node,
-      editorView,
-      getPos,
-      decorations
-    );
+    const innerNodeView = innerConstructor();
 
     let componentRef: NodeViewWrapperRef | null = null;
 
-    const { dom, contentDOM } = innerNodeView;
+    const { dom, contentDOM, component: ReactComponent } = innerNodeView;
 
-    const contentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
+    const ContentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
       | keyof ReactHTML
       | undefined;
 
@@ -105,12 +95,7 @@ export function createReactNodeViewConstructor(
       NodeViewWrapperRef,
       NodeViewWrapperProps
     >(function NodeViewWrapper(
-      {
-        elementType: ElementType,
-        contentDOMElementType: ContentDOMElementType,
-        initialState,
-        getPos,
-      }: NodeViewWrapperProps,
+      { initialState, getPos }: NodeViewWrapperProps,
       ref
     ) {
       const [node, setNode] = useState<Node>(initialState.node);
@@ -137,7 +122,7 @@ export function createReactNodeViewConstructor(
       );
 
       return (
-        <ElementType
+        <ReactComponent
           getPos={getPos}
           node={node}
           decorations={decorations}
@@ -151,7 +136,7 @@ export function createReactNodeViewConstructor(
               }}
             />
           )}
-        </ElementType>
+        </ReactComponent>
       );
     });
 
@@ -159,8 +144,6 @@ export function createReactNodeViewConstructor(
 
     const element = (
       <NodeViewWrapper
-        elementType={ReactComponent}
-        contentDOMElementType={contentDOMElementType}
         initialState={{ node, decorations, isSelected: false }}
         editorView={editorView}
         getPos={getPos}

@@ -1,32 +1,23 @@
-import { ComponentType, useMemo } from "react";
+import { useMemo } from "react";
 
 import {
-  NodeViewComponentProps,
-  PartialNodeViewConstructor,
+  InnerNodeViewConstructor,
   createReactNodeViewConstructor,
 } from "../nodeViews/createReactNodeViewConstructor";
 
 import { useNodeViewPortals } from "./useNodeViewPortals";
 
 export function useNodeViews(
-  nodeViews: Record<
-    string,
-    {
-      constructor: PartialNodeViewConstructor;
-      component: ComponentType<NodeViewComponentProps>;
-    }
-  >
+  nodeViews: Record<string, InnerNodeViewConstructor>
 ) {
   const { registerPortal, portals } = useNodeViewPortals();
 
   const reactNodeViews = useMemo(() => {
     const nodeViewEntries = Object.entries(nodeViews);
-    const reactNodeViewEntries = nodeViewEntries.map(
-      ([name, { constructor, component }]) => [
-        name,
-        createReactNodeViewConstructor(component, registerPortal, constructor),
-      ]
-    );
+    const reactNodeViewEntries = nodeViewEntries.map(([name, constructor]) => [
+      name,
+      createReactNodeViewConstructor(constructor, registerPortal),
+    ]);
     return Object.fromEntries(reactNodeViewEntries);
   }, [nodeViews, registerPortal]);
 
