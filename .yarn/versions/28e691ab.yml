@@ -1,2 +1,2 @@
 declined:
-  - react-prosemirror
+  - "@nytimes/react-prosemirror"

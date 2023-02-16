@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 
 import {
-  InnerNodeViewConstructor,
+  ReactNodeViewConstructor,
   createReactNodeViewConstructor,
 } from "../nodeViews/createReactNodeViewConstructor";
 
 import { useNodeViewPortals } from "./useNodeViewPortals";
 
 export function useNodeViews(
-  nodeViews: Record<string, InnerNodeViewConstructor>
+  nodeViews: Record<string, ReactNodeViewConstructor>
 ) {
   const { registerPortal, portals } = useNodeViewPortals();
 

@@ -508,7 +508,7 @@ export function SelectionWidget() {
  * `decorations` will be passed as props to the React component,
  * and `view` should only be accessed via the above React hooks.
  */
-type InnerNodeViewConstructor = () => {
+type ReactNodeViewConstructor = () => {
   dom: HTMLElement | null;
   component: React.ComponentType<NodeViewComponentProps>;
   contentDOM?: HTMLElement | null;
@@ -521,7 +521,7 @@ type InnerNodeViewConstructor = () => {
   destroy?: () => void;
 };
 
-type useNodeViews = (nodeViews: Record<string, InnerNodeViewConstructor>) => {
+type useNodeViews = (nodeViews: Record<string, ReactNodeViewConstructor>) => {
   nodeViews: Record<string, NodeViewConstructor>;
   renderNodeViews: () => ReactElement[];
 };

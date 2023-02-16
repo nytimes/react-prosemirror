@@ -45,10 +45,19 @@ export type RegisterElement = (
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
-export type InnerNodeView = Partial<Omit<NodeView, "update">> &
-  Pick<NodeView, "dom"> & { component: ComponentType<NodeViewComponentProps> };
+type _ReactNodeView = Omit<NodeView, "update"> & {
+  component: ComponentType<NodeViewComponentProps>;
+};
 
-export type InnerNodeViewConstructor = () => InnerNodeView;
+// We use a mapped type to improve LSP information for this type.
+// The language server will actually spell out the properties and
+// corresponding types of the mapped type, rather than repeating
+// the ugly Omit<...> & { component: ... } type above.
+export type ReactNodeView = {
+  [Property in keyof _ReactNodeView]: _ReactNodeView[Property];
+};
+
+export type ReactNodeViewConstructor = () => ReactNodeView;
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -67,7 +76,7 @@ export type InnerNodeViewConstructor = () => InnerNodeView;
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  innerConstructor: InnerNodeViewConstructor,
+  reactNodeViewConstructor: ReactNodeViewConstructor,
   registerElement: RegisterElement
 ) {
   function nodeViewConstructor(
@@ -76,11 +85,11 @@ export function createReactNodeViewConstructor(
     getPos: () => number,
     decorations: readonly Decoration[]
   ): NodeView {
-    const innerNodeView = innerConstructor();
+    const reactNodeView = reactNodeViewConstructor();
 
     let componentRef: NodeViewWrapperRef | null = null;
 
-    const { dom, contentDOM, component: ReactComponent } = innerNodeView;
+    const { dom, contentDOM, component: ReactComponent } = reactNodeView;
 
     const ContentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
       | keyof ReactHTML
@@ -191,14 +200,14 @@ export function createReactNodeViewConstructor(
       ignoreMutation(record: MutationRecord) {
         return !contentDOM?.contains(record.target);
       },
-      ...innerNodeView,
+      ...reactNodeView,
       selectNode() {
         componentRef?.setIsSelected(true);
-        innerNodeView.selectNode?.();
+        reactNodeView.selectNode?.();
       },
       deselectNode() {
         componentRef?.setIsSelected(false);
-        innerNodeView.deselectNode?.();
+        reactNodeView.deselectNode?.();
       },
       update(node: Node, decorations: readonly Decoration[]) {
         if (node.type === componentRef?.node.type) {
@@ -210,7 +219,7 @@ export function createReactNodeViewConstructor(
       },
       destroy() {
         unregisterElement();
-        innerNodeView.destroy?.();
+        reactNodeView.destroy?.();
       },
     };
   }
