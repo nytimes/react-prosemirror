@@ -1,0 +1,13 @@
+.ProseMirror {
+  border: thin solid black;
+  border-radius: 0.25rem;
+  padding: 1rem;
+  outline: none;
+  min-height: 700px;
+}
+
+main {
+  margin: auto;
+  width: 80%;
+  max-width: 700px;
+}
