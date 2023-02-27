@@ -140,8 +140,8 @@ export function createReactNodeViewConstructor(
           {ContentDOMElementType && (
             <ContentDOMElementType
               // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
-              ref={(contentDOMWrapper: HTMLElement | null) => {
-                setContentDOMWrapper(contentDOMWrapper);
+              ref={(nextContentDOMWrapper: HTMLElement | null) => {
+                setContentDOMWrapper(nextContentDOMWrapper);
               }}
             />
           )}
@@ -149,7 +149,9 @@ export function createReactNodeViewConstructor(
       );
     });
 
-    NodeViewWrapper.displayName = `NodeView(${ReactComponent.displayName})`;
+    NodeViewWrapper.displayName = `NodeView(${
+      ReactComponent.displayName ?? ReactComponent.name
+    })`;
 
     const element = (
       <NodeViewWrapper

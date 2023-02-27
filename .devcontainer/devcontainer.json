@@ -7,7 +7,11 @@
   "remoteUser": "node",
   "customizations": {
     "vscode": {
-      "extensions": ["esbenp.prettier-vscode", "dbaeumer.vscode-eslint"]
+      "extensions": [
+        "esbenp.prettier-vscode",
+        "arcanis.vscode-zipfs",
+        "dbaeumer.vscode-eslint"
+      ]
     }
   }
 }
