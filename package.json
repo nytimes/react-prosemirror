@@ -33,6 +33,7 @@
     "fix:lint": "eslint --cache --fix .",
     "fix:toc": "markdown-toc -i README.md",
     "fix": "concurrently -P 'npm:fix:* {@}' --",
+    "prepack": "yarn build",
     "test": "jest"
   },
   "devDependencies": {

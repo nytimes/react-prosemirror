@@ -5,5 +5,3 @@ export * from "./hooks/useEditorState.js";
 export * from "./hooks/useEditorView.js";
 export * from "./hooks/useEditorViewEvent.js";
 export * from "./hooks/useEditorViewLayoutEffect.js";
-export * from "./hooks/useNodeViewPortals.js";
-export * from "./nodeViews/createReactNodeViewConstructor.js";
