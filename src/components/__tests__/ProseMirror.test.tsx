@@ -115,7 +115,7 @@ describe("ProseMirror", () => {
           mount={mount}
           state={editorState}
           dispatchTransaction={function (this: EditorView, tr) {
-            // We have to wrap the update in `act1 to handle all of
+            // We have to wrap the update in `act` to handle all of
             // the async portal registering and component rendering that
             // happens "out of band" because it's triggered by ProseMirror,
             // not React.
