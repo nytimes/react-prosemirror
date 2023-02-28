@@ -13,8 +13,6 @@ import {
 } from "../../testing/setupProseMirrorView";
 import { ProseMirror } from "../ProseMirror";
 
-jest.setTimeout(60000);
-
 describe("ProseMirror", () => {
   beforeAll(() => {
     setupProseMirrorView();
