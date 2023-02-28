@@ -4,12 +4,12 @@ import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
-function withBatchedUpdates<T extends unknown[]>(
-  fn: (...args: T) => void
+function withBatchedUpdates<This, T extends unknown[]>(
+  fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
-  return (...args: T) => {
+  return function (this: This, ...args: T) {
     batch(() => {
-      fn(...args);
+      fn.call(this, ...args);
     });
   };
 }
@@ -60,6 +60,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   const [view, setView] = useState<EditorView | null>(null);
 
   props = withBatchedDispatch(props);
+  const { state, ...nonStateProps } = props;
 
   useLayoutEffect(() => {
     return () => {
@@ -83,9 +84,15 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
       setView(new EditorView({ mount }, props));
       return;
     }
-
-    view.update(props);
   }, [mount, props, view]);
+
+  useLayoutEffect(() => {
+    view?.setProps(nonStateProps);
+  }, [view, nonStateProps]);
+
+  useLayoutEffect(() => {
+    view?.setProps({ state });
+  }, [view, state]);
 
   return view;
 }

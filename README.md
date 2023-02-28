@@ -92,7 +92,7 @@ export function ProseMirrorEditor() {
   const [mount, setMount] = useState();
 
   return (
-    <ProseMirror mount={mount} editorState={EditorState.create({ schema })}>
+    <ProseMirror mount={mount} state={EditorState.create({ schema })}>
       <div ref={setMount} />
     </ProseMirror>
   );
@@ -116,7 +116,7 @@ export function ProseMirrorEditor() {
   return (
     <ProseMirror
       mount={mount}
-      editorState={editorState}
+      state={editorState}
       dispatchTransaction={(tr) => {
         setEditorState((s) => s.apply(tr));
       }}
@@ -157,7 +157,7 @@ export function ProseMirrorEditor() {
   return (
     <ProseMirror
       mount={mount}
-      editorState={editorState}
+      state={editorState}
       dispatchTransaction={(tr) => {
         setEditorState(s => s.apply(tr))
       }}
@@ -220,7 +220,7 @@ export function ProseMirrorEditor() {
   return (
     <ProseMirror
       mount={mount}
-      editorState={editorState}
+      state={editorState}
       dispatchTransaction={(tr) => {
         setEditorState((s) => s.apply(tr));
       }}
@@ -294,25 +294,32 @@ function Paragraph({ children }: Props) {
   return <p onClick={onClick}>{children}</p>;
 }
 
+// Make sure that your ReactNodeViews are defined outside of
+// your component, or are properly memoized. ProseMirror will
+// teardown and rebuild all NodeViews if the nodeView prop is
+// updated, leading to unbounded recursion if this object doesn't
+// have a stable reference.
+const reactNodeViews = {
+  paragraph: () => ({
+    component: Paragraph,
+    // We render the Paragraph component itself into a div element
+    dom: document.createElement("div"),
+    // We render the paragraph node's ProseMirror contents into
+    // a span, which will be passed as children to the Paragraph
+    // component.
+    contentDOM: document.createElement("span"),
+  }),
+};
+
 function ProseMirrorEditor() {
-  const { nodeViews, renderNodeViews } = useNodeViews({
-    paragraph: () => ({
-      component: Paragraph,
-      // We render the Paragraph component itself into a div element
-      dom: document.createElement("div"),
-      // We render the paragraph node's ProseMirror contents into
-      // a span, which will be passed as children to the Paragraph
-      // component.
-      contentDOM: document.createElement("span"),
-    }),
-  });
+  const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
 
   const [mount, setMount] = useState();
 
   return (
     <ProseMirror
       mount={mount}
-      editorState={EditorState.create({ schema })}
+      state={EditorState.create({ schema })}
       nodeViews={nodeViews}
     >
       <div ref={setMount} />

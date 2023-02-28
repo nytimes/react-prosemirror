@@ -38,7 +38,8 @@
         "ignoreDeclarationSort": true
       }
     ],
-    "no-inner-declarations": "off"
+    "no-inner-declarations": "off",
+    "import/no-unresolved": "off" // Typescript does this better!
   },
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx"],
