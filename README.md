@@ -7,13 +7,13 @@ A fully featured library for safely integrating ProseMirror and React.
 npm:
 
 ```sh
-npm install react-prosemirror
+npm install @nytimes/react-prosemirror
 ```
 
 yarn:
 
 ```sh
-yarn add react-prosemirror
+yarn add @nytimes/react-prosemirror
 ```
 
 <!-- toc -->
@@ -83,7 +83,7 @@ ProseMirror EditorView should be mounted on.
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMiror } from "prosemirror-react";
+import { ProseMiror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   // It's important that mount is stored as state,
@@ -105,7 +105,7 @@ passed as a prop.
 ```tsx
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
-import { ProseMirror } from "prosemirror-react";
+import { ProseMirror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState();
@@ -133,7 +133,7 @@ synchronizing the EditorView is a side effect, it _must_ happen in the effects
 phase of the React render lifecycle, _after_ all of the ProseMirror component's
 children have run their render functions. This means that special care must be
 taken to access the EditorView from within other React components. In order to
-abstract away this complexity, ProseMirror-React provides two hooks:
+abstract away this complexity, React ProseMirror provides two hooks:
 `useEditorViewLayoutEffect` and `useEditorViewEvent`. Both of these hooks can be
 used from any children of the ProseMirror component.
 
@@ -146,9 +146,32 @@ positioning happens when the EditorView is in sync with the latest EditorState,
 we can use `useEditorViewLayoutEffect`.
 
 ```tsx
+// SelectionWidget.tsx
+import { useEditorViewLayoutEffect } from "@nytimes/react-prosemirror";
+
+export function SelectionWidget() {
+  const [selectionCoords, setSelectionCoords] = useState()
+
+  useEditorViewLayoutEffect((view) => {
+    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+  })
+
+  return (
+    <div
+      style={{
+        position: "absolute";
+        left: selectionCoords.left;
+        top: selectionCoords.top;
+      }}
+    />
+  )
+}
+
 // ProseMirrorEditor.tsx
-import { EditorState } from 'prosemirror-state';
-import { schema } from 'prosemirror-schema-basic';
+import { EditorState } from "prosemirror-state";
+import { schema } from "prosemirror-schema-basic";
+
+import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState()
@@ -164,32 +187,11 @@ export function ProseMirrorEditor() {
     >
       {/*
         We have to mount all components that need to access the
-        EditorView as children of the ProseMirrer component
+        EditorView as children of the ProseMirror component
       */}
       <SelectionWidget />
       <div ref={setMount} />
     </ProseMirror>
-  )
-}
-
-// SelectionWidget.tsx
-import { useEditorViewLayoutEffect } from 'prosemirror-react';
-
-export function SelectionWidget() {
-  const [selectionCoords, setSelectionCoords] = useState()
-
-  useEditorViewLayoutEffect((view) => {
-    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
-  })
-
-  return (
-    <div
-      style={{
-        position: 'absolute';
-        left: selectionCoords.left;
-        top: selectionCoords.top;
-      }}
-    />
   )
 }
 ```
@@ -207,9 +209,24 @@ use `useEditorViewEvent` to create a stable function reference that can safely
 access the latest value of the `EditorView`.
 
 ```tsx
+// BoldButton.tsx
+import { toggleMark } from "prosemirror-commands";
+import { useEditorViewEvent } from "@nytimes/react-prosemirror";
+
+export function BoldButton() {
+  const onClick = useEditorViewEvent((view) => {
+    const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
+    toggleBoldMark(view.state, view.dispatch, view);
+  });
+
+  return <button onClick={onClick}>Bold</button>;
+}
+
 // ProseMirrorEditor.tsx
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
+
+import { BoldButton } from "./BoldButton.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState();
@@ -227,25 +244,12 @@ export function ProseMirrorEditor() {
     >
       {/*
         We have to mount all components that need to access the
-        EditorView as children of the ProseMirrer component
+        EditorView as children of the ProseMirror component
       */}
       <BoldButton />
       <div ref={setMount} />
     </ProseMirror>
   );
-}
-
-// BoldButton.tsx
-import { toggleMark } from "prosemirror-commands";
-import { useEditorViewEvent } from "prosemirror-react";
-
-export function BoldButton() {
-  const onClick = useEditorViewEvent((view) => {
-    const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
-    toggleBoldMark(view.state, view.dispatch, view);
-  });
-
-  return <button onClick={onClick}>Bold</button>;
 }
 ```
 
@@ -278,18 +282,19 @@ The NodeView constructor must return at least a `dom` attribute and a
 from the `update` method. Here's an example of its usage:
 
 ```tsx
+import {
+  useNodeViews,
+  useEditorViewEvent,
+  NodeViewComponentProps,
+} from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
-import { useNodeViews } from "prosemirror-react";
-
-type Props = {
-  children: ReactNode;
-};
 
 // Paragraph is more or less a normal React component, taking and rendering
 // its children. The actual children will be constructed by ProseMirror and
-// passed in here.
-function Paragraph({ children }: Props) {
+// passed in here. Take a look at the NodeViewComponentProps type to
+// see what other props will be passed to NodeView components.
+function Paragraph({ children }: NodeViewComponentProps) {
   const onClick = useEditorViewEvent((view) => view.dispatch(whatever));
   return <p onClick={onClick}>{children}</p>;
 }
@@ -481,7 +486,7 @@ EditorView lives in an ancestor component.
 Example usage:
 
 ```tsx
-import { useEditorViewLayoutEffect } from 'prosemirror-react';
+import { useEditorViewLayoutEffect } from '@nytimes/react-prosemirror';
 
 export function SelectionWidget() {
   const [selectionCoords, setSelectionCoords] = useState()
