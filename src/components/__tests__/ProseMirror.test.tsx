@@ -105,7 +105,7 @@ describe("ProseMirror", () => {
     };
 
     function TestEditor() {
-      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
+      const { nodeViews } = useNodeViews(reactNodeViews);
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
@@ -122,7 +122,6 @@ describe("ProseMirror", () => {
           nodeViews={nodeViews}
         >
           <div data-testid="editor" ref={setMount} />
-          {renderNodeViews()}
         </ProseMirror>
       );
     }

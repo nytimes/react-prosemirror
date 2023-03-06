@@ -6,7 +6,12 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { NodeViewComponentProps, ProseMirror, useNodeViews } from "../src";
+import {
+  NodeViewComponentProps,
+  ProseMirror,
+  useEditorViewEvent,
+  useNodeViews,
+} from "../src";
 
 import "./main.css";
 
@@ -35,7 +40,7 @@ const reactNodeViews = {
 };
 
 function DemoEditor() {
-  const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
+  const { nodeViews } = useNodeViews(reactNodeViews);
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
   return (
@@ -43,7 +48,6 @@ function DemoEditor() {
       <h1>React ProseMirror Demo</h1>
       <ProseMirror mount={mount} state={editorState} nodeViews={nodeViews}>
         <div ref={setMount} />
-        {renderNodeViews()}
       </ProseMirror>
     </main>
   );

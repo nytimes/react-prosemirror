@@ -9,7 +9,9 @@ import React, {
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
-import { createPortal } from "react-dom";
+import type { createPortal } from "react-dom";
+import { flushSync } from "react-dom-secondary";
+import { createRoot } from "react-dom-secondary/client";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
@@ -76,8 +78,7 @@ export type ReactNodeViewConstructor = () => ReactNodeView;
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  reactNodeViewConstructor: ReactNodeViewConstructor,
-  registerElement: RegisterElement
+  reactNodeViewConstructor: ReactNodeViewConstructor
 ) {
   function nodeViewConstructor(
     node: Node,
@@ -89,7 +90,11 @@ export function createReactNodeViewConstructor(
 
     let componentRef: NodeViewWrapperRef | null = null;
 
-    const { dom, contentDOM, component: ReactComponent } = reactNodeView;
+    const {
+      dom: container,
+      contentDOM,
+      component: ReactComponent,
+    } = reactNodeView;
 
     const ContentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
       | keyof ReactHTML
@@ -153,6 +158,7 @@ export function createReactNodeViewConstructor(
       ReactComponent.displayName ?? ReactComponent.name
     })`;
 
+    let renderedContentDOM: HTMLElement | null = null;
     const element = (
       <NodeViewWrapper
         initialState={{ node, decorations, isSelected: false }}
@@ -163,17 +169,17 @@ export function createReactNodeViewConstructor(
 
           if (!componentRef || componentRef.node.isLeaf) return;
 
-          const contentDOMWrapper = componentRef.contentDOMWrapper;
+          renderedContentDOM = componentRef.contentDOMWrapper;
           if (
-            !contentDOMWrapper ||
-            !(contentDOMWrapper instanceof HTMLElement)
+            !renderedContentDOM ||
+            !(renderedContentDOM instanceof HTMLElement)
           ) {
             return;
           }
 
           // We always set contentDOM when !node.isLeaf, which is checked above
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          contentDOMWrapper.appendChild(contentDOM!);
+          renderedContentDOM.appendChild(contentDOM!);
 
           // Synchronize the ProseMirror selection to the DOM, because mounting the
           // component changes the DOM outside of a ProseMirror update.
@@ -192,15 +198,17 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const unregisterElement = registerElement(
-      element,
-      dom as HTMLElement,
-      Math.floor(Math.random() * 0xffffff).toString(16)
-    );
+    const root = createRoot(container as HTMLElement);
+    flushSync(() => {
+      root.render(element);
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const dom = container.firstChild!;
 
     return {
       ignoreMutation(record: MutationRecord) {
-        return !contentDOM?.contains(record.target);
+        return !renderedContentDOM?.contains(record.target);
       },
       ...reactNodeView,
       selectNode() {
@@ -220,9 +228,12 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
-        unregisterElement();
+        container.appendChild(dom);
+        root.unmount();
         reactNodeView.destroy?.();
       },
+      dom,
+      contentDOM: renderedContentDOM,
     };
   }
 

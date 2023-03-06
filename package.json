@@ -85,5 +85,8 @@
   "packageManager": "yarn@3.4.1",
   "engines": {
     "node": ">=16.9"
+  },
+  "dependencies": {
+    "react-dom-secondary": "file:./react-dom-secondary"
   }
 }

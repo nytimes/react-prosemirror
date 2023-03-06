@@ -1187,6 +1187,7 @@ __metadata:
     prosemirror-view: ^1.29.1
     react: ^18.2.0
     react-dom: ^18.2.0
+    react-dom-secondary: "file:./react-dom-secondary"
     rimraf: ^3.0.2
     typescript: ^4.9.5
     vite: ^4.1.4
@@ -6984,6 +6985,18 @@ __metadata:
     kind-of: ^6.0.0
     math-random: ^1.0.1
   checksum: 1952baed71801d3698fe84f3ab01e25ea124fc20ce91e133aa1981268c1347647f9ae1fdc62389db2411ebdad61c0f7cea0ce840dee260ad2adadfcf27299018
+  languageName: node
+  linkType: hard
+
+"react-dom-secondary@file:./react-dom-secondary::locator=%40nytimes%2Freact-prosemirror%40workspace%3A.":
+  version: 18.2.0
+  resolution: "react-dom-secondary@file:./react-dom-secondary#./react-dom-secondary::hash=60c569&locator=%40nytimes%2Freact-prosemirror%40workspace%3A."
+  dependencies:
+    loose-envify: ^1.1.0
+    scheduler: ^0.23.0
+  peerDependencies:
+    react: ^18.2.0
+  checksum: 6280428d7238b90958428f0564174d6fd98ecedf4fbf378d971eb124e4114fd698702b7bdee050c042fbc1d0129973776e85bc8447ae27b771ecc8f8645e718e
   languageName: node
   linkType: hard
 
