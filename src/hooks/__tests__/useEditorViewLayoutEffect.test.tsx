@@ -3,8 +3,8 @@ import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import React from "react";
 
-import { DeferredLayoutEffectsProvider } from "../../contexts/DeferredLayoutEffects.js";
 import { EditorViewContext } from "../../contexts/EditorViewContext.js";
+import { LayoutGroup } from "../../contexts/LayoutGroup.js";
 import { useEditorViewLayoutEffect } from "../useEditorViewLayoutEffect.js";
 
 function TestComponent({
@@ -25,11 +25,11 @@ describe("useEditorViewLayoutEffect", () => {
     const editorState = {} as EditorState;
 
     render(
-      <DeferredLayoutEffectsProvider>
+      <LayoutGroup>
         <EditorViewContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} />
         </EditorViewContext.Provider>
-      </DeferredLayoutEffectsProvider>
+      </LayoutGroup>
     );
 
     expect(effect).toHaveBeenCalled();
@@ -42,19 +42,19 @@ describe("useEditorViewLayoutEffect", () => {
     const editorState = {} as EditorState;
 
     const { rerender } = render(
-      <DeferredLayoutEffectsProvider>
+      <LayoutGroup>
         <EditorViewContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={[]} />
         </EditorViewContext.Provider>
-      </DeferredLayoutEffectsProvider>
+      </LayoutGroup>
     );
 
     rerender(
-      <DeferredLayoutEffectsProvider>
+      <LayoutGroup>
         <EditorViewContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={[]} />
         </EditorViewContext.Provider>
-      </DeferredLayoutEffectsProvider>
+      </LayoutGroup>
     );
 
     expect(effect).toHaveBeenCalledTimes(1);
@@ -66,19 +66,19 @@ describe("useEditorViewLayoutEffect", () => {
     const editorState = {} as EditorState;
 
     const { rerender } = render(
-      <DeferredLayoutEffectsProvider>
+      <LayoutGroup>
         <EditorViewContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={["one"]} />
         </EditorViewContext.Provider>
-      </DeferredLayoutEffectsProvider>
+      </LayoutGroup>
     );
 
     rerender(
-      <DeferredLayoutEffectsProvider>
+      <LayoutGroup>
         <EditorViewContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={["two"]} />
         </EditorViewContext.Provider>
-      </DeferredLayoutEffectsProvider>
+      </LayoutGroup>
     );
 
     expect(effect).toHaveBeenCalledTimes(2);

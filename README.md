@@ -20,21 +20,21 @@ yarn add @nytimes/react-prosemirror
 
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
-  * [Rendering ProseMirror Views within React](#rendering-prosemirror-views-within-react)
-    + [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect)
-    + [`useEditorViewEvent`](#useeditorviewevent)
-    + [`useEditorView`, `EditorViewContext` and `DeferredLayoutEffectsProvider`](#useeditorview-editorviewcontext-and-deferredlayouteffectsprovider)
-  * [Building NodeViews with React](#building-nodeviews-with-react)
+  - [Rendering ProseMirror Views within React](#rendering-prosemirror-views-within-react)
+    - [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect)
+    - [`useEditorViewEvent`](#useeditorviewevent)
+    - [`useEditorView`, `EditorViewContext` and `LayoutGroup`](#useeditorview-editorviewcontext-and-layoutgroup)
+  - [Building NodeViews with React](#building-nodeviews-with-react)
 - [API](#api)
-  * [`ProseMirror`](#prosemirror)
-  * [`EditorViewContext`](#editorviewcontext)
-  * [`DeferredLayoutEffectsProvider`](#deferredlayouteffectsprovider)
-  * [`useDeferredLayoutEffect`](#usedeferredlayouteffect)
-  * [`useEditorState`](#useeditorstate)
-  * [`useEditorView`](#useeditorview)
-  * [`useEditorViewEvent`](#useeditorviewevent-1)
-  * [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect-1)
-  * [`useNodeViews`](#usenodeviews)
+  - [`ProseMirror`](#prosemirror)
+  - [`EditorViewContext`](#editorviewcontext)
+  - [`LayoutGroup`](#layoutgroup)
+  - [`useLayoutGroupEffect`](#uselayoutgroupeffect)
+  - [`useEditorState`](#useeditorstate)
+  - [`useEditorView`](#useeditorview)
+  - [`useEditorViewEvent`](#useeditorviewevent-1)
+  - [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect-1)
+  - [`useNodeViews`](#usenodeviews)
 
 <!-- tocstop -->
 
@@ -253,12 +253,12 @@ export function ProseMirrorEditor() {
 }
 ```
 
-#### `useEditorView`, `EditorViewContext` and `DeferredLayoutEffectsProvider`
+#### `useEditorView`, `EditorViewContext` and `LayoutGroup`
 
 Under the hood, the `ProseMirror` component essentially just composes three
-separate tools: `useEditorView`, `EditorViewContext`, and
-`DeferredLayoutEffectsProvider`. If you find yourself in need of more control
-over these, they can also be used independently.
+separate tools: `useEditorView`, `EditorViewContext`, and `LayoutGroup`. If you
+find yourself in need of more control over these, they can also be used
+independently.
 
 `useEditorView` is a relatively simple hook that takes a mount point and
 `EditorProps` as arguments and returns an EditorView instance.
@@ -266,8 +266,8 @@ over these, they can also be used independently.
 `EditorViewContext` is a simple React context, which should be provided the
 current EditorView and EditorState.
 
-`DeferredLayoutEffectsProvider` _must_ be rendered as a parent of the component
-using `useEditorView`.
+`LayoutGroup` _must_ be rendered as a parent of the component using
+`useEditorView`.
 
 ### Building NodeViews with React
 
@@ -385,39 +385,37 @@ See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
 you don't need to use this context directly.
 
-### `DeferredLayoutEffectsProvider`
+### `LayoutGroup`
 
 ```tsx
-type DeferredLayoutEffectsProvider = (props: {
-  children: React.ReactNode;
-}) => JSX.Element;
+type LayoutGroup = (props: { children: React.ReactNode }) => JSX.Element;
 ```
 
-Provides a deferral point for deferred layout effects. All effects registered
-with `useDeferredLayoutEffect` by children of this provider will execute _after_
+Provides a deferral point for grouped layout effects. All effects registered
+with `useLayoutGroupEffect` by children of this provider will execute _after_
 all effects registered by `useLayoutEffect` by children of this provider.
 
 See [ProseMirror.tsx](./src/components/ProseMirror.tsx) for example usage. Note
 that if you are using the [`ProseMirror`](#prosemirror) component, you don't
 need to use this context directly.
 
-### `useDeferredLayoutEffect`
+### `useLayoutGroupEffect`
 
 ```tsx
-type useDeferredlayoutEffect = (
+type useLayoutGroupEffect = (
   effect: React.EffectCallback,
   deps?: React.DependencyList
 ) => void;
 ```
 
 Like `useLayoutEffect`, but all effect executions are run _after_ the
-`DeferredLayoutEffectsProvider` layout effects phase.
+`LayoutGroup` layout effects phase.
 
 This hook allows child components to enqueue layout effects that won't be safe
 to run until after a parent component's layout effects have run.
 
 Note that components that use this hook must be descendants of the
-[`DeferredLayoutEffectsProvider`](#deferredlayouteffectsprovider) component.
+[`LayoutGroup`](#layoutgroup) component.
 
 ### `useEditorState`
 
@@ -460,8 +458,8 @@ Returns a stable function reference to be used as an event handler callback.
 The callback will be called with the EditorView instance as its first argument.
 
 This hook is dependent on both the `EditorViewContext.Provider` and the
-`DeferredLayoutEffectProvider`. It can only be used in a component that is
-mounted as a child of both of these providers.
+`LayoutGroup`. It can only be used in a component that is mounted as a child of
+both of these providers.
 
 ### `useEditorViewLayoutEffect`
 

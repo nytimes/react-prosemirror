@@ -1,6 +1,6 @@
 import React from "react";
 
-import { DeferredLayoutEffectsProvider } from "../contexts/DeferredLayoutEffects.js";
+import { LayoutGroup } from "../contexts/LayoutGroup.js";
 
 import { ProseMirrorInner, ProseMirrorProps } from "./ProseMirrorInner.js";
 
@@ -27,8 +27,8 @@ import { ProseMirrorInner, ProseMirrorProps } from "./ProseMirrorInner.js";
  */
 export function ProseMirror(props: ProseMirrorProps) {
   return (
-    <DeferredLayoutEffectsProvider>
+    <LayoutGroup>
       <ProseMirrorInner {...props} />
-    </DeferredLayoutEffectsProvider>
+    </LayoutGroup>
   );
 }

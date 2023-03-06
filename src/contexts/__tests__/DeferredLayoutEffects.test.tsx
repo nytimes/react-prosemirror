@@ -1,10 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import React, { useLayoutEffect, useState } from "react";
 
-import {
-  DeferredLayoutEffectsProvider,
-  useDeferredLayoutEffect,
-} from "../DeferredLayoutEffects.js";
+import { LayoutGroup, useLayoutGroupEffect } from "../LayoutGroup.js";
 
 describe("DeferredLayoutEffects", () => {
   jest.useFakeTimers("modern");
@@ -12,9 +9,9 @@ describe("DeferredLayoutEffects", () => {
   it("registers multiple effects and runs them", () => {
     function Parent() {
       return (
-        <DeferredLayoutEffectsProvider>
+        <LayoutGroup>
           <Child />
-        </DeferredLayoutEffectsProvider>
+        </LayoutGroup>
       );
     }
 
@@ -33,7 +30,7 @@ describe("DeferredLayoutEffects", () => {
         }
       }, [double]);
 
-      useDeferredLayoutEffect(() => {
+      useLayoutGroupEffect(() => {
         const timeout = setTimeout(() => {
           setDouble((d) => d * 2);
         }, 1000);

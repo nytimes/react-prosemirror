@@ -2,8 +2,8 @@ import type { EditorView } from "prosemirror-view";
 import { useContext } from "react";
 import type { DependencyList } from "react";
 
-import { useDeferredLayoutEffect } from "../contexts/DeferredLayoutEffects.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
+import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
 
 /**
  * Registers a layout effect to run after the EditorView has
@@ -32,7 +32,7 @@ export function useEditorViewLayoutEffect(
   // Note: we specifically don't want to re-run the effect
   // every time it changes, because it will most likely
   // be defined inline and run on every re-render.
-  useDeferredLayoutEffect(
+  useLayoutGroupEffect(
     () => effect(editorView),
     // The rules of hooks want to be able to statically
     // verify the dependencies for the effect, but this will

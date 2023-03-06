@@ -19,7 +19,7 @@ import { useForceUpdate } from "../hooks/useForceUpdate.js";
  * layout effects have run.
  *
  */
-const useDeferredLayoutEffects = () => {
+const useLayoutGroupEffectsRegistry = () => {
   const createQueue = useRef(new Set<() => void>()).current;
   const destroyQueue = useRef(new Set<() => void>()).current;
 
@@ -70,9 +70,7 @@ const useDeferredLayoutEffects = () => {
 type Destructor = () => void;
 type Register = (e: EffectCallback) => Destructor;
 
-const DeferredLayoutEffectsContext = createContext<Register>(
-  null as unknown as Register
-);
+const LayoutGroupContext = createContext<Register>(null as unknown as Register);
 
 interface DeferredLayoutEffectsContextProviderProps {
   children: React.ReactNode;
@@ -85,14 +83,14 @@ interface DeferredLayoutEffectsContextProviderProps {
  * effects registered by `useLayoutEffect` by children of
  * this provider.
  */
-export function DeferredLayoutEffectsProvider({
+export function LayoutGroup({
   children,
 }: DeferredLayoutEffectsContextProviderProps) {
-  const register = useDeferredLayoutEffects();
+  const register = useLayoutGroupEffectsRegistry();
   return (
-    <DeferredLayoutEffectsContext.Provider value={register}>
+    <LayoutGroupContext.Provider value={register}>
       {children}
-    </DeferredLayoutEffectsContext.Provider>
+    </LayoutGroupContext.Provider>
   );
 }
 
@@ -105,11 +103,11 @@ export function DeferredLayoutEffectsProvider({
  * that won't be safe to run until after a parent component's
  * layout effects have run.
  */
-export function useDeferredLayoutEffect(
+export function useLayoutGroupEffect(
   effect: EffectCallback,
   deps?: DependencyList
 ) {
-  const register = useContext(DeferredLayoutEffectsContext);
+  const register = useContext(LayoutGroupContext);
   // The rule for hooks wants to statically verify the deps,
   // but the dependencies are up to the caller, not this implementation.
   // eslint-disable-next-line react-hooks/exhaustive-deps
