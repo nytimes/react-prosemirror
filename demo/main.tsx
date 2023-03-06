@@ -4,7 +4,7 @@ import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
 
 import { NodeViewComponentProps, ProseMirror, useNodeViews } from "../src";
 
@@ -40,7 +40,7 @@ function DemoEditor() {
 
   return (
     <main>
-      <h1>React-ProseMirror Demo</h1>
+      <h1>React ProseMirror Demo</h1>
       <ProseMirror mount={mount} state={editorState} nodeViews={nodeViews}>
         <div ref={setMount} />
         {renderNodeViews()}
@@ -49,7 +49,10 @@ function DemoEditor() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const root = createRoot(document.getElementById("root")!);
+
+root.render(
   <React.StrictMode>
     <DemoEditor />
   </React.StrictMode>

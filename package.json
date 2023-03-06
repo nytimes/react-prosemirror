@@ -32,7 +32,7 @@
     "dev": "yarn build -- --watch",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",
-    "fix:toc": "markdown-toc -i README.md",
+    "fix:toc": "markdown-toc --bullets='-' -i README.md",
     "fix": "concurrently -P 'npm:fix:* {@}' --",
     "prepack": "yarn build",
     "test": "jest"
