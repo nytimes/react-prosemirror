@@ -1,13 +1,19 @@
 import type { DirectEditorProps } from "prosemirror-view";
-import React from "react";
+import React, { Context, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
+import { LayoutGroupContext } from "../contexts/LayoutGroup.js";
 import { useEditorView } from "../hooks/useEditorView.js";
+import { useNodeViews } from "../hooks/useNodeViews.js";
+import { ReactNodeView } from "../nodeViews/createReactNodeViewConstructor.js";
 
 export type ProseMirrorProps = DirectEditorProps & {
   mount: HTMLElement | null;
   children?: ReactNode | null;
+  reactNodeViews?: Record<string, ReactNodeView>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contexts?: Context<any>[];
 };
 
 /**
@@ -36,11 +42,21 @@ export function ProseMirrorInner({
   dispatchTransaction,
   state,
   mount,
+  reactNodeViews,
+  contexts: userContexts = [],
   ...editorProps
 }: ProseMirrorProps) {
+  const contexts = useMemo(
+    () => [...userContexts, LayoutGroupContext],
+    [userContexts]
+  );
+
+  const { nodeViews } = useNodeViews(contexts, reactNodeViews);
+
   const editorView = useEditorView(mount, {
     ...editorProps,
     state,
+    nodeViews,
     dispatchTransaction,
   });
 

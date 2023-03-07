@@ -6,8 +6,25 @@
   min-height: 700px;
 }
 
+.ProseMirror.dark {
+  background-color: #222;
+  color: #EEE;
+}
+
 main {
   margin: auto;
   width: 80%;
   max-width: 700px;
+}
+
+p {
+  padding: calc(0.5rem + 1px);
+}
+
+p.dark {
+  background-color: #222;
+  color: #EEE;
+  padding: 0.5rem;
+  border: thin dotted #EEE;
+  border-radius: 0.25rem;
 }

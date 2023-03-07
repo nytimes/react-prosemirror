@@ -5,7 +5,6 @@ import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import React, { useEffect, useState } from "react";
 
-import { useNodeViews } from "../../hooks/useNodeViews";
 import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor";
 import {
   setupProseMirrorView,
@@ -97,21 +96,20 @@ describe("ProseMirror", () => {
     }
 
     const reactNodeViews = {
-      paragraph: () => ({
+      paragraph: {
         component: Paragraph,
-        dom: document.createElement("div"),
-        contentDOM: document.createElement("span"),
-      }),
+        contentTag: "span" as const,
+      },
     };
 
     function TestEditor() {
-      const { nodeViews } = useNodeViews(reactNodeViews);
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
         <ProseMirror
           mount={mount}
           state={editorState}
+          reactNodeViews={reactNodeViews}
           dispatchTransaction={function (this: EditorView, tr) {
             // We have to wrap the update in `act` to handle all of
             // the async portal registering and component rendering that
@@ -119,7 +117,6 @@ describe("ProseMirror", () => {
             // not React.
             act(() => this.updateState(this.state.apply(tr)));
           }}
-          nodeViews={nodeViews}
         >
           <div data-testid="editor" ref={setMount} />
         </ProseMirror>

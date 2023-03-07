@@ -1,6 +1,7 @@
 import type { Node } from "prosemirror-model";
 import type { Decoration, EditorView, NodeView } from "prosemirror-view";
 import React, {
+  Context,
   Dispatch,
   ReactHTML,
   SetStateAction,
@@ -12,6 +13,8 @@ import type { ComponentType, ReactNode } from "react";
 import type { createPortal } from "react-dom";
 import { flushSync } from "react-dom-secondary";
 import { createRoot } from "react-dom-secondary/client";
+
+import { EditorViewContext } from "../contexts/EditorViewContext";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
@@ -25,12 +28,14 @@ interface NodeViewWrapperState {
   node: Node;
   decorations: readonly Decoration[];
   isSelected: boolean;
+  contextValues: unknown[];
 }
 
 interface NodeViewWrapperProps {
   editorView: EditorView;
   getPos: () => number;
   initialState: NodeViewWrapperState;
+  contexts: Context<unknown>[];
 }
 
 interface NodeViewWrapperRef {
@@ -39,6 +44,7 @@ interface NodeViewWrapperRef {
   setNode: Dispatch<SetStateAction<Node>>;
   setDecorations: Dispatch<SetStateAction<readonly Decoration[]>>;
   setIsSelected: Dispatch<SetStateAction<boolean>>;
+  setContextValues: (contextValues: unknown[]) => void;
 }
 
 export type UnregisterElement = () => void;
@@ -47,19 +53,10 @@ export type RegisterElement = (
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
-type _ReactNodeView = Omit<NodeView, "update"> & {
-  component: ComponentType<NodeViewComponentProps>;
-};
-
-// We use a mapped type to improve LSP information for this type.
-// The language server will actually spell out the properties and
-// corresponding types of the mapped type, rather than repeating
-// the ugly Omit<...> & { component: ... } type above.
 export type ReactNodeView = {
-  [Property in keyof _ReactNodeView]: _ReactNodeView[Property];
+  component: ComponentType<NodeViewComponentProps>;
+  contentTag?: keyof ReactHTML;
 };
-
-export type ReactNodeViewConstructor = () => ReactNodeView;
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -78,7 +75,12 @@ export type ReactNodeViewConstructor = () => ReactNodeView;
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  reactNodeViewConstructor: ReactNodeViewConstructor
+  reactNodeView: ReactNodeView,
+  contexts: Context<unknown>[],
+  getContextValues: () => unknown[],
+  subscribeToContextValues: (
+    listener: (contextValues: unknown[]) => void
+  ) => void
 ) {
   function nodeViewConstructor(
     node: Node,
@@ -86,19 +88,10 @@ export function createReactNodeViewConstructor(
     getPos: () => number,
     decorations: readonly Decoration[]
   ): NodeView {
-    const reactNodeView = reactNodeViewConstructor();
-
     let componentRef: NodeViewWrapperRef | null = null;
 
-    const {
-      dom: container,
-      contentDOM,
-      component: ReactComponent,
-    } = reactNodeView;
-
-    const ContentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
-      | keyof ReactHTML
-      | undefined;
+    const { contentTag: ContentDOMElementType, component: ReactComponent } =
+      reactNodeView;
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -109,7 +102,7 @@ export function createReactNodeViewConstructor(
       NodeViewWrapperRef,
       NodeViewWrapperProps
     >(function NodeViewWrapper(
-      { initialState, getPos }: NodeViewWrapperProps,
+      { initialState, getPos, contexts }: NodeViewWrapperProps,
       ref
     ) {
       const [node, setNode] = useState<Node>(initialState.node);
@@ -118,6 +111,9 @@ export function createReactNodeViewConstructor(
       );
       const [isSelected, setIsSelected] = useState<boolean>(
         initialState.isSelected
+      );
+      const [contextValues, setContextValues] = useState<unknown[]>(
+        initialState.contextValues
       );
 
       const [contentDOMWrapper, setContentDOMWrapper] =
@@ -131,26 +127,35 @@ export function createReactNodeViewConstructor(
           setNode,
           setDecorations,
           setIsSelected,
+          setContextValues,
         }),
         [node, contentDOMWrapper]
       );
 
-      return (
-        <ReactComponent
-          getPos={getPos}
-          node={node}
-          decorations={decorations}
-          isSelected={isSelected}
+      return contexts.reduce(
+        (acc, context, i) => (
+          <context.Provider value={contextValues[i]}>{acc}</context.Provider>
+        ),
+        <EditorViewContext.Provider
+          // FIX: This editorState value actually is not correct :P
+          value={{ editorView, editorState: editorView.state }}
         >
-          {ContentDOMElementType && (
-            <ContentDOMElementType
-              // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
-              ref={(nextContentDOMWrapper: HTMLElement | null) => {
-                setContentDOMWrapper(nextContentDOMWrapper);
-              }}
-            />
-          )}
-        </ReactComponent>
+          <ReactComponent
+            getPos={getPos}
+            node={node}
+            decorations={decorations}
+            isSelected={isSelected}
+          >
+            {ContentDOMElementType && (
+              <ContentDOMElementType
+                // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
+                ref={(nextContentDOMWrapper: HTMLElement | null) => {
+                  setContentDOMWrapper(nextContentDOMWrapper);
+                }}
+              />
+            )}
+          </ReactComponent>
+        </EditorViewContext.Provider>
       );
     });
 
@@ -159,15 +164,26 @@ export function createReactNodeViewConstructor(
     })`;
 
     let renderedContentDOM: HTMLElement | null = null;
+
     const element = (
       <NodeViewWrapper
-        initialState={{ node, decorations, isSelected: false }}
+        initialState={{
+          node,
+          decorations,
+          isSelected: false,
+          contextValues: getContextValues(),
+        }}
         editorView={editorView}
         getPos={getPos}
+        contexts={contexts}
         ref={(c) => {
           componentRef = c;
 
-          if (!componentRef || componentRef.node.isLeaf) return;
+          if (!componentRef) return;
+
+          subscribeToContextValues(componentRef.setContextValues);
+
+          if (componentRef.node.isLeaf) return;
 
           renderedContentDOM = componentRef.contentDOMWrapper;
           if (
@@ -176,10 +192,6 @@ export function createReactNodeViewConstructor(
           ) {
             return;
           }
-
-          // We always set contentDOM when !node.isLeaf, which is checked above
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          renderedContentDOM.appendChild(contentDOM!);
 
           // Synchronize the ProseMirror selection to the DOM, because mounting the
           // component changes the DOM outside of a ProseMirror update.
@@ -198,6 +210,7 @@ export function createReactNodeViewConstructor(
       />
     );
 
+    const container = document.createElement("div");
     const root = createRoot(container as HTMLElement);
     flushSync(() => {
       root.render(element);
@@ -213,11 +226,9 @@ export function createReactNodeViewConstructor(
       ...reactNodeView,
       selectNode() {
         componentRef?.setIsSelected(true);
-        reactNodeView.selectNode?.();
       },
       deselectNode() {
         componentRef?.setIsSelected(false);
-        reactNodeView.deselectNode?.();
       },
       update(node: Node, decorations: readonly Decoration[]) {
         if (node.type === componentRef?.node.type) {
@@ -230,7 +241,6 @@ export function createReactNodeViewConstructor(
       destroy() {
         container.appendChild(dom);
         root.unmount();
-        reactNodeView.destroy?.();
       },
       dom,
       contentDOM: renderedContentDOM,
