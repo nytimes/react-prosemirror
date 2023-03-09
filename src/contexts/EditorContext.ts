@@ -2,7 +2,7 @@ import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import { createContext } from "react";
 
-interface EditorViewContextValue {
+interface EditorContextValue {
   editorView: EditorView | null;
   editorState: EditorState | null;
 }
@@ -13,6 +13,6 @@ interface EditorViewContextValue {
  * see `useEditorState`, `useEditorViewEvent`, and
  * `useEditorViewLayoutEffect`.
  */
-export const EditorViewContext = createContext(
-  null as unknown as EditorViewContextValue
+export const EditorContext = createContext(
+  null as unknown as EditorContextValue
 );

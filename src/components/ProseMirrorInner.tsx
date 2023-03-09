@@ -2,7 +2,7 @@ import type { DirectEditorProps } from "prosemirror-view";
 import React from "react";
 import type { ReactNode } from "react";
 
-import { EditorViewContext } from "../contexts/EditorViewContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 
 export type ProseMirrorProps = DirectEditorProps & {
@@ -45,8 +45,8 @@ export function ProseMirrorInner({
   });
 
   return (
-    <EditorViewContext.Provider value={{ editorView, editorState: state }}>
+    <EditorContext.Provider value={{ editorView, editorState: state }}>
       {children ?? null}
-    </EditorViewContext.Provider>
+    </EditorContext.Provider>
   );
 }

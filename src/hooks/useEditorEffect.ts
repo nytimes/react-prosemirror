@@ -2,7 +2,7 @@ import type { EditorView } from "prosemirror-view";
 import { useContext } from "react";
 import type { DependencyList } from "react";
 
-import { EditorViewContext } from "../contexts/EditorViewContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
 
 /**
@@ -19,11 +19,11 @@ import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
  * _after_ the EditorView has been updated, even when the
  * EditorView lives in an ancestor component.
  */
-export function useEditorViewLayoutEffect(
+export function useEditorEffect(
   effect: (editorView: EditorView | null) => void | (() => void),
   dependencies?: DependencyList
 ) {
-  const { editorView } = useContext(EditorViewContext);
+  const { editorView } = useContext(EditorContext);
 
   // The rules of hooks want `effect` to be included in the
   // dependency list, but dependency issues for `effect` will
