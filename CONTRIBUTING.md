@@ -31,3 +31,16 @@ And you can build output files with `yarn build`.
 You can run tests with `yarn test`. If you want to run tests in "watch" mode,
 use `yarn test -w`. See the [Jest CLI docs](https://jestjs.io/docs/cli) for more
 information.
+
+## Version management
+
+We use yarn's "deferred versioning" release flow, documented
+[here](https://yarnpkg.com/features/release-workflow#deferred-versioning). For
+any change that affects source code files, developers will be asked at
+`git push` time to use `yarn version check -i` to specify what kind of change
+(`patch`, `minor`, or `major`) is contained within the release. This version
+type will be documented in the form of a new YAML file added to the
+`.yarn/versions` directory, which can be reviewed during code review.
+
+Maintainers can then later use `yarn version apply --all` to aggregate the
+proposed version bumps and apply them to the `package.json` file.
