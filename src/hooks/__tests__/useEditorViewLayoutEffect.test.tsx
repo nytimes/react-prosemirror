@@ -3,9 +3,9 @@ import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import React from "react";
 
-import { EditorViewContext } from "../../contexts/EditorViewContext.js";
+import { EditorContext } from "../../contexts/EditorContext.js";
 import { LayoutGroup } from "../../contexts/LayoutGroup.js";
-import { useEditorViewLayoutEffect } from "../useEditorViewLayoutEffect.js";
+import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({
   effect,
@@ -14,7 +14,7 @@ function TestComponent({
   effect: () => void;
   dependencies?: unknown[];
 }) {
-  useEditorViewLayoutEffect(effect, [effect, ...dependencies]);
+  useEditorEffect(effect, [effect, ...dependencies]);
   return null;
 }
 
@@ -26,9 +26,9 @@ describe("useEditorViewLayoutEffect", () => {
 
     render(
       <LayoutGroup>
-        <EditorViewContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} />
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       </LayoutGroup>
     );
 
@@ -43,17 +43,17 @@ describe("useEditorViewLayoutEffect", () => {
 
     const { rerender } = render(
       <LayoutGroup>
-        <EditorViewContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={[]} />
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       </LayoutGroup>
     );
 
     rerender(
       <LayoutGroup>
-        <EditorViewContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={[]} />
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       </LayoutGroup>
     );
 
@@ -67,17 +67,17 @@ describe("useEditorViewLayoutEffect", () => {
 
     const { rerender } = render(
       <LayoutGroup>
-        <EditorViewContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={["one"]} />
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       </LayoutGroup>
     );
 
     rerender(
       <LayoutGroup>
-        <EditorViewContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider value={{ editorView, editorState }}>
           <TestComponent effect={effect} dependencies={["two"]} />
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       </LayoutGroup>
     );
 

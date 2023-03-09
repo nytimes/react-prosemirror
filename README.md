@@ -21,8 +21,8 @@ yarn add @nytimes/react-prosemirror
 - [The Problem](#the-problem)
 - [The Solution](#the-solution)
   - [Rendering ProseMirror Views within React](#rendering-prosemirror-views-within-react)
-    - [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect)
-    - [`useEditorViewEvent`](#useeditorviewevent)
+    - [`useEditorEffect`](#useeditoreffect)
+    - [`useEditorEvent`](#useeditorevent)
     - [`useEditorView`, `EditorViewContext` and `LayoutGroup`](#useeditorview-editorviewcontext-and-layoutgroup)
   - [Building NodeViews with React](#building-nodeviews-with-react)
 - [API](#api)
@@ -32,8 +32,8 @@ yarn add @nytimes/react-prosemirror
   - [`useLayoutGroupEffect`](#uselayoutgroupeffect)
   - [`useEditorState`](#useeditorstate)
   - [`useEditorView`](#useeditorview)
-  - [`useEditorViewEvent`](#useeditorviewevent-1)
-  - [`useEditorViewLayoutEffect`](#useeditorviewlayouteffect-1)
+  - [`useEditorEvent`](#useeditorevent-1)
+  - [`useEditorEffect`](#useeditoreffect-1)
   - [`useNodeViews`](#usenodeviews)
 
 <!-- tocstop -->
@@ -134,25 +134,25 @@ phase of the React render lifecycle, _after_ all of the ProseMirror component's
 children have run their render functions. This means that special care must be
 taken to access the EditorView from within other React components. In order to
 abstract away this complexity, React ProseMirror provides two hooks:
-`useEditorViewLayoutEffect` and `useEditorViewEvent`. Both of these hooks can be
-used from any children of the ProseMirror component.
+`useEditorEffect` and `useEditorEvent`. Both of these hooks can be used from any
+children of the ProseMirror component.
 
-#### `useEditorViewLayoutEffect`
+#### `useEditorEffect`
 
 Often, it's necessary to position React components relative to specific
 positions in the ProseMirror document. For example, you might have some widget
 that needs to be positioned at the user's cursor. In order to ensure that this
 positioning happens when the EditorView is in sync with the latest EditorState,
-we can use `useEditorViewLayoutEffect`.
+we can use `useEditorEffect`.
 
 ```tsx
 // SelectionWidget.tsx
-import { useEditorViewLayoutEffect } from "@nytimes/react-prosemirror";
+import { useEditorEffect } from "@nytimes/react-prosemirror";
 
 export function SelectionWidget() {
   const [selectionCoords, setSelectionCoords] = useState()
 
-  useEditorViewLayoutEffect((view) => {
+  useEditorEffect((view) => {
     setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
   })
 
@@ -196,7 +196,7 @@ export function ProseMirrorEditor() {
 }
 ```
 
-#### `useEditorViewEvent`
+#### `useEditorEvent`
 
 It's also often necessary to dispatch transactions or execute side effects in
 response to user actions, like mouse clicks and keyboard events. Note: if you
@@ -205,16 +205,16 @@ you most likely need to use a ProseMirror plugin with an event handler.
 
 However, if you need to dispatch a transaction in response to some event
 dispatched from a React component, like a tooltip or a toolbar button, you can
-use `useEditorViewEvent` to create a stable function reference that can safely
+use `useEditorEvent` to create a stable function reference that can safely
 access the latest value of the `EditorView`.
 
 ```tsx
 // BoldButton.tsx
 import { toggleMark } from "prosemirror-commands";
-import { useEditorViewEvent } from "@nytimes/react-prosemirror";
+import { useEditorEvent } from "@nytimes/react-prosemirror";
 
 export function BoldButton() {
-  const onClick = useEditorViewEvent((view) => {
+  const onClick = useEditorEvent((view) => {
     const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
     toggleBoldMark(view.state, view.dispatch, view);
   });
@@ -284,7 +284,7 @@ from the `update` method. Here's an example of its usage:
 ```tsx
 import {
   useNodeViews,
-  useEditorViewEvent,
+  useEditorEvent,
   NodeViewComponentProps,
 } from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
@@ -295,7 +295,7 @@ import { schema } from "prosemirror-schema-basic";
 // passed in here. Take a look at the NodeViewComponentProps type to
 // see what other props will be passed to NodeView components.
 function Paragraph({ children }: NodeViewComponentProps) {
-  const onClick = useEditorViewEvent((view) => view.dispatch(whatever));
+  const onClick = useEditorEvent((view) => view.dispatch(whatever));
   return <p onClick={onClick}>{children}</p>;
 }
 
@@ -374,12 +374,12 @@ type EditorViewContext = React.Context<{
   editorView: EditorView | null;
   editorState: EditorState | null;
 }>;
+```
 
 Provides the EditorView, as well as the current EditorState. Should not be
 consumed directly; instead see [`useEditorState`](#useeditorstate),
-[`useEditorViewEvent`](#useeditorviewevent), and
-[`useEditorViewLayoutEffect`](#useeditorviewlayouteffect).
-```
+[`useEditorEvent`](#useeditorevent), and
+[`useEditorEffect`](#useeditoreffect-1).
 
 See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
@@ -438,17 +438,17 @@ Creates, mounts, and manages a ProseMirror `EditorView`.
 
 All state and props updates are executed in a layout effect. To ensure that the
 EditorState and EditorView are never out of sync, it's important that the
-EditorView produced by this hook is only accessed through the
-`useEditorViewEvent` and `useEditorViewLayoutEffect` hooks.
+EditorView produced by this hook is only accessed through the `useEditorEvent`
+and `useEditorEffect` hooks.
 
 See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
 you don't need to use this hook directly.
 
-### `useEditorViewEvent`
+### `useEditorEvent`
 
 ```tsx
-type useEditorViewEvent = <T extends unknown[]>(
+type useEditorEvent = <T extends unknown[]>(
   callback: (view: EditorView | null, ...args: T) => void
 ) => void;
 ```
@@ -461,10 +461,10 @@ This hook is dependent on both the `EditorViewContext.Provider` and the
 `LayoutGroup`. It can only be used in a component that is mounted as a child of
 both of these providers.
 
-### `useEditorViewLayoutEffect`
+### `useEditorEffect`
 
 ```tsx
-type useEditorViewLayoutEffect = (
+type useEditorEffect = (
   effect: (editorView: EditorView | null) => void | (() => void),
   dependencies?: React.DependencyList
 ) => void;
@@ -484,12 +484,12 @@ EditorView lives in an ancestor component.
 Example usage:
 
 ```tsx
-import { useEditorViewLayoutEffect } from '@nytimes/react-prosemirror';
+import { useEditorEffect } from '@nytimes/react-prosemirror';
 
 export function SelectionWidget() {
   const [selectionCoords, setSelectionCoords] = useState()
 
-  useEditorViewLayoutEffect((view) => {
+  useEditorEffect((view) => {
     setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
   })
 
@@ -543,8 +543,8 @@ components.
 `component` can be any React component that takes `NodeViewComponentProps`. It
 will be passed as props all of the arguments to the `nodeViewConstructor` except
 for `editorView`. NodeView components that need access directly to the
-EditorView should use the `useEditorViewEvent` and `useEditorViewLayoutEffect`
-hooks to ensure safe access.
+EditorView should use the `useEditorEvent` and `useEditorEffect` hooks to ensure
+safe access.
 
 For contentful Nodes, the NodeView component will also be passed a `children`
 prop containing an empty element. ProseMirror will render content nodes into

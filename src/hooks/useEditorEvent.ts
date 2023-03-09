@@ -1,9 +1,9 @@
 import type { EditorView } from "prosemirror-view";
 import { useCallback, useContext, useRef } from "react";
 
-import { EditorViewContext } from "../contexts/EditorViewContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 
-import { useEditorViewLayoutEffect } from "./useEditorViewLayoutEffect.js";
+import { useEditorEffect } from "./useEditorEffect.js";
 
 /**
  * Returns a stable function reference to be used as an
@@ -18,13 +18,13 @@ import { useEditorViewLayoutEffect } from "./useEditorViewLayoutEffect.js";
  * component that is mounted as a child of both of these
  * providers.
  */
-export function useEditorViewEvent<T extends unknown[]>(
+export function useEditorEvent<T extends unknown[]>(
   callback: (view: EditorView | null, ...args: T) => void
 ) {
   const ref = useRef(callback);
-  const { editorView } = useContext(EditorViewContext);
+  const { editorView } = useContext(EditorContext);
 
-  useEditorViewLayoutEffect(() => {
+  useEditorEffect(() => {
     ref.current = callback;
   }, [callback]);
 
