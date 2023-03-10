@@ -70,7 +70,9 @@ const useLayoutGroupEffectsRegistry = () => {
 type Destructor = () => void;
 type Register = (e: EffectCallback) => Destructor;
 
-const LayoutGroupContext = createContext<Register>(null as unknown as Register);
+export const LayoutGroupContext = createContext<Register>(
+  null as unknown as Register
+);
 
 interface DeferredLayoutEffectsContextProviderProps {
   children: React.ReactNode;
