@@ -6,5 +6,6 @@ export * from "./hooks/useEditorView.js";
 export * from "./hooks/useEditorEvent.js";
 export * from "./hooks/useEditorEffect.js";
 export * from "./hooks/useNodeViews.js";
+export * from "./contexts/ProseMirrorEventRegistryContext.js";
 
 export type { NodeViewComponentProps } from "./nodeViews/createReactNodeViewConstructor";

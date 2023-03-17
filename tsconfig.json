@@ -3,6 +3,7 @@
   "include": ["src/**/*", "src/**/*.json"],
   "compilerOptions": {
     "lib": ["DOM", "ES2022"],
+    "target": "ES2015",
     /* Input/output paths */
     "outDir": "dist/types",
     "rootDir": "src",

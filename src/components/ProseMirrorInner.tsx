@@ -1,9 +1,14 @@
 import type { DirectEditorProps } from "prosemirror-view";
-import React from "react";
+import React, { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
+import {
+  ProseMirrorEventRegistryContext,
+  useProseMirrorEventRegistry,
+} from "../contexts/ProseMirrorEventRegistryContext.js";
 import { useEditorView } from "../hooks/useEditorView.js";
+import { reactEvents } from "../plugins/reactEventPlugin.js";
 
 export type ProseMirrorProps = DirectEditorProps & {
   mount: HTMLElement | null;
@@ -38,15 +43,25 @@ export function ProseMirrorInner({
   mount,
   ...editorProps
 }: ProseMirrorProps) {
+  const { registry, register, unregister } = useProseMirrorEventRegistry();
+  const reactEventPlugin = useMemo(() => reactEvents(registry), [registry]);
+  const plugins = useMemo(
+    () => [...(editorProps.plugins ?? []), reactEventPlugin],
+    [editorProps.plugins, reactEventPlugin]
+  );
+
   const editorView = useEditorView(mount, {
     ...editorProps,
+    plugins,
     state,
     dispatchTransaction,
   });
 
   return (
-    <EditorContext.Provider value={{ editorView, editorState: state }}>
-      {children ?? null}
-    </EditorContext.Provider>
+    <ProseMirrorEventRegistryContext.Provider value={{ register, unregister }}>
+      <EditorContext.Provider value={{ editorView, editorState: state }}>
+        {children ?? null}
+      </EditorContext.Provider>
+    </ProseMirrorEventRegistryContext.Provider>
   );
 }
