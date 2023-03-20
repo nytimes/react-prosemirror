@@ -14,7 +14,7 @@ import type { createPortal } from "react-dom";
 import { flushSync } from "react-dom-secondary";
 import { createRoot } from "react-dom-secondary/client";
 
-import { EditorViewContext } from "../contexts/EditorViewContext";
+import { EditorContext } from "../contexts/EditorContext";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
@@ -136,7 +136,7 @@ export function createReactNodeViewConstructor(
         (acc, context, i) => (
           <context.Provider value={contextValues[i]}>{acc}</context.Provider>
         ),
-        <EditorViewContext.Provider
+        <EditorContext.Provider
           // FIX: This editorState value actually is not correct :P
           value={{ editorView, editorState: editorView.state }}
         >
@@ -155,7 +155,7 @@ export function createReactNodeViewConstructor(
               />
             )}
           </ReactComponent>
-        </EditorViewContext.Provider>
+        </EditorContext.Provider>
       );
     });
 

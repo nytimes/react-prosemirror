@@ -6,11 +6,7 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { createContext, useContext, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import {
-  NodeViewComponentProps,
-  ProseMirror,
-  useEditorViewLayoutEffect,
-} from "../src";
+import { NodeViewComponentProps, ProseMirror, useEditorEffect } from "../src";
 
 import "./main.css";
 
@@ -31,7 +27,7 @@ const ThemeContext = createContext("light");
 function Paragraph({ children }: NodeViewComponentProps) {
   const theme = useContext(ThemeContext);
   // Don't really want this in the demo, just showing that it works!
-  useEditorViewLayoutEffect((view) => {
+  useEditorEffect((view) => {
     console.log(view?.coordsAtPos(view?.state.selection.anchor));
   });
   return <p className={theme}>{children}</p>;
