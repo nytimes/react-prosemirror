@@ -83,7 +83,7 @@ ProseMirror EditorView should be mounted on.
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMiror } from "@nytimes/react-prosemirror";
+import { ProseMirror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   // It's important that mount is stored as state,
