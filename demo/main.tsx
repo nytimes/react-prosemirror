@@ -9,8 +9,8 @@ import { createRoot } from "react-dom/client";
 import {
   NodeViewComponentProps,
   ProseMirror,
+  useEditorDOMEvent,
   useNodeViews,
-  useProseMirrorEvent,
 } from "../src";
 
 import "./main.css";
@@ -64,7 +64,9 @@ function Paragraph({ node, getPos, children }: NodeViewComponentProps) {
 
   const ref = useRef<HTMLParagraphElement | null>(null);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  useProseMirrorEvent(
+
+  useEditorDOMEvent(
+    "keydown",
     (view, event) => {
       if (
         stringAfterAt === null ||
@@ -79,6 +81,7 @@ function Paragraph({ node, getPos, children }: NodeViewComponentProps) {
             ? previousIndex + 1
             : 0
         );
+        event.preventDefault();
         return true;
       }
       if (event.code === "ArrowUp") {
@@ -87,6 +90,7 @@ function Paragraph({ node, getPos, children }: NodeViewComponentProps) {
             ? previousIndex - 1
             : namesToDisplay.length - 1
         );
+        event.preventDefault();
         return true;
       }
       if (event.code === "Enter") {
@@ -104,6 +108,7 @@ function Paragraph({ node, getPos, children }: NodeViewComponentProps) {
             )
           )
         );
+        event.preventDefault();
         return true;
       }
       return false;

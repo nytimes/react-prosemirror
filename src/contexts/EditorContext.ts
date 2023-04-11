@@ -16,3 +16,5 @@ interface EditorContextValue {
 export const EditorContext = createContext(
   null as unknown as EditorContextValue
 );
+
+export const EditorProvider = EditorContext.Provider;
