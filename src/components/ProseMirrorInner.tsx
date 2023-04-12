@@ -44,6 +44,7 @@ export function ProseMirrorInner({
 }: ProseMirrorProps) {
   const { reactEventPlugin, editorDOMEventRegistry } = useReactEventPlugin();
 
+  console.log({ reactEventPlugin });
   const plugins = useMemo(
     () => [...(editorProps.plugins ?? []), reactEventPlugin],
     [editorProps.plugins, reactEventPlugin]

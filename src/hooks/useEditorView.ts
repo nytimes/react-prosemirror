@@ -87,7 +87,9 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   }, [mount, props, view]);
 
   useLayoutEffect(() => {
+    console.log(nonStateProps.plugins);
     view?.setProps(nonStateProps);
+    console.log(view?.props.plugins);
   }, [view, nonStateProps]);
 
   useLayoutEffect(() => {

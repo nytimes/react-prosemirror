@@ -5,10 +5,9 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
+  useState,
 } from "react";
 
-import { useForceUpdate } from "../hooks/useForceUpdate";
 import {
   DOMEventMap,
   EventHandler,
@@ -27,11 +26,11 @@ import {
  * `EditorDOMEventRegistryContext`.
  */
 export function useReactEventPlugin() {
-  const registry = useRef(
+  const [registry, setRegistry] = useState(
     new Map<keyof DOMEventMap, Set<EventHandler>>()
-  ).current;
+  );
 
-  const forceUpdate = useForceUpdate();
+  console.log(registry);
 
   const register = useCallback(
     (eventType: keyof DOMEventMap, handler: EventHandler) => {
@@ -41,29 +40,25 @@ export function useReactEventPlugin() {
         // We only need to force an update when the set of event types
         // that we care about changes
         registry.set(eventType, handlers);
-        forceUpdate();
+        setRegistry(new Map(registry));
       }
     },
-    [registry, forceUpdate]
+    [registry]
   );
 
   const unregister = useCallback(
     (eventType: keyof DOMEventMap, handler: EventHandler) => {
       const handlers = registry.get(eventType);
-      if (!handlers) return;
-      handlers.delete(handler);
+      handlers?.delete(handler);
     },
     [registry]
   );
 
   const reactEventPlugin = useMemo(
-    () => createReactEventPlugin(registry),
-    // We force an update whenever the set of event types that
-    // we care about changes. This plugin only needs to be
-    // recreated when that set (the set of registry keys)
-    // changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [registry.keys()]
+    () => (
+      console.log("creating new plugin"), createReactEventPlugin(registry)
+    ),
+    [registry]
   );
 
   const editorDOMEventRegistry = useMemo(
@@ -74,21 +69,19 @@ export function useReactEventPlugin() {
   return { editorDOMEventRegistry, reactEventPlugin };
 }
 
-type Register<EventType extends keyof DOMEventMap = any> = (
-  eventType: EventType,
-  handler: EventHandler<EventType>
-) => void;
-
-type Unregister<EventType extends keyof DOMEventMap = any> =
-  Register<EventType>;
-
-type EditorDOMEventRegistryContextValue = {
-  register: Register;
-  unregister: Unregister;
-};
+interface EditorDOMEventRegistry {
+  register<EventType extends keyof DOMEventMap>(
+    eventType: EventType,
+    handler: EventHandler<EventType>
+  ): void;
+  unregister<EventType extends keyof DOMEventMap>(
+    eventType: EventType,
+    handler: EventHandler<EventType>
+  ): void;
+}
 
 const EditorDOMEventRegistryContext = createContext(
-  null as unknown as EditorDOMEventRegistryContextValue
+  null as unknown as EditorDOMEventRegistry
 );
 
 export const EditorDOMEventsProvider = EditorDOMEventRegistryContext.Provider;
@@ -99,9 +92,10 @@ export function useEditorDOMEvent<EventType extends keyof DOMEventMap>(
   deps?: DependencyList
 ) {
   const { register, unregister } = useContext(EditorDOMEventRegistryContext);
+
   useEffect(() => {
     register(eventType, handler);
     return () => unregister(eventType, handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [register, unregister, ...(deps ?? [])]);
 }

@@ -1,4 +1,4 @@
-import { Plugin } from "prosemirror-state";
+import { Plugin, PluginKey } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 
 export interface DOMEventMap extends HTMLElementEventMap {
@@ -13,19 +13,25 @@ export function createReactEventPlugin(
   eventHandlerRegistry: Map<keyof DOMEventMap, Set<EventHandler>>
 ) {
   const domEventHandlers: Record<keyof DOMEventMap, EventHandler> = {};
-  for (const [event, handlers] of eventHandlerRegistry.entries()) {
+
+  for (const [eventType, handlers] of eventHandlerRegistry.entries()) {
     function handleEvent(view: EditorView, event: Event) {
+      console.log(handlers);
       for (const handler of handlers) {
-        if (handler(view, event)) return true;
+        if (handler(view, event) || event.defaultPrevented) return true;
       }
       return false;
     }
-    domEventHandlers[event] = handleEvent;
+
+    domEventHandlers[eventType] = handleEvent;
   }
+
   const plugin = new Plugin({
+    key: new PluginKey("reactEvents"),
     props: {
       handleDOMEvents: domEventHandlers,
     },
   });
+
   return plugin;
 }
