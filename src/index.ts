@@ -1,11 +1,14 @@
-export * from "./components/ProseMirror.js";
-export * from "./contexts/EditorContext.js";
-export * from "./contexts/LayoutGroup.js";
-export * from "./hooks/useEditorState.js";
-export * from "./hooks/useEditorView.js";
-export * from "./hooks/useEditorEvent.js";
-export * from "./hooks/useEditorEffect.js";
-export * from "./hooks/useNodeViews.js";
-export * from "./contexts/EditorDOMEventRegistryContext.js";
+"use client";
+
+export { ProseMirror } from "./components/ProseMirror.js";
+export { EditorProvider } from "./contexts/EditorContext.js";
+export { LayoutGroup, useLayoutGroupEffect } from "./contexts/LayoutGroup.js";
+export { useEditorEffect } from "./hooks/useEditorEffect.js";
+export { useEditorEventCallback } from "./hooks/useEditorEventCallback.js";
+export { useEditorEventListener } from "./hooks/useEditorEventListener.js";
+export { useEditorState } from "./hooks/useEditorState.js";
+export { useEditorView } from "./hooks/useEditorView.js";
+export { useNodeViews } from "./hooks/useNodeViews.js";
+export { useReactEventPlugin } from "./hooks/useReactEventPlugin.js";
 
 export type { NodeViewComponentProps } from "./nodeViews/createReactNodeViewConstructor";

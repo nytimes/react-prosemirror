@@ -1,17 +1,12 @@
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Fragment, Schema, Slice } from "prosemirror-model";
+import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import {
-  NodeViewComponentProps,
-  ProseMirror,
-  useEditorDOMEvent,
-  useNodeViews,
-} from "../src";
+import { NodeViewComponentProps, ProseMirror, useNodeViews } from "../src";
 
 import "./main.css";
 
@@ -27,116 +22,8 @@ const editorState = EditorState.create({
   plugins: [keymap(baseKeymap)],
 });
 
-const names = [
-  "Shane Friedman",
-  "Nozlee Samadzadeh",
-  "Anna Bialas",
-  "Ilya Gurevich",
-  "Gabriela Contreras-Cisneros",
-  "Douglas Back",
-  "Alex Millatmal",
-  "Elizabeth Gorence",
-  "Morgan Cohn",
-];
-
-function Paragraph({ node, getPos, children }: NodeViewComponentProps) {
-  const textContent = useMemo(
-    () => node.textBetween(0, node.content.size, "\ufffc"),
-    [node]
-  );
-  const lastAtIndex = useMemo(
-    () => textContent.lastIndexOf("@"),
-    [textContent]
-  );
-  const stringAfterAt =
-    lastAtIndex === -1
-      ? null
-      : textContent.slice(lastAtIndex + 1, textContent.length + 1);
-
-  const namesToDisplay = useMemo(() => {
-    return (
-      stringAfterAt &&
-      names.filter((name) =>
-        name.toLocaleLowerCase().startsWith(stringAfterAt.toLocaleLowerCase())
-      )
-    );
-  }, [stringAfterAt]);
-
-  const ref = useRef<HTMLParagraphElement | null>(null);
-  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-
-  useEditorDOMEvent(
-    "keydown",
-    (view, event) => {
-      if (
-        stringAfterAt === null ||
-        namesToDisplay === null ||
-        !view.state.selection.empty ||
-        view.state.selection.$anchor.parent !== node
-      )
-        return false;
-      if (event.code === "ArrowDown") {
-        setHighlightIndex((previousIndex) =>
-          previousIndex !== null && previousIndex < namesToDisplay.length - 1
-            ? previousIndex + 1
-            : 0
-        );
-        event.preventDefault();
-        return true;
-      }
-      if (event.code === "ArrowUp") {
-        setHighlightIndex((previousIndex) =>
-          previousIndex !== null && previousIndex > 0
-            ? previousIndex - 1
-            : namesToDisplay.length - 1
-        );
-        event.preventDefault();
-        return true;
-      }
-      if (event.code === "Enter") {
-        if (highlightIndex === null) return false;
-        const startIndex = getPos() + lastAtIndex + 1;
-        const endIndex = getPos() + lastAtIndex + 1 + stringAfterAt.length + 1;
-        view.dispatch(
-          view.state.tr.replace(
-            startIndex,
-            endIndex,
-            new Slice(
-              Fragment.from(schema.text(namesToDisplay[highlightIndex])),
-              0,
-              0
-            )
-          )
-        );
-        event.preventDefault();
-        return true;
-      }
-      return false;
-    },
-    [stringAfterAt, highlightIndex, namesToDisplay]
-  );
-
-  return (
-    <>
-      <p ref={ref}>{children}</p>
-      {namesToDisplay && (
-        <ul contentEditable={false}>
-          {namesToDisplay.map((name, i) => (
-            <li
-              key={name}
-              style={
-                i === highlightIndex
-                  ? { backgroundColor: "lightblue" }
-                  : undefined
-              }
-            >
-              {name}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
-  );
+function Paragraph({ children }: NodeViewComponentProps) {
+  return <p>{children}</p>;
 }
 
 const reactNodeViews = {

@@ -1,9 +1,6 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-
-export interface DOMEventMap extends HTMLElementEventMap {
-  [event: string]: Event;
-}
+import type { DOMEventMap } from "prosemirror-view";
 
 export type EventHandler<
   EventType extends keyof DOMEventMap = keyof DOMEventMap

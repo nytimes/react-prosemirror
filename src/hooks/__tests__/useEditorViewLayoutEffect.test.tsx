@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { render } from "@testing-library/react";
 import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
@@ -23,10 +24,19 @@ describe("useEditorViewLayoutEffect", () => {
     const effect = jest.fn();
     const editorView = {} as EditorView;
     const editorState = {} as EditorState;
+    const registerEventListener = () => {};
+    const unregisterEventListener = () => {};
 
     render(
       <LayoutGroup>
-        <EditorContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider
+          value={{
+            editorView,
+            editorState,
+            registerEventListener,
+            unregisterEventListener,
+          }}
+        >
           <TestComponent effect={effect} />
         </EditorContext.Provider>
       </LayoutGroup>
@@ -40,10 +50,19 @@ describe("useEditorViewLayoutEffect", () => {
     const effect = jest.fn();
     const editorView = {} as EditorView;
     const editorState = {} as EditorState;
+    const registerEventListener = () => {};
+    const unregisterEventListener = () => {};
 
     const { rerender } = render(
       <LayoutGroup>
-        <EditorContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider
+          value={{
+            editorView,
+            editorState,
+            registerEventListener,
+            unregisterEventListener,
+          }}
+        >
           <TestComponent effect={effect} dependencies={[]} />
         </EditorContext.Provider>
       </LayoutGroup>
@@ -51,7 +70,14 @@ describe("useEditorViewLayoutEffect", () => {
 
     rerender(
       <LayoutGroup>
-        <EditorContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider
+          value={{
+            editorView,
+            editorState,
+            registerEventListener,
+            unregisterEventListener,
+          }}
+        >
           <TestComponent effect={effect} dependencies={[]} />
         </EditorContext.Provider>
       </LayoutGroup>
@@ -64,10 +90,19 @@ describe("useEditorViewLayoutEffect", () => {
     const effect = jest.fn();
     const editorView = {} as EditorView;
     const editorState = {} as EditorState;
+    const registerEventListener = () => {};
+    const unregisterEventListener = () => {};
 
     const { rerender } = render(
       <LayoutGroup>
-        <EditorContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider
+          value={{
+            editorView,
+            editorState,
+            registerEventListener,
+            unregisterEventListener,
+          }}
+        >
           <TestComponent effect={effect} dependencies={["one"]} />
         </EditorContext.Provider>
       </LayoutGroup>
@@ -75,7 +110,14 @@ describe("useEditorViewLayoutEffect", () => {
 
     rerender(
       <LayoutGroup>
-        <EditorContext.Provider value={{ editorView, editorState }}>
+        <EditorContext.Provider
+          value={{
+            editorView,
+            editorState,
+            registerEventListener,
+            unregisterEventListener,
+          }}
+        >
           <TestComponent effect={effect} dependencies={["two"]} />
         </EditorContext.Provider>
       </LayoutGroup>
