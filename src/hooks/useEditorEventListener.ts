@@ -1,4 +1,4 @@
-import { Plugin } from "prosemirror-state";
+import type { Plugin } from "prosemirror-state";
 import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { useCallback, useContext, useRef } from "react";
 
