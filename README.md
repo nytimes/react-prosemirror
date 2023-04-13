@@ -267,7 +267,7 @@ You can use the `useEditorEventListener` hook to accomplish this. It takes an
 semantics for ProseMirror's `handleDOMEvents` prop:
 
 - Returning `true` or calling `event.preventDefault` will prevent other
-  listeners from running
+  listeners from running.
 - Returning `true` will not automatically call `event.preventDefault`; if you
   want to prevent the default contenteditable behavior, you must call
   `event.preventDefault`.
@@ -283,7 +283,7 @@ function Paragraph({ node, getPos, children }) {
       return false;
     }
     const nodeStart = getPos();
-    const nodeEnd = nodeStart + node.size;
+    const nodeEnd = nodeStart + node.nodeSize;
     const { selection } = view.state;
     if (selection.anchor < nodeStart || selection.anchor > nodeEnd) {
       return false;
@@ -490,8 +490,8 @@ Creates, mounts, and manages a ProseMirror `EditorView`.
 
 All state and props updates are executed in a layout effect. To ensure that the
 EditorState and EditorView are never out of sync, it's important that the
-EditorView produced by this hook is only accessed through the
-`useEditorEventCallback` and `useEditorEffect` hooks.
+EditorView produced by this hook is only accessed through the hooks exposed by
+this library.
 
 See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,

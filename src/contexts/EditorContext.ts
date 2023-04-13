@@ -2,7 +2,7 @@ import type { EditorState } from "prosemirror-state";
 import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { createContext } from "react";
 
-import type { EventHandler } from "../plugins/createReactEventPlugin.js";
+import type { EventHandler } from "../hooks/useComponentEventListenersPlugin";
 
 interface EditorContextValue {
   editorView: EditorView | null;
