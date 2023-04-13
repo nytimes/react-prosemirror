@@ -22,17 +22,19 @@ yarn add @nytimes/react-prosemirror
 - [The Solution](#the-solution)
   - [Rendering ProseMirror Views within React](#rendering-prosemirror-views-within-react)
     - [`useEditorEffect`](#useeditoreffect)
-    - [`useEditorEvent`](#useeditorevent)
-    - [`useEditorView`, `EditorViewContext` and `LayoutGroup`](#useeditorview-editorviewcontext-and-layoutgroup)
+    - [`useEditorEventCallback`](#useeditoreventcallback)
+    - [`useEditorEventListener`](#useeditoreventlistener)
+    - [`useEditorView`, `EditorProvider` and `LayoutGroup`](#useeditorview-editorprovider-and-layoutgroup)
   - [Building NodeViews with React](#building-nodeviews-with-react)
 - [API](#api)
   - [`ProseMirror`](#prosemirror)
-  - [`EditorViewContext`](#editorviewcontext)
+  - [`EditorProvider`](#editorprovider)
   - [`LayoutGroup`](#layoutgroup)
   - [`useLayoutGroupEffect`](#uselayoutgroupeffect)
   - [`useEditorState`](#useeditorstate)
   - [`useEditorView`](#useeditorview)
-  - [`useEditorEvent`](#useeditorevent-1)
+  - [`useEditorEventCallback`](#useeditoreventcallback-1)
+  - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
   - [`useNodeViews`](#usenodeviews)
 
@@ -134,8 +136,8 @@ phase of the React render lifecycle, _after_ all of the ProseMirror component's
 children have run their render functions. This means that special care must be
 taken to access the EditorView from within other React components. In order to
 abstract away this complexity, React ProseMirror provides two hooks:
-`useEditorEffect` and `useEditorEvent`. Both of these hooks can be used from any
-children of the ProseMirror component.
+`useEditorEffect` and `useEditorEventCallback`. Both of these hooks can be used
+from any children of the ProseMirror component.
 
 #### `useEditorEffect`
 
@@ -196,25 +198,25 @@ export function ProseMirrorEditor() {
 }
 ```
 
-#### `useEditorEvent`
+#### `useEditorEventCallback`
 
 It's also often necessary to dispatch transactions or execute side effects in
 response to user actions, like mouse clicks and keyboard events. Note: if you
 need to respond to keyboard events from _within_ the `contenteditable` element,
-you most likely need to use a ProseMirror plugin with an event handler.
+you should instead use [`useEditorEventListener`](#useEditorEventListener).
 
 However, if you need to dispatch a transaction in response to some event
 dispatched from a React component, like a tooltip or a toolbar button, you can
-use `useEditorEvent` to create a stable function reference that can safely
-access the latest value of the `EditorView`.
+use `useEditorEventCallback` to create a stable function reference that can
+safely access the latest value of the `EditorView`.
 
 ```tsx
 // BoldButton.tsx
 import { toggleMark } from "prosemirror-commands";
-import { useEditorEvent } from "@nytimes/react-prosemirror";
+import { useEditorEventCallback } from "@nytimes/react-prosemirror";
 
 export function BoldButton() {
-  const onClick = useEditorEvent((view) => {
+  const onClick = useEditorEventCallback((view) => {
     const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
     toggleBoldMark(view.state, view.dispatch, view);
   });
@@ -253,18 +255,60 @@ export function ProseMirrorEditor() {
 }
 ```
 
-#### `useEditorView`, `EditorViewContext` and `LayoutGroup`
+#### `useEditorEventListener`
+
+`useEditorEventCallback` produces functions that can be passed to React
+components as event handlers. If you need to listen to events that originate
+_within the `contenteditable` node_, however, those event listeners need to be
+registered with the `EditorView`'s `handleDOMEvents` prop.
+
+You can use the `useEditorEventListener` hook to accomplish this. It takes an
+`eventType` and an event listener. The event listener follows the usual
+semantics for ProseMirror's `handleDOMEvents` prop:
+
+- Returning `true` or calling `event.preventDefault` will prevent other
+  listeners from running.
+- Returning `true` will not automatically call `event.preventDefault`; if you
+  want to prevent the default contenteditable behavior, you must call
+  `event.preventDefault`.
+
+You can use this hook to implement custom behavior in your NodeViews:
+
+```tsx
+import { useEditorEventListener } from "@nytimes/react-prosemirror";
+
+function Paragraph({ node, getPos, children }) {
+  useEditorEventListener("keydown", (view, event) => {
+    if (event.code !== "ArrowDown") {
+      return false;
+    }
+    const nodeStart = getPos();
+    const nodeEnd = nodeStart + node.nodeSize;
+    const { selection } = view.state;
+    if (selection.anchor < nodeStart || selection.anchor > nodeEnd) {
+      return false;
+    }
+    event.preventDefault();
+    alert("No down keys allowed!");
+    return true;
+  });
+
+  return <p>{children}</p>;
+}
+```
+
+#### `useEditorView`, `EditorProvider` and `LayoutGroup`
 
 Under the hood, the `ProseMirror` component essentially just composes three
-separate tools: `useEditorView`, `EditorViewContext`, and `LayoutGroup`. If you
+separate tools: `useEditorView`, `EditorProvider`, and `LayoutGroup`. If you
 find yourself in need of more control over these, they can also be used
 independently.
 
 `useEditorView` is a relatively simple hook that takes a mount point and
 `EditorProps` as arguments and returns an EditorView instance.
 
-`EditorViewContext` is a simple React context, which should be provided the
-current EditorView and EditorState.
+`EditorProvider` is a simple React context, which should be provided the current
+EditorView and EditorState.
 
 `LayoutGroup` _must_ be rendered as a parent of the component using
 `useEditorView`.
@@ -284,7 +328,7 @@ from the `update` method. Here's an example of its usage:
 ```tsx
 import {
   useNodeViews,
-  useEditorEvent,
+  useEditorEventCallback,
   NodeViewComponentProps,
 } from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
@@ -295,7 +339,7 @@ import { schema } from "prosemirror-schema-basic";
 // passed in here. Take a look at the NodeViewComponentProps type to
 // see what other props will be passed to NodeView components.
 function Paragraph({ children }: NodeViewComponentProps) {
-  const onClick = useEditorEvent((view) => view.dispatch(whatever));
+  const onClick = useEditorEventCallback((view) => view.dispatch(whatever));
   return <p onClick={onClick}>{children}</p>;
 }
 
@@ -367,23 +411,31 @@ function MyProseMirrorField() {
 }
 ```
 
-### `EditorViewContext`
+### `EditorProvider`
 
 ```tsx
-type EditorViewContext = React.Context<{
+type EditorProvider = React.Provider<{
   editorView: EditorView | null;
   editorState: EditorState | null;
+  registerEventListener<EventType extends keyof DOMEventMap>(
+    eventType: EventType,
+    handler: EventHandler<EventType>
+  ): void;
+  unregisterEventListener<EventType extends keyof DOMEventMap>(
+    eventType: EventType,
+    handler: EventHandler<EventType>
+  ): void;
 }>;
 ```
 
 Provides the EditorView, as well as the current EditorState. Should not be
 consumed directly; instead see [`useEditorState`](#useeditorstate),
-[`useEditorEvent`](#useeditorevent), and
+[`useEditorEventCallback`](#useeditorevent), and
 [`useEditorEffect`](#useeditoreffect-1).
 
 See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
-you don't need to use this context directly.
+you don't need to use this provider directly.
 
 ### `LayoutGroup`
 
@@ -438,17 +490,17 @@ Creates, mounts, and manages a ProseMirror `EditorView`.
 
 All state and props updates are executed in a layout effect. To ensure that the
 EditorState and EditorView are never out of sync, it's important that the
-EditorView produced by this hook is only accessed through the `useEditorEvent`
-and `useEditorEffect` hooks.
+EditorView produced by this hook is only accessed through the hooks exposed by
+this library.
 
 See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
 usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
 you don't need to use this hook directly.
 
-### `useEditorEvent`
+### `useEditorEventCallback`
 
 ```tsx
-type useEditorEvent = <T extends unknown[]>(
+type useEditorEventCallback = <T extends unknown[]>(
   callback: (view: EditorView | null, ...args: T) => void
 ) => void;
 ```
@@ -457,9 +509,22 @@ Returns a stable function reference to be used as an event handler callback.
 
 The callback will be called with the EditorView instance as its first argument.
 
-This hook is dependent on both the `EditorViewContext.Provider` and the
+This hook is dependent on both the `EditorProvider.Provider` and the
 `LayoutGroup`. It can only be used in a component that is mounted as a child of
 both of these providers.
+
+### `useEditorEventListener`
+
+```tsx
+type useEditorEventListener = <EventType extends DOMEventMap>(
+  eventType: EventType,
+  listener: (view: EditorView, event: DOMEventMap[EventType]) => boolean
+) => void;
+```
+
+Attaches an event listener at the `EditorView`'s DOM node. See
+[the ProseMirror docs](https://prosemirror.net/docs/ref/#view.EditorProps.handleDOMEvents)
+for more details.
 
 ### `useEditorEffect`
 
@@ -543,8 +608,8 @@ components.
 `component` can be any React component that takes `NodeViewComponentProps`. It
 will be passed as props all of the arguments to the `nodeViewConstructor` except
 for `editorView`. NodeView components that need access directly to the
-EditorView should use the `useEditorEvent` and `useEditorEffect` hooks to ensure
-safe access.
+EditorView should use the `useEditorEventCallback` and `useEditorEffect` hooks
+to ensure safe access.
 
 For contentful Nodes, the NodeView component will also be passed a `children`
 prop containing an empty element. ProseMirror will render content nodes into
