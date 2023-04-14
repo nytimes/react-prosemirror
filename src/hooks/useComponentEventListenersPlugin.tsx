@@ -24,7 +24,6 @@ function createComponentEventListenersPlugin(
         batch(() => {
           handled = !!handler.call(this, view, event);
         });
-        console.log(handled);
         if (handled || event.defaultPrevented) return true;
       }
       return false;

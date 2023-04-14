@@ -14,6 +14,7 @@
     "node": false
   },
   "rules": {
+    "no-console": ["off", { "allow": "error" }],
     "react-hooks/exhaustive-deps": [
       "warn",
       {
