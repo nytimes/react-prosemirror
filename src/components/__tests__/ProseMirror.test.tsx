@@ -5,13 +5,13 @@ import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import React, { useEffect, useState } from "react";
 
-import { useNodeViews } from "../../hooks/useNodeViews";
-import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor";
+import { useNodeViews } from "../../hooks/useNodeViews.js";
+import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import {
   setupProseMirrorView,
   teardownProseMirrorView,
-} from "../../testing/setupProseMirrorView";
-import { ProseMirror } from "../ProseMirror";
+} from "../../testing/setupProseMirrorView.js";
+import { ProseMirror } from "../ProseMirror.js";
 
 describe("ProseMirror", () => {
   beforeAll(() => {

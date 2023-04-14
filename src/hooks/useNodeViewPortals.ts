@@ -1,7 +1,7 @@
 import { ReactPortal, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { RegisterElement } from "../nodeViews/createReactNodeViewConstructor";
+import { RegisterElement } from "../nodeViews/createReactNodeViewConstructor.js";
 
 /**
  * Provides an array of React portals and a callback for registering

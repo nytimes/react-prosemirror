@@ -1,8 +1,10 @@
 {
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
     "plugin:import/recommended",
+    "plugin:import/typescript",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
     "plugin:react-hooks/recommended",
     "prettier"
@@ -18,9 +20,10 @@
     "react-hooks/exhaustive-deps": [
       "warn",
       {
-        "additionalHooks": "(useEditorViewLayoutEffect|useEditorViewEvent|useDeferredLayoutEffect$)"
+        "additionalHooks": "(useEditorEffect|useLayoutGroupEffect$)"
       }
     ],
+    "import/extensions": ["error", "ignorePackages"],
     "import/order": [
       "error",
       {
@@ -47,11 +50,6 @@
     "import/external-module-folders": [".yarn"],
     "import/parsers": {
       "@typescript-eslint/parser": [".ts", ".tsx"]
-    },
-    "import/resolver": {
-      "typescript": {
-        "alwaysTryTypes": true // always try to resolve types under `<root>@types` directory even it doesn't contain any source code, like `@types/unist`
-      }
     },
     "react": {
       "version": "detect"

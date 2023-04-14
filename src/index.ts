@@ -11,4 +11,4 @@ export { useEditorView } from "./hooks/useEditorView.js";
 export { useNodeViews } from "./hooks/useNodeViews.js";
 export { useComponentEventListenersPlugin } from "./hooks/useComponentEventListenersPlugin.js";
 
-export type { NodeViewComponentProps } from "./nodeViews/createReactNodeViewConstructor";
+export type { NodeViewComponentProps } from "./nodeViews/createReactNodeViewConstructor.js";
