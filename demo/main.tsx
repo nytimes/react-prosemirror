@@ -6,7 +6,11 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { NodeViewComponentProps, ProseMirror, useNodeViews } from "../src";
+import {
+  NodeViewComponentProps,
+  ProseMirror,
+  useNodeViews,
+} from "../src/index.js";
 
 import "./main.css";
 

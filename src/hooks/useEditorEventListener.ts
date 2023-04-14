@@ -4,7 +4,7 @@ import { useCallback, useContext, useRef } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
 
-import type { EventHandler } from "./useComponentEventListenersPlugin";
+import type { EventHandler } from "./useComponentEventListenersPlugin.js";
 import { useEditorEffect } from "./useEditorEffect.js";
 
 /**
@@ -37,5 +37,5 @@ export function useEditorEventListener<EventType extends keyof DOMEventMap>(
   useEditorEffect(() => {
     registerEventListener(eventType, eventHandler);
     return () => unregisterEventListener(eventType, eventHandler);
-  }, [registerEventListener, unregisterEventListener]);
+  }, [eventHandler, eventType, registerEventListener, unregisterEventListener]);
 }

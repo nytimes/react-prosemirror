@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import {
   ReactNodeViewConstructor,
   createReactNodeViewConstructor,
-} from "../nodeViews/createReactNodeViewConstructor";
+} from "../nodeViews/createReactNodeViewConstructor.js";
 
-import { useNodeViewPortals } from "./useNodeViewPortals";
+import { useNodeViewPortals } from "./useNodeViewPortals.js";
 
 export function useNodeViews(
   nodeViews: Record<string, ReactNodeViewConstructor>
