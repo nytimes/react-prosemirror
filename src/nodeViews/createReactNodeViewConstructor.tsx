@@ -1,5 +1,11 @@
 import type { Node } from "prosemirror-model";
-import type { Decoration, EditorView, NodeView } from "prosemirror-view";
+import type {
+  Decoration,
+  DecorationSource,
+  EditorView,
+  NodeView,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import React, {
   Dispatch,
   ReactHTML,
@@ -45,7 +51,7 @@ export type RegisterElement = (
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
-type _ReactNodeView = Omit<NodeView, "update"> & {
+type _ReactNodeView = NodeView & {
   component: ComponentType<NodeViewComponentProps>;
 };
 
@@ -57,7 +63,9 @@ export type ReactNodeView = {
   [Property in keyof _ReactNodeView]: _ReactNodeView[Property];
 };
 
-export type ReactNodeViewConstructor = () => ReactNodeView;
+export type ReactNodeViewConstructor = (
+  ...args: Parameters<NodeViewConstructor>
+) => ReactNodeView;
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -83,9 +91,16 @@ export function createReactNodeViewConstructor(
     node: Node,
     editorView: EditorView,
     getPos: () => number,
-    decorations: readonly Decoration[]
+    decorations: readonly Decoration[],
+    innerDecorations: DecorationSource
   ): NodeView {
-    const reactNodeView = reactNodeViewConstructor();
+    const reactNodeView = reactNodeViewConstructor(
+      node,
+      editorView,
+      getPos,
+      decorations,
+      innerDecorations
+    );
 
     let componentRef: NodeViewWrapperRef | null = null;
 
@@ -211,7 +226,16 @@ export function createReactNodeViewConstructor(
         componentRef?.setIsSelected(false);
         reactNodeView.deselectNode?.();
       },
-      update(node: Node, decorations: readonly Decoration[]) {
+      update(
+        node: Node,
+        decorations: readonly Decoration[],
+        innerDecorations: DecorationSource
+      ) {
+        if (
+          reactNodeView.update?.(node, decorations, innerDecorations) === false
+        ) {
+          return false;
+        }
         if (node.type === componentRef?.node.type) {
           componentRef?.setNode(node);
           componentRef?.setDecorations(decorations);
