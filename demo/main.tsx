@@ -11,6 +11,7 @@ import {
   ProseMirror,
   useNodeViews,
 } from "../src/index.js";
+import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 
 import "./main.css";
 
@@ -21,6 +22,7 @@ const schema = new Schema({
     text: { group: "inline" },
   },
 });
+
 const editorState = EditorState.create({
   schema,
   plugins: [keymap(baseKeymap)],
@@ -30,7 +32,7 @@ function Paragraph({ children }: NodeViewComponentProps) {
   return <p>{children}</p>;
 }
 
-const reactNodeViews = {
+const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   paragraph: () => ({
     component: Paragraph,
     dom: document.createElement("div"),

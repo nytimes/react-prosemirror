@@ -322,8 +322,8 @@ augmenting NodeView constructors with React components.
 
 `useNodeViews` takes a map from node name to an extended NodeView constructor.
 The NodeView constructor must return at least a `dom` attribute and a
-`component` attribute, but can also return any other NodeView attributes, aside
-from the `update` method. Here's an example of its usage:
+`component` attribute, but can also return any other NodeView attributes. Here's
+an example of its usage:
 
 ```tsx
 import {
@@ -577,23 +577,32 @@ export function SelectionWidget() {
  * Extension of ProseMirror's NodeViewConstructor type to include
  * `component`, the React component to used render the NodeView.
  * All properties other than `component` and `dom` are optional.
- *
- * Unlike ProseMirror's NodeViewConstructor, this function will
- * not be passed any arguments. Instead, `node`, `getPos`, and
- * `decorations` will be passed as props to the React component,
- * and `view` should only be accessed via the above React hooks.
  */
-type ReactNodeViewConstructor = () => {
+type ReactNodeViewConstructor = (
+  node: Node,
+  view: EditorView,
+  getPos: () => number,
+  decorations: readonly Decoration[],
+  innerDecorations: DecorationSource
+) => {
   dom: HTMLElement | null;
   component: React.ComponentType<NodeViewComponentProps>;
   contentDOM?: HTMLElement | null;
   selectNode?: () => void;
   deselectNode?: () => void;
-  setSelection?:
-    | (anchor: number, head: number, root: Document | ShadowRoot) => void;
+  setSelection?: (
+    anchor: number,
+    head: number,
+    root: Document | ShadowRoot
+  ) => void;
   stopEvent?: (event: Event) => boolean;
   ignoreMutation?: (mutation: MutationRecord) => boolean;
   destroy?: () => void;
+  update?: (
+    node: Node,
+    decorations: readonly Decoration[],
+    innerDecoration: DecorationSource
+  ) => boolean;
 };
 
 type useNodeViews = (nodeViews: Record<string, ReactNodeViewConstructor>) => {
