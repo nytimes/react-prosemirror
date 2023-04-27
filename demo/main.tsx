@@ -21,11 +21,19 @@ const schema = new Schema({
   nodes: {
     doc: { content: "block+" },
     paragraph: { group: "block", content: "inline*" },
+    list: { group: "block", content: "list_item+" },
+    list_item: { content: "inline*" },
     text: { group: "inline" },
   },
 });
 
 const editorState = EditorState.create({
+  doc: schema.topNodeType.create(null, [
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    schema.nodes.paragraph.createAndFill()!,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    schema.nodes.list.createAndFill()!,
+  ]),
   schema,
   plugins: [keymap(baseKeymap)],
 });
@@ -34,11 +42,29 @@ function Paragraph({ children }: NodeViewComponentProps) {
   return <p>{children}</p>;
 }
 
+function List({ children }: NodeViewComponentProps) {
+  return <ul>{children}</ul>;
+}
+
+function ListItem({ children }: NodeViewComponentProps) {
+  return <li>{children}</li>;
+}
+
 const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   paragraph: () => ({
     component: Paragraph,
     dom: document.createElement("div"),
     contentDOM: document.createElement("span"),
+  }),
+  list: () => ({
+    component: List,
+    dom: document.createElement("div"),
+    contentDOM: document.createElement("div"),
+  }),
+  list_item: () => ({
+    component: ListItem,
+    dom: document.createElement("div"),
+    contentDOM: document.createElement("div"),
   }),
 };
 
@@ -64,8 +90,4 @@ function DemoEditor() {
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const root = createRoot(document.getElementById("root")!);
 
-root.render(
-  <React.StrictMode>
-    <DemoEditor />
-  </React.StrictMode>
-);
+root.render(<DemoEditor />);

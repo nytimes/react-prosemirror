@@ -10,11 +10,18 @@ import React, {
   Dispatch,
   SetStateAction,
   forwardRef,
+  useContext,
   useImperativeHandle,
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
+
+import {
+  PORTAL_REGISTRY_ROOT_KEY,
+  PortalRegistryContext,
+  PortalRegistryKey,
+} from "../contexts/PortalRegistryContext.js";
 
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
@@ -49,6 +56,7 @@ interface NodeViewWrapperRef {
 export type UnregisterElement = () => void;
 
 export type RegisterElement = (
+  registrationKey: PortalRegistryKey,
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
@@ -67,6 +75,58 @@ export type ReactNodeView = {
 export type ReactNodeViewConstructor = (
   ...args: Parameters<NodeViewConstructor>
 ) => ReactNodeView;
+
+const REACT_PM_KEY = "reactpmkey";
+
+function findNearestRegistryKey(editorView: EditorView, pos: number) {
+  const parentElement = editorView.domAtPos(pos, 0).node as HTMLElement;
+  const nearestElementWithKey = parentElement?.closest(
+    `[data-${REACT_PM_KEY}]`
+  ) as HTMLElement | null;
+
+  return (
+    nearestElementWithKey?.dataset[REACT_PM_KEY] ?? PORTAL_REGISTRY_ROOT_KEY
+  );
+}
+
+/** A queue of registration tasks to be executed */
+const taskQueue: Array<() => void> = [];
+
+/**
+ * Flush the task queue, executing all tasks
+ */
+function flushTaskQueue() {
+  while (taskQueue.length) {
+    // We're iterating over the length of the queue,
+    // so we know that shift will always return a non-null
+    // task.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const register = taskQueue.shift()!;
+    register();
+  }
+}
+
+/**
+ * Ensure that this microtask will be executed at the
+ * end of the current event loop.
+ *
+ * If the flush task has not already been queued, queues
+ * it. Then pushes the microtask onto the queue to be flushed.
+ */
+function ensureMicrotask(microtask: () => void) {
+  if (!taskQueue.length) {
+    queueMicrotask(flushTaskQueue);
+  }
+  taskQueue.push(microtask);
+}
+
+/**
+ * Cancels a queued microtask by removing it from the
+ * task queue.
+ */
+function cancelMicrotask(microtask: () => void) {
+  taskQueue.splice(taskQueue.indexOf(microtask), 1);
+}
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -117,6 +177,10 @@ export function createReactNodeViewConstructor(
       (phrasingContentTags.includes(contentDOM.tagName.toLocaleLowerCase())
         ? "span"
         : "div");
+
+    // A key to uniquely identify this element to React
+    const key = Math.floor(Math.random() * 0xffffff).toString(16);
+
     /**
      * Wrapper component to provide some imperative handles for updating
      * and re-rendering its child. Takes and renders an arbitrary ElementType
@@ -136,6 +200,9 @@ export function createReactNodeViewConstructor(
       const [isSelected, setIsSelected] = useState<boolean>(
         initialState.isSelected
       );
+
+      const portalTreeRegistry = useContext(PortalRegistryContext);
+      const childPortals = portalTreeRegistry[key];
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -159,6 +226,7 @@ export function createReactNodeViewConstructor(
           decorations={decorations}
           isSelected={isSelected}
         >
+          {childPortals}
           {ContentDOMWrapper && (
             <ContentDOMWrapper
               style={{ display: "contents" }}
@@ -214,11 +282,32 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const unregisterElement = registerElement(
-      element,
-      dom as HTMLElement,
-      Math.floor(Math.random() * 0xffffff).toString(16)
-    );
+    if (contentDOM) {
+      // Store this node view's registration key on the contentDOM
+      // so it can be retrieved by its children.
+      contentDOM.dataset[REACT_PM_KEY] = key;
+    }
+
+    let unregisterElement: UnregisterElement | undefined;
+
+    // ProseMirror hasn't assigned finished constructing the
+    // node view descriptor tree yet, so attempts to ascend it
+    // will fail until after the current call stack has finished
+    // executing.
+    //
+    // Push registration onto the microtask queue so that it will
+    // be executed at the end of the current event loop, after
+    // ProseMirror has finished constructing the node view descriptor
+    // tree.
+    const registrationMicrotask = () => {
+      unregisterElement = registerElement(
+        findNearestRegistryKey(editorView, getPos()),
+        element,
+        dom as HTMLElement,
+        key
+      );
+    };
+    ensureMicrotask(registrationMicrotask);
 
     return {
       ignoreMutation(record: MutationRecord) {
@@ -251,7 +340,11 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
-        unregisterElement();
+        if (unregisterElement) {
+          unregisterElement();
+        } else {
+          cancelMicrotask(registrationMicrotask);
+        }
         reactNodeView.destroy?.();
       },
     };
