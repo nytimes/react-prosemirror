@@ -1,14 +1,14 @@
-import { useMemo } from "react";
+import { ComponentType, useMemo } from "react";
 
 import {
-  ReactNodeViewConstructor,
+  NodeViewComponentProps,
   createReactNodeViewConstructor,
 } from "../nodeViews/createReactNodeViewConstructor.js";
 
 import { useNodeViewPortals } from "./useNodeViewPortals.js";
 
 export function useNodeViews(
-  nodeViews: Record<string, ReactNodeViewConstructor>
+  nodeViews: Record<string, ComponentType<NodeViewComponentProps>>
 ) {
   const { registerPortal, portals } = useNodeViewPortals();
 

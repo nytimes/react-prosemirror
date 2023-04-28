@@ -3,7 +3,7 @@ import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
-import React, { useState } from "react";
+import React, { ComponentType, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -11,13 +11,14 @@ import {
   ProseMirror,
   useNodeViews,
 } from "../src/index.js";
-import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 
 import "./main.css";
 
 const schema = new Schema({
   nodes: {
     doc: { content: "block+" },
+    list: { group: "block", content: "list_item+" },
+    list_item: { content: "paragraph+" },
     paragraph: { group: "block", content: "inline*" },
     text: { group: "inline" },
   },
@@ -32,12 +33,18 @@ function Paragraph({ children }: NodeViewComponentProps) {
   return <p>{children}</p>;
 }
 
-const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
-  paragraph: () => ({
-    component: Paragraph,
-    dom: document.createElement("div"),
-    contentDOM: document.createElement("span"),
-  }),
+function List({ children }: NodeViewComponentProps) {
+  return <ul>{children}</ul>;
+}
+
+function ListItem({ children }: NodeViewComponentProps) {
+  return <li>{children}</li>;
+}
+
+const reactNodeViews: Record<string, ComponentType<NodeViewComponentProps>> = {
+  paragraph: Paragraph,
+  list: List,
+  list_item: ListItem,
 };
 
 function DemoEditor() {

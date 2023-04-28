@@ -1,7 +1,6 @@
 import type { Node } from "prosemirror-model";
 import type {
   Decoration,
-  DecorationSource,
   EditorView,
   NodeView,
   NodeViewConstructor,
@@ -15,8 +14,6 @@ import React, {
 } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
-
-import { phrasingContentTags } from "./phrasingContentTags.js";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
@@ -85,38 +82,36 @@ export type ReactNodeViewConstructor = (
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  reactNodeViewConstructor: ReactNodeViewConstructor,
+  ReactComponent: ComponentType<NodeViewComponentProps>,
   registerElement: RegisterElement
 ) {
   function nodeViewConstructor(
     node: Node,
     editorView: EditorView,
     getPos: () => number,
-    decorations: readonly Decoration[],
-    innerDecorations: DecorationSource
+    decorations: readonly Decoration[]
   ): NodeView {
-    const reactNodeView = reactNodeViewConstructor(
-      node,
-      editorView,
-      getPos,
-      decorations,
-      innerDecorations
-    );
-
     let componentRef: NodeViewWrapperRef | null = null;
 
-    const { dom, contentDOM, component: ReactComponent } = reactNodeView;
+    const domElementType = node.isInline ? "span" : "div";
+    const dom = document.createElement(domElementType);
+    dom.dataset["pmnodetype"] = node.type.name;
+    dom.dataset["pmdom"] = "true";
+    dom.style["display"] = "contents";
 
-    // Use a span if the provided contentDOM is in the "phrasing" content
-    // category. Otherwise use a div. This is our best attempt at not
-    // breaking the intended content model, for now.
-    //
-    // https://developer.mozilla.org/en-US/docs/Web/HTML/Content_categories#phrasing_content
-    const ContentDOMWrapper =
-      contentDOM &&
-      (phrasingContentTags.includes(contentDOM.tagName.toLocaleLowerCase())
-        ? "span"
-        : "div");
+    const hasContent = !node.isLeaf && !node.isAtom;
+    const contentIsInline = node.isTextblock;
+    const ContentDOMWrapper = contentIsInline ? "span" : "div";
+
+    const contentDOM = hasContent
+      ? document.createElement(ContentDOMWrapper)
+      : undefined;
+
+    if (contentDOM) {
+      contentDOM.dataset["pmcontentdom"] = "true";
+      contentDOM.style["display"] = "contents";
+    }
+
     /**
      * Wrapper component to provide some imperative handles for updating
      * and re-rendering its child. Takes and renders an arbitrary ElementType
@@ -159,8 +154,9 @@ export function createReactNodeViewConstructor(
           decorations={decorations}
           isSelected={isSelected}
         >
-          {ContentDOMWrapper && (
+          {hasContent && (
             <ContentDOMWrapper
+              data-pmcontentdomwrapper={true}
               style={{ display: "contents" }}
               ref={(nextContentDOMWrapper) => {
                 setContentDOMWrapper(nextContentDOMWrapper);
@@ -221,28 +217,18 @@ export function createReactNodeViewConstructor(
     );
 
     return {
+      dom,
+      contentDOM,
       ignoreMutation(record: MutationRecord) {
         return !contentDOM?.contains(record.target);
       },
-      ...reactNodeView,
       selectNode() {
         componentRef?.setIsSelected(true);
-        reactNodeView.selectNode?.();
       },
       deselectNode() {
         componentRef?.setIsSelected(false);
-        reactNodeView.deselectNode?.();
       },
-      update(
-        node: Node,
-        decorations: readonly Decoration[],
-        innerDecorations: DecorationSource
-      ) {
-        if (
-          reactNodeView.update?.(node, decorations, innerDecorations) === false
-        ) {
-          return false;
-        }
+      update(node: Node, decorations: readonly Decoration[]) {
         if (node.type === componentRef?.node.type) {
           componentRef?.setNode(node);
           componentRef?.setDecorations(decorations);
@@ -252,7 +238,6 @@ export function createReactNodeViewConstructor(
       },
       destroy() {
         unregisterElement();
-        reactNodeView.destroy?.();
       },
     };
   }

@@ -11,3 +11,8 @@ main {
   width: 80%;
   max-width: 700px;
 }
+
+ul li {
+  display: flex;
+  flex-direction: row;
+}

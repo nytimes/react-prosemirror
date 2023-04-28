@@ -97,11 +97,7 @@ describe("ProseMirror", () => {
     }
 
     const reactNodeViews = {
-      paragraph: () => ({
-        component: Paragraph,
-        dom: document.createElement("div"),
-        contentDOM: document.createElement("span"),
-      }),
+      paragraph: Paragraph,
     };
 
     function TestEditor() {
