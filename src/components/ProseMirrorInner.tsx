@@ -33,7 +33,6 @@ export type ProseMirrorProps = EditorProps & {
  */
 export function ProseMirrorInner({
   children,
-  dispatchTransaction,
   mount,
   ...editorProps
 }: ProseMirrorProps) {
@@ -51,7 +50,6 @@ export function ProseMirrorInner({
   const editorView = useEditorView(mount, {
     ...editorProps,
     plugins,
-    dispatchTransaction,
   });
 
   const editorState =

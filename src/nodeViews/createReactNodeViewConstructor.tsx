@@ -1,4 +1,5 @@
 import type { Node } from "prosemirror-model";
+import { Plugin, PluginKey } from "prosemirror-state";
 import type {
   Decoration,
   DecorationSource,
@@ -76,57 +77,55 @@ export type ReactNodeViewConstructor = (
   ...args: Parameters<NodeViewConstructor>
 ) => ReactNodeView;
 
-const REACT_PM_KEY = "reactpmkey";
+function findNearestRegistryKey(
+  editorView: EditorView,
+  pos: number
+): PortalRegistryKey {
+  const positionRegistry = portalTreePlugin.getState(editorView.state);
+  if (!positionRegistry) return PORTAL_REGISTRY_ROOT_KEY;
 
-function findNearestRegistryKey(editorView: EditorView, pos: number) {
-  const parentElement = editorView.domAtPos(pos, 0).node as HTMLElement;
-  const nearestElementWithKey = parentElement?.closest(
-    `[data-${REACT_PM_KEY}]`
-  ) as HTMLElement | null;
+  const $pos = editorView.state.doc.resolve(pos);
 
-  return (
-    nearestElementWithKey?.dataset[REACT_PM_KEY] ?? PORTAL_REGISTRY_ROOT_KEY
-  );
-}
+  for (let d = $pos.depth; d > 0; d--) {
+    const parentPos = $pos.before(d);
+    const parentKey = positionRegistry.get(parentPos);
 
-/** A queue of registration tasks to be executed */
-const taskQueue: Array<() => void> = [];
-
-/**
- * Flush the task queue, executing all tasks
- */
-function flushTaskQueue() {
-  while (taskQueue.length) {
-    // We're iterating over the length of the queue,
-    // so we know that shift will always return a non-null
-    // task.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const register = taskQueue.shift()!;
-    register();
+    if (parentKey) return parentKey;
   }
+
+  return PORTAL_REGISTRY_ROOT_KEY;
 }
 
-/**
- * Ensure that this microtask will be executed at the
- * end of the current event loop.
- *
- * If the flush task has not already been queued, queues
- * it. Then pushes the microtask onto the queue to be flushed.
- */
-function ensureMicrotask(microtask: () => void) {
-  if (!taskQueue.length) {
-    queueMicrotask(flushTaskQueue);
-  }
-  taskQueue.push(microtask);
+function generateRandomKey() {
+  return Math.floor(Math.random() * 0xffffff).toString(16);
 }
 
-/**
- * Cancels a queued microtask by removing it from the
- * task queue.
- */
-function cancelMicrotask(microtask: () => void) {
-  taskQueue.splice(taskQueue.indexOf(microtask), 1);
-}
+export const portalTreePlugin = new Plugin({
+  key: new PluginKey("reactPmPortalTree"),
+  state: {
+    init(_, state) {
+      const next = new Map<number, string>();
+      state.doc.descendants((_, pos) => {
+        const key = generateRandomKey();
+
+        next.set(pos, key);
+      });
+      return next;
+    },
+    apply(tr, value, _, newState) {
+      if (!tr.docChanged) return value;
+
+      const next = new Map<number, string>();
+      newState.doc.descendants((_, pos) => {
+        const prevPos = tr.mapping.invert().map(pos);
+        const prevKey = value.get(prevPos);
+        const key = prevKey ?? generateRandomKey();
+        next.set(pos, key);
+      });
+      return next;
+    },
+  },
+});
 
 /**
  * Factory function for creating nodeViewConstructors that
@@ -179,7 +178,9 @@ export function createReactNodeViewConstructor(
         : "div");
 
     // A key to uniquely identify this element to React
-    const key = Math.floor(Math.random() * 0xffffff).toString(16);
+    const key =
+      portalTreePlugin.getState(editorView.state)?.get(getPos()) ??
+      generateRandomKey();
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -201,8 +202,8 @@ export function createReactNodeViewConstructor(
         initialState.isSelected
       );
 
-      const portalTreeRegistry = useContext(PortalRegistryContext);
-      const childPortals = portalTreeRegistry[key];
+      const portalRegistry = useContext(PortalRegistryContext);
+      const childPortals = portalRegistry[key];
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -282,13 +283,7 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    if (contentDOM) {
-      // Store this node view's registration key on the contentDOM
-      // so it can be retrieved by its children.
-      contentDOM.dataset[REACT_PM_KEY] = key;
-    }
-
-    let unregisterElement: UnregisterElement | undefined;
+    // let unregisterElement: UnregisterElement | undefined;
 
     // ProseMirror hasn't assigned finished constructing the
     // node view descriptor tree yet, so attempts to ascend it
@@ -299,15 +294,16 @@ export function createReactNodeViewConstructor(
     // be executed at the end of the current event loop, after
     // ProseMirror has finished constructing the node view descriptor
     // tree.
-    const registrationMicrotask = () => {
-      unregisterElement = registerElement(
-        findNearestRegistryKey(editorView, getPos()),
-        element,
-        dom as HTMLElement,
-        key
-      );
-    };
-    ensureMicrotask(registrationMicrotask);
+    // const registrationMicrotask = () => {
+
+    // };
+    // ensureMicrotask(registrationMicrotask);
+    const unregisterElement = registerElement(
+      findNearestRegistryKey(editorView, getPos()),
+      element,
+      dom as HTMLElement,
+      key
+    );
 
     return {
       ignoreMutation(record: MutationRecord) {
@@ -340,11 +336,11 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
-        if (unregisterElement) {
-          unregisterElement();
-        } else {
-          cancelMicrotask(registrationMicrotask);
-        }
+        // if (unregisterElement) {
+        unregisterElement();
+        // } else {
+        //   cancelMicrotask(registrationMicrotask);
+        // }
         reactNodeView.destroy?.();
       },
     };

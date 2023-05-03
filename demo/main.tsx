@@ -1,6 +1,14 @@
-import { baseKeymap } from "prosemirror-commands";
+import {
+  baseKeymap,
+  chainCommands,
+  createParagraphNear,
+  liftEmptyBlock,
+  newlineInCode,
+  splitBlock,
+} from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
+import { liftListItem, splitListItem } from "prosemirror-schema-list";
 import { EditorState } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
@@ -13,7 +21,10 @@ import {
   useEditorState,
   useNodeViews,
 } from "../src/index.js";
-import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
+import {
+  ReactNodeViewConstructor,
+  portalTreePlugin,
+} from "../src/nodeViews/createReactNodeViewConstructor.js";
 
 import "./main.css";
 
@@ -22,7 +33,7 @@ const schema = new Schema({
     doc: { content: "block+" },
     paragraph: { group: "block", content: "inline*" },
     list: { group: "block", content: "list_item+" },
-    list_item: { content: "inline*" },
+    list_item: { content: "paragraph+" },
     text: { group: "inline" },
   },
 });
@@ -35,7 +46,21 @@ const editorState = EditorState.create({
     schema.nodes.list.createAndFill()!,
   ]),
   schema,
-  plugins: [keymap(baseKeymap)],
+  plugins: [
+    keymap({
+      ...baseKeymap,
+      Enter: chainCommands(
+        newlineInCode,
+        createParagraphNear,
+        liftEmptyBlock,
+        splitListItem(schema.nodes.list_item),
+        splitBlock
+      ),
+      "Shift-Enter": baseKeymap.Enter,
+      "Shift-Tab": liftListItem(schema.nodes.list_item),
+    }),
+    portalTreePlugin,
+  ],
 });
 
 function Paragraph({ children }: NodeViewComponentProps) {
