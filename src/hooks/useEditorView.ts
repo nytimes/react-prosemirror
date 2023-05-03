@@ -58,6 +58,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: DirectEditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
+  // const [keyRegistry];
 
   props = withBatchedDispatch(props);
   const { state, ...nonStateProps } = props;

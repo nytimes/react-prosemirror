@@ -34,7 +34,6 @@ export type ProseMirrorProps = DirectEditorProps & {
  */
 export function ProseMirrorInner({
   children,
-  dispatchTransaction,
   state,
   mount,
   ...editorProps
@@ -54,7 +53,6 @@ export function ProseMirrorInner({
     ...editorProps,
     plugins,
     state,
-    dispatchTransaction,
   });
 
   const editorContextValue = useMemo(
