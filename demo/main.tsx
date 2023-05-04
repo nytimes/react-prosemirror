@@ -9,7 +9,8 @@ import {
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { liftListItem, splitListItem } from "prosemirror-schema-list";
-import { EditorState } from "prosemirror-state";
+import { EditorState, Transaction } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -93,6 +94,17 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   }),
 };
 
+function dispatchTransaction(this: EditorView, tr: Transaction) {
+  const newState = this.state.apply(tr);
+  this.updateState(
+    EditorState.create({
+      doc: newState.doc,
+      selection: newState.selection,
+      plugins: newState.plugins,
+    })
+  );
+}
+
 function DemoEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
@@ -102,8 +114,9 @@ function DemoEditor() {
       <h1>React ProseMirror Demo</h1>
       <ProseMirror
         mount={mount}
-        defaultState={editorState}
+        state={editorState}
         nodeViews={nodeViews}
+        dispatchTransaction={dispatchTransaction}
       >
         <div ref={setMount} />
         {renderNodeViews()}

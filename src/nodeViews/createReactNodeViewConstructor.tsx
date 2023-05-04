@@ -81,8 +81,10 @@ function findNearestRegistryKey(
   editorView: EditorView,
   pos: number
 ): PortalRegistryKey {
-  const positionRegistry = portalTreePlugin.getState(editorView.state);
-  if (!positionRegistry) return PORTAL_REGISTRY_ROOT_KEY;
+  const pluginState = portalTreePlugin.getState(editorView.state);
+  if (!pluginState) return PORTAL_REGISTRY_ROOT_KEY;
+
+  const { registry: positionRegistry } = pluginState;
 
   const $pos = editorView.state.doc.resolve(pos);
 
@@ -104,23 +106,26 @@ export const portalTreePlugin = new Plugin({
   key: new PluginKey("reactPmPortalTree"),
   state: {
     init(_, state) {
-      const next = new Map<number, string>();
+      const next = {
+        registry: new Map<number, string>(),
+        seed: generateRandomKey(),
+      };
       state.doc.descendants((_, pos) => {
         const key = generateRandomKey();
 
-        next.set(pos, key);
+        next.registry.set(pos, key);
       });
       return next;
     },
     apply(tr, value, _, newState) {
       if (!tr.docChanged) return value;
 
-      const next = new Map<number, string>();
+      const next = { ...value, registry: new Map<number, string>() };
       newState.doc.descendants((_, pos) => {
         const prevPos = tr.mapping.invert().map(pos);
-        const prevKey = value.get(prevPos);
+        const prevKey = value.registry.get(prevPos);
         const key = prevKey ?? generateRandomKey();
-        next.set(pos, key);
+        next.registry.set(pos, key);
       });
       return next;
     },
@@ -179,8 +184,12 @@ export function createReactNodeViewConstructor(
 
     // A key to uniquely identify this element to React
     const key =
-      portalTreePlugin.getState(editorView.state)?.get(getPos()) ??
+      portalTreePlugin.getState(editorView.state)?.registry.get(getPos()) ??
       generateRandomKey();
+
+    const initialPortalTreeSeed = portalTreePlugin.getState(
+      editorView.state
+    )?.seed;
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -323,6 +332,21 @@ export function createReactNodeViewConstructor(
         decorations: readonly Decoration[],
         innerDecorations: DecorationSource
       ) {
+        // If the plugin has been re-initialized since this
+        // node view was created, we need to rebuild it
+        // ALSO: we could technically keep this in sync
+        // without destroying and rebuilding the node views!
+        // I think we just need to pass the key as a "ref", and
+        // in here, update the key, unregister the element, and re-register it.
+        // This would still unmount and remount the React component though
+        // so maybe not actually worth it?
+        const nextPortalTreeSeed = portalTreePlugin.getState(
+          editorView.state
+        )?.seed;
+        if (nextPortalTreeSeed !== initialPortalTreeSeed) {
+          return false;
+        }
+
         if (
           reactNodeView.update?.(node, decorations, innerDecorations) === false
         ) {
