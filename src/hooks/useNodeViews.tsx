@@ -1,10 +1,10 @@
-import React, { ReactPortal, useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
   PORTAL_REGISTRY_ROOT_KEY,
+  PortalRegistry,
   PortalRegistryContext,
-  PortalRegistryKey,
 } from "../contexts/PortalRegistryContext.js";
 import {
   ReactNodeViewConstructor,
@@ -13,11 +13,18 @@ import {
 } from "../nodeViews/createReactNodeViewConstructor.js";
 
 type Props = {
-  portals: Record<PortalRegistryKey, ReactPortal[]>;
+  portals: PortalRegistry;
 };
 
 function NodeViews({ portals }: Props) {
-  const rootPortals = portals[PORTAL_REGISTRY_ROOT_KEY];
+  const rootRegisteredPortals = portals[PORTAL_REGISTRY_ROOT_KEY];
+  const rootPortals = useMemo(
+    () =>
+      rootRegisteredPortals
+        ?.sort((a, b) => a.getPos() - b.getPos())
+        .map(({ portal }) => portal),
+    [rootRegisteredPortals]
+  );
 
   return (
     <PortalRegistryContext.Provider value={portals}>
@@ -29,16 +36,14 @@ function NodeViews({ portals }: Props) {
 export function useNodeViews(
   nodeViews: Record<string, ReactNodeViewConstructor>
 ) {
-  const [portals, setPortals] = useState(
-    {} as Record<PortalRegistryKey, ReactPortal[]>
-  );
+  const [portals, setPortals] = useState({} as PortalRegistry);
 
   const registerPortal: RegisterElement = useCallback(
-    (registrationKey, child, container, key) => {
+    (registrationKey, getPos, child, container, key) => {
       const portal = createPortal(child, container, key);
       setPortals((oldPortals) => {
         const oldChildPortals = oldPortals[registrationKey] ?? [];
-        const newChildPortals = oldChildPortals.concat(portal);
+        const newChildPortals = oldChildPortals.concat({ getPos, portal });
         return {
           ...oldPortals,
           [registrationKey]: newChildPortals,
@@ -48,7 +53,9 @@ export function useNodeViews(
       return () => {
         setPortals((oldPortals) => {
           const oldChildPortals = oldPortals[registrationKey] ?? [];
-          const newChildPortals = oldChildPortals.filter((p) => p !== portal);
+          const newChildPortals = oldChildPortals.filter(
+            ({ portal: p }) => p !== portal
+          );
           return {
             ...oldPortals,
             [registrationKey]: newChildPortals,

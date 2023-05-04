@@ -1,5 +1,12 @@
 import { ReactPortal, createContext } from "react";
 
+export type RegisteredPortal = {
+  getPos: () => number;
+  portal: ReactPortal;
+};
+
+export type PortalRegistry = Record<PortalRegistryKey, RegisteredPortal[]>;
+
 /**
  * A map of node view keys to portals.
  *
@@ -8,9 +15,9 @@ import { ReactPortal, createContext } from "react";
  * key, allowing portals to be rendered with the appropriate
  * hierarchy.
  */
-export const PortalRegistryContext = createContext<
-  Record<PortalRegistryKey, ReactPortal[]>
->(null as unknown as Record<PortalRegistryKey, ReactPortal[]>);
+export const PortalRegistryContext = createContext<PortalRegistry>(
+  null as unknown as PortalRegistry
+);
 
 /**
  * Node views that don't have any React node view ancestors
