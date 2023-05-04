@@ -10,7 +10,6 @@ import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { liftListItem, splitListItem } from "prosemirror-schema-list";
 import { EditorState, Transaction } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -97,20 +96,10 @@ function DemoEditor() {
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
   const [state, setState] = useState(editorState);
 
-  const dispatchTransaction = useCallback(function (
-    this: EditorView,
-    tr: Transaction
-  ) {
-    setState((oldState) => {
-      const newState = oldState.apply(tr);
-      return EditorState.create({
-        doc: newState.doc,
-        selection: newState.selection,
-        plugins: newState.plugins,
-      });
-    });
-  },
-  []);
+  const dispatchTransaction = useCallback(
+    (tr: Transaction) => setState((oldState) => oldState.apply(tr)),
+    []
+  );
 
   return (
     <main>

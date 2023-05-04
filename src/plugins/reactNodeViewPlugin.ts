@@ -26,7 +26,7 @@ export function findNearestRegistryKey(
   const pluginState = reactNodeViewPlugin.getState(editorView.state);
   if (!pluginState) return PORTAL_REGISTRY_ROOT_KEY;
 
-  const { registry: positionRegistry } = pluginState;
+  const positionRegistry = pluginState;
 
   const $pos = editorView.state.doc.resolve(pos);
 
@@ -73,26 +73,23 @@ export const reactNodeViewPlugin = new Plugin({
   key: new PluginKey("reactNodeView"),
   state: {
     init(_, state) {
-      const next = {
-        registry: new Map<number, string>(),
-        seed: createRegistryKey(),
-      };
+      const next = new Map<number, string>();
       state.doc.descendants((_, pos) => {
         const key = createRegistryKey();
 
-        next.registry.set(pos, key);
+        next.set(pos, key);
       });
       return next;
     },
     apply(tr, value, _, newState) {
       if (!tr.docChanged) return value;
 
-      const next = { ...value, registry: new Map<number, string>() };
+      const next = new Map<number, string>();
       newState.doc.descendants((_, pos) => {
         const prevPos = tr.mapping.invert().map(pos);
-        const prevKey = value.registry.get(prevPos);
+        const prevKey = value.get(prevPos);
         const key = prevKey ?? createRegistryKey();
-        next.registry.set(pos, key);
+        next.set(pos, key);
       });
       return next;
     },
