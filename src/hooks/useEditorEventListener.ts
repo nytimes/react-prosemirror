@@ -3,8 +3,8 @@ import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { useCallback, useContext, useRef } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
+import type { EventHandler } from "../plugins/componentEventListenersPlugin.js";
 
-import type { EventHandler } from "./useComponentEventListenersPlugin.js";
 import { useEditorEffect } from "./useEditorEffect.js";
 
 /**
