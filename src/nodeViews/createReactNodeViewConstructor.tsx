@@ -135,12 +135,8 @@ export function createReactNodeViewConstructor(
 
     // A key to uniquely identify this element to React
     const key =
-      reactNodeViewPlugin.getState(editorView.state)?.registry.get(getPos()) ??
+      reactNodeViewPlugin.getState(editorView.state)?.get(getPos()) ??
       createRegistryKey();
-
-    const initialPortalTreeSeed = reactNodeViewPlugin.getState(
-      editorView.state
-    )?.seed;
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -278,10 +274,8 @@ export function createReactNodeViewConstructor(
       ) {
         // If this node view's parent has been removed from the registry, we
         // need to rebuild it and its children with new registry keys
-        const nextPortalTreeSeed = reactNodeViewPlugin.getState(
-          editorView.state
-        )?.seed;
-        if (nextPortalTreeSeed !== initialPortalTreeSeed) {
+        const positionRegistry = reactNodeViewPlugin.getState(editorView.state);
+        if (positionRegistry && key !== positionRegistry.get(getPos())) {
           return false;
         }
 

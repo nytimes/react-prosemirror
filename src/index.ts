@@ -10,6 +10,7 @@ export { useEditorState } from "./hooks/useEditorState.js";
 export { useEditorView } from "./hooks/useEditorView.js";
 export { useNodeViews } from "./hooks/useNodeViews.js";
 export { useComponentEventListenersPlugin } from "./hooks/useComponentEventListenersPlugin.js";
+export { reactNodeViewPlugin } from "./plugins/reactNodeViewPlugin.js";
 
 export type {
   NodeViewComponentProps,
