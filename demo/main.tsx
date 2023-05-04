@@ -12,7 +12,7 @@ import { liftListItem, splitListItem } from "prosemirror-schema-list";
 import { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -94,27 +94,32 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   }),
 };
 
-function dispatchTransaction(this: EditorView, tr: Transaction) {
-  const newState = this.state.apply(tr);
-  this.updateState(
-    EditorState.create({
-      doc: newState.doc,
-      selection: newState.selection,
-      plugins: newState.plugins,
-    })
-  );
-}
-
 function DemoEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
+  const [state, setState] = useState(editorState);
+
+  const dispatchTransaction = useCallback(function (
+    this: EditorView,
+    tr: Transaction
+  ) {
+    setState((oldState) => {
+      const newState = oldState.apply(tr);
+      return EditorState.create({
+        doc: newState.doc,
+        selection: newState.selection,
+        plugins: newState.plugins,
+      });
+    });
+  },
+  []);
 
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
       <ProseMirror
         mount={mount}
-        state={editorState}
+        state={state}
         nodeViews={nodeViews}
         dispatchTransaction={dispatchTransaction}
       >

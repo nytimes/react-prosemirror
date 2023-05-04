@@ -13,6 +13,7 @@ import React, {
   forwardRef,
   useContext,
   useImperativeHandle,
+  useMemo,
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
@@ -58,6 +59,7 @@ export type UnregisterElement = () => void;
 
 export type RegisterElement = (
   registrationKey: PortalRegistryKey,
+  getPos: () => number,
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
@@ -212,7 +214,14 @@ export function createReactNodeViewConstructor(
       );
 
       const portalRegistry = useContext(PortalRegistryContext);
-      const childPortals = portalRegistry[key];
+      const childRegisteredPortals = portalRegistry[key];
+      const childPortals = useMemo(
+        () =>
+          childRegisteredPortals
+            ?.sort((a, b) => a.getPos() - b.getPos())
+            .map(({ portal }) => portal),
+        [childRegisteredPortals]
+      );
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -292,23 +301,9 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    // let unregisterElement: UnregisterElement | undefined;
-
-    // ProseMirror hasn't assigned finished constructing the
-    // node view descriptor tree yet, so attempts to ascend it
-    // will fail until after the current call stack has finished
-    // executing.
-    //
-    // Push registration onto the microtask queue so that it will
-    // be executed at the end of the current event loop, after
-    // ProseMirror has finished constructing the node view descriptor
-    // tree.
-    // const registrationMicrotask = () => {
-
-    // };
-    // ensureMicrotask(registrationMicrotask);
     const unregisterElement = registerElement(
       findNearestRegistryKey(editorView, getPos()),
+      getPos,
       element,
       dom as HTMLElement,
       key
@@ -332,14 +327,8 @@ export function createReactNodeViewConstructor(
         decorations: readonly Decoration[],
         innerDecorations: DecorationSource
       ) {
-        // If the plugin has been re-initialized since this
-        // node view was created, we need to rebuild it
-        // ALSO: we could technically keep this in sync
-        // without destroying and rebuilding the node views!
-        // I think we just need to pass the key as a "ref", and
-        // in here, update the key, unregister the element, and re-register it.
-        // This would still unmount and remount the React component though
-        // so maybe not actually worth it?
+        // If this node view's parent has been removed from the registry, we
+        // need to rebuild it and its children with new registry keys
         const nextPortalTreeSeed = portalTreePlugin.getState(
           editorView.state
         )?.seed;
@@ -360,11 +349,7 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
-        // if (unregisterElement) {
         unregisterElement();
-        // } else {
-        //   cancelMicrotask(registrationMicrotask);
-        // }
         reactNodeView.destroy?.();
       },
     };
