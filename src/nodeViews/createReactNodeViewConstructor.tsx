@@ -1,5 +1,4 @@
 import type { Node } from "prosemirror-model";
-import { Plugin, PluginKey } from "prosemirror-state";
 import type {
   Decoration,
   DecorationSource,
@@ -20,10 +19,15 @@ import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import {
-  PORTAL_REGISTRY_ROOT_KEY,
   PortalRegistryContext,
   PortalRegistryKey,
 } from "../contexts/PortalRegistryContext.js";
+import {
+  REACT_NODE_VIEW,
+  createRegistryKey,
+  findNearestRegistryKey,
+  reactNodeViewPlugin,
+} from "../plugins/reactNodeViewPlugin.js";
 
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
@@ -79,61 +83,6 @@ export type ReactNodeViewConstructor = (
   ...args: Parameters<NodeViewConstructor>
 ) => ReactNodeView;
 
-function findNearestRegistryKey(
-  editorView: EditorView,
-  pos: number
-): PortalRegistryKey {
-  const pluginState = portalTreePlugin.getState(editorView.state);
-  if (!pluginState) return PORTAL_REGISTRY_ROOT_KEY;
-
-  const { registry: positionRegistry } = pluginState;
-
-  const $pos = editorView.state.doc.resolve(pos);
-
-  for (let d = $pos.depth; d > 0; d--) {
-    const parentPos = $pos.before(d);
-    const parentKey = positionRegistry.get(parentPos);
-
-    if (parentKey) return parentKey;
-  }
-
-  return PORTAL_REGISTRY_ROOT_KEY;
-}
-
-function generateRandomKey() {
-  return Math.floor(Math.random() * 0xffffff).toString(16);
-}
-
-export const portalTreePlugin = new Plugin({
-  key: new PluginKey("reactPmPortalTree"),
-  state: {
-    init(_, state) {
-      const next = {
-        registry: new Map<number, string>(),
-        seed: generateRandomKey(),
-      };
-      state.doc.descendants((_, pos) => {
-        const key = generateRandomKey();
-
-        next.registry.set(pos, key);
-      });
-      return next;
-    },
-    apply(tr, value, _, newState) {
-      if (!tr.docChanged) return value;
-
-      const next = { ...value, registry: new Map<number, string>() };
-      newState.doc.descendants((_, pos) => {
-        const prevPos = tr.mapping.invert().map(pos);
-        const prevKey = value.registry.get(prevPos);
-        const key = prevKey ?? generateRandomKey();
-        next.registry.set(pos, key);
-      });
-      return next;
-    },
-  },
-});
-
 /**
  * Factory function for creating nodeViewConstructors that
  * render as React components.
@@ -186,10 +135,10 @@ export function createReactNodeViewConstructor(
 
     // A key to uniquely identify this element to React
     const key =
-      portalTreePlugin.getState(editorView.state)?.registry.get(getPos()) ??
-      generateRandomKey();
+      reactNodeViewPlugin.getState(editorView.state)?.registry.get(getPos()) ??
+      createRegistryKey();
 
-    const initialPortalTreeSeed = portalTreePlugin.getState(
+    const initialPortalTreeSeed = reactNodeViewPlugin.getState(
       editorView.state
     )?.seed;
 
@@ -329,7 +278,7 @@ export function createReactNodeViewConstructor(
       ) {
         // If this node view's parent has been removed from the registry, we
         // need to rebuild it and its children with new registry keys
-        const nextPortalTreeSeed = portalTreePlugin.getState(
+        const nextPortalTreeSeed = reactNodeViewPlugin.getState(
           editorView.state
         )?.seed;
         if (nextPortalTreeSeed !== initialPortalTreeSeed) {
@@ -355,5 +304,5 @@ export function createReactNodeViewConstructor(
     };
   }
 
-  return nodeViewConstructor;
+  return Object.assign(nodeViewConstructor, { [REACT_NODE_VIEW]: true });
 }

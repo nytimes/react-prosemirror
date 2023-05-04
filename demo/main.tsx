@@ -22,10 +22,8 @@ import {
   useEditorState,
   useNodeViews,
 } from "../src/index.js";
-import {
-  ReactNodeViewConstructor,
-  portalTreePlugin,
-} from "../src/nodeViews/createReactNodeViewConstructor.js";
+import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
+import { reactNodeViewPlugin } from "../src/plugins/reactNodeViewPlugin.js";
 
 import "./main.css";
 
@@ -34,7 +32,7 @@ const schema = new Schema({
     doc: { content: "block+" },
     paragraph: { group: "block", content: "inline*" },
     list: { group: "block", content: "list_item+" },
-    list_item: { content: "paragraph+" },
+    list_item: { content: "paragraph+", toDOM: () => ["li", 0] },
     text: { group: "inline" },
   },
 });
@@ -60,7 +58,7 @@ const editorState = EditorState.create({
       "Shift-Enter": baseKeymap.Enter,
       "Shift-Tab": liftListItem(schema.nodes.list_item),
     }),
-    portalTreePlugin,
+    reactNodeViewPlugin,
   ],
 });
 
