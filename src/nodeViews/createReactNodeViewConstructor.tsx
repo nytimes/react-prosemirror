@@ -8,7 +8,6 @@ import type {
 } from "prosemirror-view";
 import React, {
   Dispatch,
-  ReactHTML,
   SetStateAction,
   forwardRef,
   useImperativeHandle,
@@ -16,6 +15,8 @@ import React, {
 } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
+
+import { phrasingContentTags } from "./phrasingContentTags.js";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
@@ -106,10 +107,16 @@ export function createReactNodeViewConstructor(
 
     const { dom, contentDOM, component: ReactComponent } = reactNodeView;
 
-    const ContentDOMElementType = contentDOM?.tagName.toLocaleLowerCase() as
-      | keyof ReactHTML
-      | undefined;
-
+    // Use a span if the provided contentDOM is in the "phrasing" content
+    // category. Otherwise use a div. This is our best attempt at not
+    // breaking the intended content model, for now.
+    //
+    // https://developer.mozilla.org/en-US/docs/Web/HTML/Content_categories#phrasing_content
+    const ContentDOMWrapper =
+      contentDOM &&
+      (phrasingContentTags.includes(contentDOM.tagName.toLocaleLowerCase())
+        ? "span"
+        : "div");
     /**
      * Wrapper component to provide some imperative handles for updating
      * and re-rendering its child. Takes and renders an arbitrary ElementType
@@ -152,10 +159,10 @@ export function createReactNodeViewConstructor(
           decorations={decorations}
           isSelected={isSelected}
         >
-          {ContentDOMElementType && (
-            <ContentDOMElementType
-              // @ts-expect-error There are too many HTML tags, so typescript won't compute this union type
-              ref={(nextContentDOMWrapper: HTMLElement | null) => {
+          {ContentDOMWrapper && (
+            <ContentDOMWrapper
+              style={{ display: "contents" }}
+              ref={(nextContentDOMWrapper) => {
                 setContentDOMWrapper(nextContentDOMWrapper);
               }}
             />
