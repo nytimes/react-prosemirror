@@ -14,6 +14,7 @@ import React, {
   useImperativeHandle,
   useMemo,
   useState,
+  useCallback,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -22,6 +23,8 @@ import {
   PortalRegistryContext,
   PortalRegistryKey,
 } from "../contexts/PortalRegistryContext.js";
+import { useEditorEffect } from "../hooks/useEditorEffect.js";
+import { useEditorState } from "../hooks/useEditorState.js";
 import {
   REACT_NODE_VIEW,
   createRegistryKey,
@@ -59,11 +62,54 @@ interface NodeViewWrapperRef {
   setIsSelected: Dispatch<SetStateAction<boolean>>;
 }
 
+type NodeViewProps = {
+  node: Node;
+  pos: number;
+};
+
+function useChildNodeViews(node: Node, getPos: () => number) {
+  const portals = useContext(PortalRegistryContext);
+  const [children, setChildren] = useState<JSX.Element[]>([]);
+
+  useEditorEffect(
+    (view) => {
+      if (!view) return;
+      console.log("in usechildnodes");
+
+      const positionRegistry = reactNodeViewPlugin.getState(view.state)!;
+
+      const childPositions: { node: Node; pos: number }[] = [];
+      node.forEach((child, offset) => {
+        childPositions.push({ node: child, pos: getPos() + 1 + offset });
+      });
+
+      setChildren(
+        childPositions
+          .filter(({ node }) => !node.isText)
+          .map(({ node, pos }) => {
+            const key = positionRegistry.get(pos)!;
+            // console.log(node.type.name, node.textContent, key);
+            const portal = portals[key];
+            return portal ?? <PlainNodeView key={key} node={node} pos={pos} />;
+          })
+      );
+    },
+    [node, portals, getPos]
+  );
+
+  return children;
+}
+
+export function PlainNodeView({ node, pos }: NodeViewProps) {
+  console.log(`rendering ${node.type.name} at ${pos}`);
+  const getPos = useCallback(() => pos, [pos]);
+  const children = useChildNodeViews(node, getPos);
+  return <>{children}</>;
+}
+
 export type UnregisterElement = () => void;
 
 export type RegisterElement = (
-  registrationKey: PortalRegistryKey,
-  getPos: () => number,
   ...args: Parameters<typeof createPortal>
 ) => UnregisterElement;
 
@@ -110,6 +156,7 @@ export function createReactNodeViewConstructor(
     decorations: readonly Decoration[],
     innerDecorations: DecorationSource
   ): NodeView {
+    console.log(node.type.name, "create");
     const reactNodeView = reactNodeViewConstructor(
       node,
       editorView,
@@ -151,6 +198,7 @@ export function createReactNodeViewConstructor(
       ref
     ) {
       const [node, setNode] = useState<Node>(initialState.node);
+      console.log(`rendering ${node.type.name} at ${getPos()}`);
       const [decorations, setDecorations] = useState<readonly Decoration[]>(
         initialState.decorations
       );
@@ -158,15 +206,7 @@ export function createReactNodeViewConstructor(
         initialState.isSelected
       );
 
-      const portalRegistry = useContext(PortalRegistryContext);
-      const childRegisteredPortals = portalRegistry[key];
-      const childPortals = useMemo(
-        () =>
-          childRegisteredPortals
-            ?.sort((a, b) => a.getPos() - b.getPos())
-            .map(({ portal }) => portal),
-        [childRegisteredPortals]
-      );
+      const children = useChildNodeViews(node, getPos);
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -190,7 +230,7 @@ export function createReactNodeViewConstructor(
           decorations={decorations}
           isSelected={isSelected}
         >
-          {childPortals}
+          {children}
           {ContentDOMWrapper && (
             <ContentDOMWrapper
               style={{ display: "contents" }}
@@ -246,13 +286,7 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const unregisterElement = registerElement(
-      findNearestRegistryKey(editorView, getPos()),
-      getPos,
-      element,
-      dom as HTMLElement,
-      key
-    );
+    const unregisterElement = registerElement(element, dom as HTMLElement, key);
 
     return {
       ignoreMutation(record: MutationRecord) {
@@ -272,12 +306,13 @@ export function createReactNodeViewConstructor(
         decorations: readonly Decoration[],
         innerDecorations: DecorationSource
       ) {
+        console.log(node.type.name, "update");
         // If this node view's parent has been removed from the registry, we
         // need to rebuild it and its children with new registry keys
-        const positionRegistry = reactNodeViewPlugin.getState(editorView.state);
-        if (positionRegistry && key !== positionRegistry.get(getPos())) {
-          return false;
-        }
+        // const positionRegistry = reactNodeViewPlugin.getState(editorView.state);
+        // if (positionRegistry && key !== positionRegistry.get(getPos())) {
+        //   return false;
+        // }
 
         if (
           reactNodeView.update?.(node, decorations, innerDecorations) === false
@@ -292,6 +327,7 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
+        console.log(node.type.name, "destroy");
         unregisterElement();
         reactNodeView.destroy?.();
       },

@@ -15,8 +15,8 @@ export type PortalRegistry = Record<PortalRegistryKey, RegisteredPortal[]>;
  * key, allowing portals to be rendered with the appropriate
  * hierarchy.
  */
-export const PortalRegistryContext = createContext<PortalRegistry>(
-  null as unknown as PortalRegistry
+export const PortalRegistryContext = createContext<Record<string, ReactPortal>>(
+  null as unknown as Record<string, ReactPortal>
 );
 
 /**
