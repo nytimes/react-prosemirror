@@ -34,9 +34,9 @@ export function findNearestRegistryKey(
     const ancestorNodeTypeName = $pos.node(d).type.name;
     const ancestorNodeView = editorView.props.nodeViews?.[
       ancestorNodeTypeName
-    ] as NodeViewConstructor & { [REACT_NODE_VIEW]?: true };
+    ] as (NodeViewConstructor & { [REACT_NODE_VIEW]?: true }) | undefined;
 
-    if (!ancestorNodeView[REACT_NODE_VIEW]) continue;
+    if (!ancestorNodeView?.[REACT_NODE_VIEW]) continue;
 
     const ancestorPos = $pos.before(d);
     const ancestorKey = positionRegistry.get(ancestorPos);
@@ -85,11 +85,17 @@ export const reactNodeViewPlugin = new Plugin({
       if (!tr.docChanged) return value;
 
       const next = new Map<number, string>();
+      const nextKeys = new Set<string>();
       newState.doc.descendants((_, pos) => {
         const prevPos = tr.mapping.invert().map(pos);
-        const prevKey = value.get(prevPos);
-        const key = prevKey ?? createRegistryKey();
+        const prevKey = value.get(prevPos) ?? createRegistryKey();
+        // If several consecutive nodes are added in a single transaction,
+        // their positions will map back to the same previous position.
+        // We need a new key for each new node, so we have to verify uniqueness
+        // here.
+        const key = nextKeys.has(prevKey) ? createRegistryKey() : prevKey;
         next.set(pos, key);
+        nextKeys.add(key);
       });
       return next;
     },
