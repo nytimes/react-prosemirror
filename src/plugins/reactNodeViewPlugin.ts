@@ -78,6 +78,7 @@ export const reactNodeViewPlugin = new Plugin({
         const key = createRegistryKey();
 
         next.set(pos, key);
+        return true;
       });
       return next;
     },
@@ -86,7 +87,9 @@ export const reactNodeViewPlugin = new Plugin({
 
       const next = new Map<number, string>();
       const nextKeys = new Set<string>();
-      newState.doc.descendants((_, pos) => {
+      newState.doc.descendants((node, pos) => {
+        if (node.isText) return false;
+
         const prevPos = tr.mapping.invert().map(pos);
         const prevKey = value.get(prevPos) ?? createRegistryKey();
         // If this transaction adds a new node, there will be multiple

@@ -59,6 +59,7 @@ interface NodeViewWrapperRef {
 export type UnregisterElement = () => void;
 
 export type RegisterPortal = (
+  view: EditorView,
   getPos: () => number,
   portal: ReactPortal
 ) => UnregisterElement;
@@ -248,7 +249,7 @@ export function createReactNodeViewConstructor(
 
     const portal = createPortal(element, dom as HTMLElement, key);
 
-    const unregisterElement = registerPortal(getPos, portal);
+    const unregisterElement = registerPortal(editorView, getPos, portal);
 
     return {
       ignoreMutation(record: MutationRecord) {
