@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { ReactPortal, useCallback, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
@@ -12,19 +12,28 @@ import {
   createReactNodeViewConstructor,
 } from "../nodeViews/createReactNodeViewConstructor.js";
 
+import { useEditorEffect } from "./useEditorEffect.js";
+
 type Props = {
   portals: PortalRegistry;
 };
 
 function NodeViews({ portals }: Props) {
   const rootRegisteredPortals = portals[PORTAL_REGISTRY_ROOT_KEY];
-  const rootPortals = useMemo(
-    () =>
+  const [rootPortals, setRootPortals] = useState<ReactPortal[]>(
+    rootRegisteredPortals.map(({ portal }) => portal)
+  );
+
+  // `getPos` is technically derived from the EditorView
+  // state, so it's not safe to call until after the EditorView
+  // has been updated
+  useEditorEffect(() => {
+    setRootPortals(
       rootRegisteredPortals
         ?.sort((a, b) => a.getPos() - b.getPos())
-        .map(({ portal }) => portal),
-    [rootRegisteredPortals]
-  );
+        .map(({ portal }) => portal)
+    );
+  }, [rootRegisteredPortals]);
 
   return (
     <PortalRegistryContext.Provider value={portals}>

@@ -8,11 +8,11 @@ import type {
 } from "prosemirror-view";
 import React, {
   Dispatch,
+  ReactPortal,
   SetStateAction,
   forwardRef,
   useContext,
   useImperativeHandle,
-  useMemo,
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
@@ -22,6 +22,7 @@ import {
   PortalRegistryContext,
   PortalRegistryKey,
 } from "../contexts/PortalRegistryContext.js";
+import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import {
   REACT_NODE_VIEW,
   createRegistryKey,
@@ -160,13 +161,17 @@ export function createReactNodeViewConstructor(
 
       const portalRegistry = useContext(PortalRegistryContext);
       const childRegisteredPortals = portalRegistry[key];
-      const childPortals = useMemo(
-        () =>
+      const [childPortals, setChildPortals] = useState<
+        ReactPortal[] | undefined
+      >(childRegisteredPortals?.map(({ portal }) => portal));
+
+      useEditorEffect(() => {
+        setChildPortals(
           childRegisteredPortals
             ?.sort((a, b) => a.getPos() - b.getPos())
-            .map(({ portal }) => portal),
-        [childRegisteredPortals]
-      );
+            .map(({ portal }) => portal)
+        );
+      }, [childRegisteredPortals]);
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);

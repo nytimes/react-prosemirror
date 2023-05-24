@@ -89,13 +89,13 @@ export const reactNodeViewPlugin = new Plugin({
       newState.doc.descendants((_, pos) => {
         const prevPos = tr.mapping.invert().map(pos);
         const prevKey = value.get(prevPos) ?? createRegistryKey();
-        // If several consecutive nodes are added in a single transaction,
-        // their positions will map back to the same previous position.
-        // We need a new key for each new node, so we have to verify uniqueness
-        // here.
+        // If this transaction adds a new node, there will be multiple
+        // nodes that map back to the same initial position. In this case,
+        // create new keys for new nodes.
         const key = nextKeys.has(prevKey) ? createRegistryKey() : prevKey;
         next.set(pos, key);
         nextKeys.add(key);
+        return true;
       });
       return next;
     },

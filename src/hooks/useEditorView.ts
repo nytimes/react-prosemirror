@@ -79,7 +79,6 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
-  // const [keyRegistry];
 
   const forceUpdate = useForceUpdate();
 
