@@ -18,15 +18,11 @@ import React, {
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import {
-  PortalRegistryContext,
-  PortalRegistryKey,
-} from "../contexts/PortalRegistryContext.js";
+import { PortalRegistryContext } from "../contexts/PortalRegistryContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import {
   REACT_NODE_VIEW,
   createRegistryKey,
-  findNearestRegistryKey,
   reactNodeViewPlugin,
 } from "../plugins/reactNodeViewPlugin.js";
 
@@ -62,10 +58,9 @@ interface NodeViewWrapperRef {
 
 export type UnregisterElement = () => void;
 
-export type RegisterElement = (
-  registrationKey: PortalRegistryKey,
+export type RegisterPortal = (
   getPos: () => number,
-  ...args: Parameters<typeof createPortal>
+  portal: ReactPortal
 ) => UnregisterElement;
 
 type _ReactNodeView = NodeView & {
@@ -102,7 +97,7 @@ export type ReactNodeViewConstructor = (
  */
 export function createReactNodeViewConstructor(
   reactNodeViewConstructor: ReactNodeViewConstructor,
-  registerElement: RegisterElement
+  registerPortal: RegisterPortal
 ) {
   function nodeViewConstructor(
     node: Node,
@@ -251,13 +246,9 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const unregisterElement = registerElement(
-      findNearestRegistryKey(editorView, getPos()),
-      getPos,
-      element,
-      dom as HTMLElement,
-      key
-    );
+    const portal = createPortal(element, dom as HTMLElement, key);
+
+    const unregisterElement = registerPortal(getPos, portal);
 
     return {
       ignoreMutation(record: MutationRecord) {

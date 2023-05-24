@@ -1,5 +1,4 @@
-import React, { ReactPortal, useCallback, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import React, { ReactPortal, useMemo, useState } from "react";
 
 import {
   PORTAL_REGISTRY_ROOT_KEY,
@@ -8,11 +7,13 @@ import {
 } from "../contexts/PortalRegistryContext.js";
 import {
   ReactNodeViewConstructor,
-  RegisterElement,
+  RegisterPortal,
   createReactNodeViewConstructor,
 } from "../nodeViews/createReactNodeViewConstructor.js";
+import { findNearestRegistryKey } from "../plugins/reactNodeViewPlugin.js";
 
 import { useEditorEffect } from "./useEditorEffect.js";
+import { useEditorEventCallback } from "./useEditorEventCallback.js";
 
 type Props = {
   portals: PortalRegistry;
@@ -47,32 +48,35 @@ export function useNodeViews(
 ) {
   const [portals, setPortals] = useState({} as PortalRegistry);
 
-  const registerPortal: RegisterElement = useCallback(
-    (registrationKey, getPos, child, container, key) => {
-      const portal = createPortal(child, container, key);
+  const registerPortal: RegisterPortal = useEditorEventCallback(
+    (view, getPos: () => number, portal: ReactPortal) => {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      if (!view) return () => {};
+
+      const nearestAncestorKey = findNearestRegistryKey(view, getPos());
+
       setPortals((oldPortals) => {
-        const oldChildPortals = oldPortals[registrationKey] ?? [];
+        const oldChildPortals = oldPortals[nearestAncestorKey] ?? [];
         const newChildPortals = oldChildPortals.concat({ getPos, portal });
         return {
           ...oldPortals,
-          [registrationKey]: newChildPortals,
+          [nearestAncestorKey]: newChildPortals,
         };
       });
 
       return () => {
         setPortals((oldPortals) => {
-          const oldChildPortals = oldPortals[registrationKey] ?? [];
+          const oldChildPortals = oldPortals[nearestAncestorKey] ?? [];
           const newChildPortals = oldChildPortals.filter(
             ({ portal: p }) => p !== portal
           );
           return {
             ...oldPortals,
-            [registrationKey]: newChildPortals,
+            [nearestAncestorKey]: newChildPortals,
           };
         });
       };
-    },
-    []
+    }
   );
 
   const reactNodeViews = useMemo(() => {

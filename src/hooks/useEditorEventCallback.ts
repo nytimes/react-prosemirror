@@ -18,8 +18,8 @@ import { useEditorEffect } from "./useEditorEffect.js";
  * component that is mounted as a child of both of these
  * providers.
  */
-export function useEditorEventCallback<T extends unknown[]>(
-  callback: (view: EditorView | null, ...args: T) => void
+export function useEditorEventCallback<T extends unknown[], R>(
+  callback: (view: EditorView | null, ...args: T) => R
 ) {
   const ref = useRef(callback);
   const { editorView } = useContext(EditorContext);
