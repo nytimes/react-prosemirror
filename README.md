@@ -36,6 +36,7 @@ yarn add @nytimes/react-prosemirror
   - [`useEditorEventCallback`](#useeditoreventcallback-1)
   - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
+  - [`useNodePos`](#usenodepos)
   - [`useNodeViews`](#usenodeviews)
 
 <!-- tocstop -->
@@ -277,12 +278,13 @@ You can use this hook to implement custom behavior in your NodeViews:
 ```tsx
 import { useEditorEventListener } from "@nytimes/react-prosemirror";
 
-function Paragraph({ node, getPos, children }) {
+function Paragraph({ node, children }) {
+  const nodeStart = useNodePos();
+
   useEditorEventListener("keydown", (view, event) => {
     if (event.code !== "ArrowDown") {
       return false;
     }
-    const nodeStart = getPos();
     const nodeEnd = nodeStart + node.nodeSize;
     const { selection } = view.state;
     if (selection.anchor < nodeStart || selection.anchor > nodeEnd) {
@@ -569,6 +571,19 @@ export function SelectionWidget() {
   )
 }
 ```
+
+### `useNodePos`
+
+```tsx
+type useNodePos = () => number;
+```
+
+Returns the node's current position in the document. Takes the place of
+ProseMirror's `getPos` function that gets passed to NodeView's, which is unsafe
+to use in React render functions.
+
+This hook can only be used in React components rendered with
+[`useNodeViews`](#usenodeviews).
 
 ### `useNodeViews`
 
