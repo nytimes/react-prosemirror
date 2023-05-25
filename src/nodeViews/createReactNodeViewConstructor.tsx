@@ -16,11 +16,13 @@ import React, {
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { NodePosProvider } from "../hooks/useNodePos.js";
+import { createNodeKey, reactPluginKey } from "../plugins/react.js";
+
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
-  getPos: () => number;
   node: Node;
   children: ReactNode;
   isSelected: boolean;
@@ -33,8 +35,6 @@ interface NodeViewWrapperState {
 }
 
 interface NodeViewWrapperProps {
-  editorView: EditorView;
-  getPos: () => number;
   initialState: NodeViewWrapperState;
 }
 
@@ -117,6 +117,11 @@ export function createReactNodeViewConstructor(
       (phrasingContentTags.includes(contentDOM.tagName.toLocaleLowerCase())
         ? "span"
         : "div");
+
+    const nodeKey =
+      reactPluginKey.getState(editorView.state)?.posToKey.get(getPos()) ??
+      createNodeKey();
+
     /**
      * Wrapper component to provide some imperative handles for updating
      * and re-rendering its child. Takes and renders an arbitrary ElementType
@@ -125,10 +130,7 @@ export function createReactNodeViewConstructor(
     const NodeViewWrapper = forwardRef<
       NodeViewWrapperRef,
       NodeViewWrapperProps
-    >(function NodeViewWrapper(
-      { initialState, getPos }: NodeViewWrapperProps,
-      ref
-    ) {
+    >(function NodeViewWrapper({ initialState }: NodeViewWrapperProps, ref) {
       const [node, setNode] = useState<Node>(initialState.node);
       const [decorations, setDecorations] = useState<readonly Decoration[]>(
         initialState.decorations
@@ -153,21 +155,22 @@ export function createReactNodeViewConstructor(
       );
 
       return (
-        <ReactComponent
-          getPos={getPos}
-          node={node}
-          decorations={decorations}
-          isSelected={isSelected}
-        >
-          {ContentDOMWrapper && (
-            <ContentDOMWrapper
-              style={{ display: "contents" }}
-              ref={(nextContentDOMWrapper) => {
-                setContentDOMWrapper(nextContentDOMWrapper);
-              }}
-            />
-          )}
-        </ReactComponent>
+        <NodePosProvider key={nodeKey}>
+          <ReactComponent
+            node={node}
+            decorations={decorations}
+            isSelected={isSelected}
+          >
+            {ContentDOMWrapper && (
+              <ContentDOMWrapper
+                style={{ display: "contents" }}
+                ref={(nextContentDOMWrapper) => {
+                  setContentDOMWrapper(nextContentDOMWrapper);
+                }}
+              />
+            )}
+          </ReactComponent>
+        </NodePosProvider>
       );
     });
 
@@ -178,8 +181,6 @@ export function createReactNodeViewConstructor(
     const element = (
       <NodeViewWrapper
         initialState={{ node, decorations, isSelected: false }}
-        editorView={editorView}
-        getPos={getPos}
         ref={(c) => {
           componentRef = c;
 
