@@ -11,7 +11,7 @@ export type EventHandler<
 ) => boolean | void;
 
 export function componentEventListeners(
-  eventHandlerRegistry: Map<keyof DOMEventMap, Set<EventHandler>>
+  eventHandlerRegistry: Map<keyof DOMEventMap, Iterable<EventHandler>>
 ) {
   const domEventHandlers: Record<keyof DOMEventMap, EventHandler> = {};
 
