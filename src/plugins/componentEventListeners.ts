@@ -10,7 +10,7 @@ export type EventHandler<
   event: DOMEventMap[EventType]
 ) => boolean | void;
 
-export function createComponentEventListenersPlugin(
+export function componentEventListeners(
   eventHandlerRegistry: Map<keyof DOMEventMap, Set<EventHandler>>
 ) {
   const domEventHandlers: Record<keyof DOMEventMap, EventHandler> = {};
@@ -31,7 +31,7 @@ export function createComponentEventListenersPlugin(
   }
 
   const plugin = new Plugin({
-    key: new PluginKey("componentEventListeners"),
+    key: new PluginKey("@nytimes/react-prosemirror/componentEventListeners"),
     props: {
       handleDOMEvents: domEventHandlers,
     },

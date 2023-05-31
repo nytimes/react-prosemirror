@@ -3,7 +3,7 @@ import React, { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { EditorProvider } from "../contexts/EditorContext.js";
-import { useComponentEventListenersPlugin } from "../hooks/useComponentEventListenersPlugin.js";
+import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 
 export type ProseMirrorProps = DirectEditorProps & {
@@ -43,7 +43,7 @@ export function ProseMirrorInner({
     componentEventListenersPlugin,
     registerEventListener,
     unregisterEventListener,
-  } = useComponentEventListenersPlugin();
+  } = useComponentEventListeners();
 
   const plugins = useMemo(
     () => [...(editorProps.plugins ?? []), componentEventListenersPlugin],

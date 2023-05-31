@@ -2,7 +2,7 @@
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 
-import { reactNodeViewPlugin } from "../reactNodeViewPlugin.js";
+import { react, reactPluginKey } from "../react.js";
 
 const schema = new Schema({
   nodes: {
@@ -22,10 +22,10 @@ describe("reactNodeViewPlugin", () => {
         schema.nodes.paragraph.create(),
         schema.nodes.paragraph.create(),
       ]),
-      plugins: [reactNodeViewPlugin],
+      plugins: [react()],
     });
 
-    const pluginState = reactNodeViewPlugin.getState(editorState)!;
+    const pluginState = reactPluginKey.getState(editorState)!;
     expect(pluginState.posToKey.size).toBe(3);
   });
 
@@ -36,16 +36,15 @@ describe("reactNodeViewPlugin", () => {
         schema.nodes.paragraph.create(),
         schema.nodes.paragraph.create(),
       ]),
-      plugins: [reactNodeViewPlugin],
+      plugins: [react()],
     });
 
-    const initialPluginState =
-      reactNodeViewPlugin.getState(initialEditorState)!;
+    const initialPluginState = reactPluginKey.getState(initialEditorState)!;
 
     const nextEditorState = initialEditorState.apply(
       initialEditorState.tr.insertText("Hello, world!", 1)
     );
-    const nextPluginState = reactNodeViewPlugin.getState(nextEditorState)!;
+    const nextPluginState = reactPluginKey.getState(nextEditorState)!;
 
     expect(Array.from(initialPluginState.keyToPos.keys())).toEqual(
       Array.from(nextPluginState.keyToPos.keys())
@@ -59,16 +58,15 @@ describe("reactNodeViewPlugin", () => {
         schema.nodes.paragraph.create(),
         schema.nodes.paragraph.create(),
       ]),
-      plugins: [reactNodeViewPlugin],
+      plugins: [react()],
     });
 
-    const initialPluginState =
-      reactNodeViewPlugin.getState(initialEditorState)!;
+    const initialPluginState = reactPluginKey.getState(initialEditorState)!;
 
     const nextEditorState = initialEditorState.apply(
       initialEditorState.tr.insert(0, schema.nodes.list.createAndFill()!)
     );
-    const nextPluginState = reactNodeViewPlugin.getState(nextEditorState)!;
+    const nextPluginState = reactPluginKey.getState(nextEditorState)!;
 
     // Adds new keys for new nodes
     expect(nextPluginState.keyToPos.size).toBe(5);

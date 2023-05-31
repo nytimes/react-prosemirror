@@ -3,8 +3,8 @@ import { useCallback, useMemo, useState } from "react";
 
 import {
   EventHandler,
-  createComponentEventListenersPlugin,
-} from "../plugins/componentEventListenersPlugin.js";
+  componentEventListeners,
+} from "../plugins/componentEventListeners.js";
 
 /**
  * Produces a plugin that can be used with ProseMirror to handle DOM
@@ -32,7 +32,7 @@ import {
  * To accomplish this, we shallowly clone the registry whenever a new event
  * type is registered.
  */
-export function useComponentEventListenersPlugin() {
+export function useComponentEventListeners() {
   const [registry, setRegistry] = useState(
     new Map<keyof DOMEventMap, Set<EventHandler>>()
   );
@@ -58,7 +58,7 @@ export function useComponentEventListenersPlugin() {
   );
 
   const componentEventListenersPlugin = useMemo(
-    () => createComponentEventListenersPlugin(registry),
+    () => componentEventListeners(registry),
     [registry]
   );
 
