@@ -21,10 +21,11 @@ import { createPortal } from "react-dom";
 import { PortalRegistryContext } from "../contexts/PortalRegistryContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import {
-  REACT_NODE_VIEW,
-  createRegistryKey,
-  reactNodeViewPlugin,
-} from "../plugins/reactNodeViewPlugin.js";
+  NodeKey,
+  ROOT_NODE_KEY,
+  createNodeKey,
+  reactPluginKey,
+} from "../plugins/react.js";
 
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
@@ -81,6 +82,45 @@ export type ReactNodeViewConstructor = (
 ) => ReactNodeView;
 
 /**
+ * Identifies a node view constructor as having been created
+ * by @nytimes/react-prosemirror
+ */
+export const REACT_NODE_VIEW = Symbol("react node view");
+
+/**
+ * Searches upward for the nearest node with a registry key,
+ * returning the first registry key it finds associated with
+ * a React node view.
+ *
+ * Returns the root key if no ancestor nodes have registry keys.
+ */
+export function findNearestNodeKey(
+  editorView: EditorView,
+  pos: number
+): NodeKey {
+  const pluginState = reactPluginKey.getState(editorView.state);
+  if (!pluginState) return ROOT_NODE_KEY;
+
+  const $pos = editorView.state.doc.resolve(pos);
+
+  for (let d = $pos.depth; d > 0; d--) {
+    const ancestorNodeTypeName = $pos.node(d).type.name;
+    const ancestorNodeView = editorView.props.nodeViews?.[
+      ancestorNodeTypeName
+    ] as (NodeViewConstructor & { [REACT_NODE_VIEW]?: true }) | undefined;
+
+    if (!ancestorNodeView?.[REACT_NODE_VIEW]) continue;
+
+    const ancestorPos = $pos.before(d);
+    const ancestorKey = pluginState.posToKey.get(ancestorPos);
+
+    if (ancestorKey) return ancestorKey;
+  }
+
+  return ROOT_NODE_KEY;
+}
+
+/**
  * Factory function for creating nodeViewConstructors that
  * render as React components.
  *
@@ -132,8 +172,8 @@ export function createReactNodeViewConstructor(
 
     // A key to uniquely identify this element to React
     const key =
-      reactNodeViewPlugin.getState(editorView.state)?.get(getPos()) ??
-      createRegistryKey();
+      reactPluginKey.getState(editorView.state)?.posToKey.get(getPos()) ??
+      createNodeKey();
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -271,8 +311,11 @@ export function createReactNodeViewConstructor(
       ) {
         // If this node view's parent has been removed from the registry, we
         // need to rebuild it and its children with new registry keys
-        const positionRegistry = reactNodeViewPlugin.getState(editorView.state);
-        if (positionRegistry && key !== positionRegistry.get(getPos())) {
+        const positionRegistry = reactPluginKey.getState(editorView.state);
+        if (
+          positionRegistry &&
+          key !== positionRegistry.posToKey.get(getPos())
+        ) {
           return false;
         }
 

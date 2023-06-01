@@ -2,7 +2,6 @@ import { EditorView } from "prosemirror-view";
 import React, { ReactPortal, useCallback, useMemo, useState } from "react";
 
 import {
-  PORTAL_REGISTRY_ROOT_KEY,
   PortalRegistry,
   PortalRegistryContext,
 } from "../contexts/PortalRegistryContext.js";
@@ -10,8 +9,9 @@ import {
   ReactNodeViewConstructor,
   RegisterPortal,
   createReactNodeViewConstructor,
+  findNearestNodeKey,
 } from "../nodeViews/createReactNodeViewConstructor.js";
-import { findNearestRegistryKey } from "../plugins/reactNodeViewPlugin.js";
+import { ROOT_NODE_KEY } from "../plugins/react.js";
 
 import { useEditorEffect } from "./useEditorEffect.js";
 
@@ -20,7 +20,7 @@ type Props = {
 };
 
 function NodeViews({ portals }: Props) {
-  const rootRegisteredPortals = portals[PORTAL_REGISTRY_ROOT_KEY];
+  const rootRegisteredPortals = portals[ROOT_NODE_KEY];
   const [rootPortals, setRootPortals] = useState<ReactPortal[]>(
     rootRegisteredPortals?.map(({ portal }) => portal)
   );
@@ -50,7 +50,7 @@ export function useNodeViews(
 
   const registerPortal: RegisterPortal = useCallback(
     (view: EditorView, getPos: () => number, portal: ReactPortal) => {
-      const nearestAncestorKey = findNearestRegistryKey(view, getPos());
+      const nearestAncestorKey = findNearestNodeKey(view, getPos());
 
       setPortals((oldPortals) => {
         const oldChildPortals = oldPortals[nearestAncestorKey] ?? [];

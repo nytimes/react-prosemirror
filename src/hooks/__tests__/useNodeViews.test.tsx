@@ -5,7 +5,7 @@ import React, { createContext, useContext, useState } from "react";
 
 import { ProseMirror } from "../../components/ProseMirror.js";
 import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
-import { reactNodeViewPlugin } from "../../plugins/reactNodeViewPlugin.js";
+import { react } from "../../plugins/react.js";
 import { useNodeViews } from "../useNodeViews.js";
 
 const schema = new Schema({
@@ -20,7 +20,7 @@ const schema = new Schema({
 const editorState = EditorState.create({
   doc: schema.topNodeType.create(null, schema.nodes.list.createAndFill()),
   schema,
-  plugins: [reactNodeViewPlugin],
+  plugins: [react()],
 });
 
 describe("useNodeViews", () => {
