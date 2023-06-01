@@ -1,12 +1,11 @@
-import type { DirectEditorProps } from "prosemirror-view";
 import React, { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import { EditorProvider } from "../contexts/EditorContext.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
-import { useEditorView } from "../hooks/useEditorView.js";
+import { EditorProps, useEditorView } from "../hooks/useEditorView.js";
 
-export type ProseMirrorProps = DirectEditorProps & {
+export type ProseMirrorProps = EditorProps & {
   mount: HTMLElement | null;
   children?: ReactNode | null;
 };
@@ -35,7 +34,6 @@ export type ProseMirrorProps = DirectEditorProps & {
 export function ProseMirrorInner({
   children,
   dispatchTransaction,
-  state,
   mount,
   ...editorProps
 }: ProseMirrorProps) {
@@ -53,18 +51,20 @@ export function ProseMirrorInner({
   const editorView = useEditorView(mount, {
     ...editorProps,
     plugins,
-    state,
     dispatchTransaction,
   });
+
+  const editorState =
+    "state" in editorProps ? editorProps.state : editorView?.state ?? null;
 
   const editorContextValue = useMemo(
     () => ({
       editorView,
-      editorState: state,
+      editorState,
       registerEventListener,
       unregisterEventListener,
     }),
-    [editorView, state, registerEventListener, unregisterEventListener]
+    [editorState, editorView, registerEventListener, unregisterEventListener]
   );
 
   return (
