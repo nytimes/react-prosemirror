@@ -37,7 +37,7 @@ yarn add @nytimes/react-prosemirror
   - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
   - [`useNodeViews`](#usenodeviews)
-  - [`reactNodeViewPlugin`](#reactnodeviewplugin)
+  - [`react`](#react)
 
 <!-- tocstop -->
 
@@ -320,9 +320,8 @@ EditorView and EditorState.
 The other way to integrate React and ProseMirror is to have ProseMirror render
 NodeViews using React components. This is somewhat more complex than the
 previous section. This library provides a `useNodeViews` hook, a factory for
-augmenting NodeView constructors with React components, and
-`reactNodeViewPlugin`, a ProseMirror Plugin for maintaining the React component
-hierarchy.
+augmenting NodeView constructors with React components, and `react`, a
+ProseMirror Plugin for maintaining the React component hierarchy.
 
 `useNodeViews` takes a map from node name to an extended NodeView constructor.
 The NodeView constructor must return at least a `dom` attribute and a
@@ -365,22 +364,19 @@ const reactNodeViews = {
   }),
 };
 
+const editorState = EditorState.create({
+  schema,
+  // You must add the react if you use
+  // the useNodeViews hook.
+  plugins: [react()],
+});
+
 function ProseMirrorEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   return (
-    <ProseMirror
-      mount={mount}
-      defaultState={EditorState.create({
-        schema,
-        // You must add the reactNodeViewPlugin if you use
-        // the useNodeViews hook.
-        plugins: [react()],
-      })}
-      nodeViews={nodeViews}
-    >
+    <ProseMirror mount={mount} defaultState={editorState} nodeViews={nodeViews}>
       <div ref={setMount} />
       {renderNodeViews()}
     </ProseMirror>
@@ -623,7 +619,7 @@ type useNodeViews = (nodeViews: Record<string, ReactNodeViewConstructor>) => {
 
 Hook for creating and rendering NodeViewConstructors that are powered by React
 components. To use this hook, you must also include
-[`reactNodeViewPlugin`](#reactnodeviewplugin) in your `EditorState`.
+[`react`](#reactnodeviewplugin) in your `EditorState`.
 
 `component` can be any React component that takes `NodeViewComponentProps`. It
 will be passed as props all of the arguments to the `nodeViewConstructor` except
@@ -637,10 +633,10 @@ this element. Like in ProseMirror, the existence of a `contentDOM` attribute
 determines whether a NodeView is contentful (i.e. the NodeView has editable
 content that should be managed by ProseMirror).
 
-### `reactNodeViewPlugin`
+### `react`
 
 ```tsx
-type reactNodeViewPlugin = Plugin<Map<number, string>>;
+type react = Plugin<Map<number, string>>;
 ```
 
 A ProseMirror Plugin that assists in maintaining the correct hierarchy for React

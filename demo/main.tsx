@@ -17,8 +17,6 @@ import { createRoot } from "react-dom/client";
 import {
   NodeViewComponentProps,
   ProseMirror,
-  useEditorEffect,
-  useEditorState,
   useNodeViews,
 } from "../src/index.js";
 import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";

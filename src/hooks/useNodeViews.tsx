@@ -9,7 +9,7 @@ import {
   ReactNodeViewConstructor,
   RegisterPortal,
   createReactNodeViewConstructor,
-  findNearestNodeKey,
+  findNodeKeyUp,
 } from "../nodeViews/createReactNodeViewConstructor.js";
 import { ROOT_NODE_KEY } from "../plugins/react.js";
 
@@ -50,7 +50,7 @@ export function useNodeViews(
 
   const registerPortal: RegisterPortal = useCallback(
     (view: EditorView, getPos: () => number, portal: ReactPortal) => {
-      const nearestAncestorKey = findNearestNodeKey(view, getPos());
+      const nearestAncestorKey = findNodeKeyUp(view, getPos());
 
       setPortals((oldPortals) => {
         const oldChildPortals = oldPortals[nearestAncestorKey] ?? [];

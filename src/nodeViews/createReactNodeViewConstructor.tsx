@@ -88,16 +88,13 @@ export type ReactNodeViewConstructor = (
 export const REACT_NODE_VIEW = Symbol("react node view");
 
 /**
- * Searches upward for the nearest node with a registry key,
- * returning the first registry key it finds associated with
+ * Searches upward for the nearest node with a node key,
+ * returning the first node key it finds associated with
  * a React node view.
  *
- * Returns the root key if no ancestor nodes have registry keys.
+ * Returns the root key if no ancestor nodes have node keys.
  */
-export function findNearestNodeKey(
-  editorView: EditorView,
-  pos: number
-): NodeKey {
+export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
   const pluginState = reactPluginKey.getState(editorView.state);
   if (!pluginState) return ROOT_NODE_KEY;
 
@@ -170,8 +167,7 @@ export function createReactNodeViewConstructor(
         ? "span"
         : "div");
 
-    // A key to uniquely identify this element to React
-    const key =
+    const nodeKey =
       reactPluginKey.getState(editorView.state)?.posToKey.get(getPos()) ??
       createNodeKey();
 
@@ -196,11 +192,14 @@ export function createReactNodeViewConstructor(
       );
 
       const portalRegistry = useContext(PortalRegistryContext);
-      const childRegisteredPortals = portalRegistry[key];
-      const [childPortals, setChildPortals] = useState<
-        ReactPortal[] | undefined
-      >(childRegisteredPortals?.map(({ portal }) => portal));
+      const childRegisteredPortals = portalRegistry[nodeKey];
+      const [childPortals, setChildPortals] = useState(
+        childRegisteredPortals?.map(({ portal }) => portal)
+      );
 
+      // `getPos` is technically derived from the EditorView
+      // state, so it's not safe to call until after the EditorView
+      // has been updated
       useEditorEffect(() => {
         setChildPortals(
           childRegisteredPortals
@@ -287,9 +286,9 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const portal = createPortal(element, dom as HTMLElement, key);
+    const portal = createPortal(element, dom as HTMLElement, nodeKey);
 
-    const unregisterElement = registerPortal(editorView, getPos, portal);
+    const unregisterPortal = registerPortal(editorView, getPos, portal);
 
     return {
       ignoreMutation(record: MutationRecord) {
@@ -314,7 +313,7 @@ export function createReactNodeViewConstructor(
         const positionRegistry = reactPluginKey.getState(editorView.state);
         if (
           positionRegistry &&
-          key !== positionRegistry.posToKey.get(getPos())
+          nodeKey !== positionRegistry.posToKey.get(getPos())
         ) {
           return false;
         }
@@ -332,7 +331,7 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
-        unregisterElement();
+        unregisterPortal();
         reactNodeView.destroy?.();
       },
     };
