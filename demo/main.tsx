@@ -9,6 +9,8 @@ import { createRoot } from "react-dom/client";
 import {
   NodeViewComponentProps,
   ProseMirror,
+  useEditorEffect,
+  useEditorState,
   useNodeViews,
 } from "../src/index.js";
 import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
@@ -47,7 +49,11 @@ function DemoEditor() {
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
-      <ProseMirror mount={mount} state={editorState} nodeViews={nodeViews}>
+      <ProseMirror
+        mount={mount}
+        defaultState={editorState}
+        nodeViews={nodeViews}
+      >
         <div ref={setMount} />
         {renderNodeViews()}
       </ProseMirror>

@@ -94,7 +94,7 @@ export function ProseMirrorEditor() {
   const [mount, setMount] = useState();
 
   return (
-    <ProseMirror mount={mount} state={EditorState.create({ schema })}>
+    <ProseMirror mount={mount} defaultState={EditorState.create({ schema })}>
       <div ref={setMount} />
     </ProseMirror>
   );
@@ -368,7 +368,7 @@ function ProseMirrorEditor() {
   return (
     <ProseMirror
       mount={mount}
-      state={EditorState.create({ schema })}
+      defaultState={EditorState.create({ schema })}
       nodeViews={nodeViews}
     >
       <div ref={setMount} />
@@ -383,13 +383,13 @@ function ProseMirrorEditor() {
 ### `ProseMirror`
 
 ```tsx
-type ProseMirror = (props: {
-  dispatchTransaction: (tr: Transaction) => void;
-  editorProps: EditorProps;
-  editorState: EditorState;
-  mount: HTMLElement | null;
-  children?: ReactNode | null;
-}) => JSX.Element;
+type ProseMirror = (
+  props: {
+    mount: HTMLElement;
+    children: ReactNode;
+  } & DirectEditorProps &
+    ({ defaultState: EditorState } | { state: EditorState })
+) => JSX.Element;
 ```
 
 Renders the ProseMirror View onto a DOM mount.

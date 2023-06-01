@@ -1,8 +1,10 @@
-import type { Transaction } from "prosemirror-state";
+import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
+
+import { useForceUpdate } from "./useForceUpdate.js";
 
 function withBatchedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
@@ -14,12 +16,19 @@ function withBatchedUpdates<This, T extends unknown[]>(
   };
 }
 
-const defaultDispatchTransaction = function (
-  this: EditorView,
-  tr: Transaction
-) {
-  batch(() => this.updateState(this.state.apply(tr)));
-};
+function defaultDispatchTransaction(this: EditorView, tr: Transaction) {
+  this.updateState(this.state.apply(tr));
+}
+
+type EditorStateProps =
+  | {
+      state: EditorState;
+    }
+  | {
+      defaultState: EditorState;
+    };
+
+export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
 
 /**
  * Enhances editor props so transactions dispatch in a batched update.
@@ -33,13 +42,25 @@ const defaultDispatchTransaction = function (
  * the Editor View unmodified after we upgrade to React 18, which batches every
  * update by default.
  */
-function withBatchedDispatch(props: DirectEditorProps): DirectEditorProps {
+function withBatchedDispatch(
+  props: EditorProps,
+  forceUpdate: () => void
+): EditorProps & {
+  dispatchTransaction: EditorView["dispatch"];
+} {
   return {
     ...props,
     ...{
-      dispatchTransaction: props.dispatchTransaction
-        ? withBatchedUpdates(props.dispatchTransaction)
-        : defaultDispatchTransaction,
+      dispatchTransaction: function dispatchTransaction(
+        this: EditorView,
+        tr: Transaction
+      ) {
+        const batchedDispatchTransaction = withBatchedUpdates(
+          props.dispatchTransaction ?? defaultDispatchTransaction
+        );
+        batchedDispatchTransaction.call(this, tr);
+        forceUpdate();
+      },
     },
   };
 }
@@ -55,12 +76,26 @@ function withBatchedDispatch(props: DirectEditorProps): DirectEditorProps {
  */
 export function useEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
-  props: DirectEditorProps
+  props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
 
-  props = withBatchedDispatch(props);
-  const { state, ...nonStateProps } = props;
+  const forceUpdate = useForceUpdate();
+
+  const editorProps = withBatchedDispatch(props, forceUpdate);
+
+  const stateProp = "state" in editorProps ? editorProps.state : undefined;
+
+  const state =
+    "defaultState" in editorProps
+      ? editorProps.defaultState
+      : editorProps.state;
+
+  const nonStateProps = Object.fromEntries(
+    Object.entries(editorProps).filter(
+      ([propName]) => propName !== "state" && propName !== "defaultState"
+    )
+  );
 
   useLayoutEffect(() => {
     return () => {
@@ -81,18 +116,26 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
 
     if (!view) {
-      setView(new EditorView({ mount }, props));
+      setView(
+        new EditorView(
+          { mount },
+          {
+            ...editorProps,
+            state,
+          }
+        )
+      );
       return;
     }
-  }, [mount, props, view]);
+  }, [editorProps, mount, state, view]);
 
   useLayoutEffect(() => {
     view?.setProps(nonStateProps);
   }, [view, nonStateProps]);
 
   useLayoutEffect(() => {
-    view?.setProps({ state });
-  }, [view, state]);
+    if (stateProp) view?.setProps({ state: stateProp });
+  }, [view, stateProp]);
 
   return view;
 }
