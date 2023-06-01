@@ -9,7 +9,6 @@ export { useEditorEventListener } from "./hooks/useEditorEventListener.js";
 export { useEditorState } from "./hooks/useEditorState.js";
 export { useEditorView } from "./hooks/useEditorView.js";
 export { useNodeViews } from "./hooks/useNodeViews.js";
-export { useComponentEventListenersPlugin } from "./hooks/useComponentEventListenersPlugin.js";
 
 export type {
   NodeViewComponentProps,

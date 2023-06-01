@@ -1,46 +1,10 @@
-import { Plugin, PluginKey } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
 import type { DOMEventMap } from "prosemirror-view";
 import { useCallback, useMemo, useState } from "react";
-import { unstable_batchedUpdates as batch } from "react-dom";
 
-export type EventHandler<
-  EventType extends keyof DOMEventMap = keyof DOMEventMap
-> = (
-  this: Plugin,
-  view: EditorView,
-  event: DOMEventMap[EventType]
-) => boolean | void;
-
-function createComponentEventListenersPlugin(
-  eventHandlerRegistry: Map<keyof DOMEventMap, Set<EventHandler>>
-) {
-  const domEventHandlers: Record<keyof DOMEventMap, EventHandler> = {};
-
-  for (const [eventType, handlers] of eventHandlerRegistry.entries()) {
-    function handleEvent(this: Plugin, view: EditorView, event: Event) {
-      for (const handler of handlers) {
-        let handled = false;
-        batch(() => {
-          handled = !!handler.call(this, view, event);
-        });
-        if (handled || event.defaultPrevented) return true;
-      }
-      return false;
-    }
-
-    domEventHandlers[eventType] = handleEvent;
-  }
-
-  const plugin = new Plugin({
-    key: new PluginKey("componentEventListeners"),
-    props: {
-      handleDOMEvents: domEventHandlers,
-    },
-  });
-
-  return plugin;
-}
+import {
+  EventHandler,
+  componentEventListeners,
+} from "../plugins/componentEventListeners.js";
 
 /**
  * Produces a plugin that can be used with ProseMirror to handle DOM
@@ -68,7 +32,7 @@ function createComponentEventListenersPlugin(
  * To accomplish this, we shallowly clone the registry whenever a new event
  * type is registered.
  */
-export function useComponentEventListenersPlugin() {
+export function useComponentEventListeners() {
   const [registry, setRegistry] = useState(
     new Map<keyof DOMEventMap, Set<EventHandler>>()
   );
@@ -94,7 +58,7 @@ export function useComponentEventListenersPlugin() {
   );
 
   const componentEventListenersPlugin = useMemo(
-    () => createComponentEventListenersPlugin(registry),
+    () => componentEventListeners(registry),
     [registry]
   );
 
