@@ -149,21 +149,27 @@ we can use `useEditorEffect`.
 
 ```tsx
 // SelectionWidget.tsx
-import { useEditorEffect } from "@nytimes/react-prosemirror";
+import { useRef } from "react"
+import { useEditorEffect } from "@nytimes/react-prosemirror"
 
 export function SelectionWidget() {
-  const [selectionCoords, setSelectionCoords] = useState()
+  const ref = useRef()
 
   useEditorEffect((view) => {
-    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+    if (!view || !ref.current) return
+
+    const viewClientRect = view.dom.getBoundingClientRect()
+    const coords = view.coordsAtPos(view.state.selection.anchor))
+
+    ref.current.style.top = coords.top - viewClientRect.top;
+    ref.current.style.left = coords.left - viewClientRect.left;
   })
 
   return (
     <div
+      ref={ref}
       style={{
-        position: "absolute";
-        left: selectionCoords.left;
-        top: selectionCoords.top;
+        position: "absolute"
       }}
     />
   )
@@ -549,21 +555,27 @@ EditorView lives in an ancestor component.
 Example usage:
 
 ```tsx
-import { useEditorEffect } from '@nytimes/react-prosemirror';
+import { useRef } from "react"
+import { useEditorEffect } from "@nytimes/react-prosemirror"
 
 export function SelectionWidget() {
-  const [selectionCoords, setSelectionCoords] = useState()
+  const ref = useRef()
 
   useEditorEffect((view) => {
-    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+    if (!view || !ref.current) return
+
+    const viewClientRect = view.dom.getBoundingClientRect()
+    const coords = view.coordsAtPos(view.state.selection.anchor))
+
+    ref.current.style.top = coords.top - viewClientRect.top;
+    ref.current.style.left = coords.left - viewClientRect.left;
   })
 
   return (
     <div
+      ref={ref}
       style={{
-        position: 'absolute';
-        left: selectionCoords.left;
-        top: selectionCoords.top;
+        position: "absolute"
       }}
     />
   )
