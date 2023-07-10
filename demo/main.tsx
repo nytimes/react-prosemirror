@@ -6,6 +6,7 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 
+import { EditorView } from "../src/components/EditorView.js";
 import {
   NodeViewComponentProps,
   ProseMirror,
@@ -20,7 +21,26 @@ import "./main.css";
 const schema = new Schema({
   nodes: {
     doc: { content: "block+" },
-    paragraph: { group: "block", content: "inline*" },
+    list: {
+      group: "block",
+      content: "list_item+",
+      toDOM() {
+        return ["ul", 0];
+      },
+    },
+    list_item: {
+      content: "paragraph+",
+      toDOM() {
+        return ["li", 0];
+      },
+    },
+    paragraph: {
+      group: "block",
+      content: "inline*",
+      toDOM() {
+        return ["p", 0];
+      },
+    },
     text: { group: "inline" },
   },
 });
@@ -42,21 +62,30 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   }),
 };
 
-function DemoEditor() {
-  const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-  const [mount, setMount] = useState<HTMLDivElement | null>(null);
+// function DemoEditor() {
+//   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
+//   const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
+//   return (
+//     <main>
+//       <h1>React ProseMirror Demo</h1>
+//       <ProseMirror
+//         mount={mount}
+//         defaultState={editorState}
+//         nodeViews={nodeViews}
+//       >
+//         <div ref={setMount} />
+//         {renderNodeViews()}
+//       </ProseMirror>
+//     </main>
+//   );
+// }
+
+function DemoEditor() {
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
-      <ProseMirror
-        mount={mount}
-        defaultState={editorState}
-        nodeViews={nodeViews}
-      >
-        <div ref={setMount} />
-        {renderNodeViews()}
-      </ProseMirror>
+      <EditorView defaultState={editorState}></EditorView>
     </main>
   );
 }
