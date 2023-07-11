@@ -1,8 +1,16 @@
+import {
+  chainCommands,
+  deleteSelection,
+  joinBackward,
+  selectNodeBackward,
+} from "prosemirror-commands";
 import { DOMOutputSpec, Node } from "prosemirror-model";
 import { EditorState, TextSelection, Transaction } from "prosemirror-state";
 import { DirectEditorProps } from "prosemirror-view";
 import React, {
   Children,
+  Component,
+  ReactElement,
   ReactNode,
   cloneElement,
   createContext,
@@ -14,11 +22,12 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { findDOMNode } from "react-dom";
 
 type EditorViewContextValue = {
   state: EditorState;
-  domToPos: Map<HTMLElement, number>;
-  posToDOM: Map<number, HTMLElement>;
+  domToPos: Map<Element | Text, number>;
+  posToDOM: Map<number, Element | Text>;
 };
 
 const EditorViewContext = createContext(
@@ -49,7 +58,7 @@ function renderSpec(outputSpec: DOMOutputSpec): ReactNode {
     const tagName = tagSpec.replace(" ", ":");
     const attrs = outputSpec[1];
 
-    const props: Record<string, any> = {};
+    const props: Record<string, unknown> = {};
     let start = 1;
     if (
       attrs &&
@@ -92,24 +101,82 @@ type NodeWrapperProps = {
 
 function NodeWrapper({ children, pos }: NodeWrapperProps) {
   const { posToDOM, domToPos } = useContext(EditorViewContext);
+  const ref = useRef<Element | null>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    posToDOM.set(pos, ref.current);
+    domToPos.set(ref.current, pos);
+  });
+
   const child = Children.only(children);
   if (!isValidElement(child)) return <>{child}</>;
 
-  const clonedChild = cloneElement(child, {
-    ref: (element: HTMLElement) => {
-      posToDOM.set(pos, element);
-      domToPos.set(element, pos);
+  const childElement = child as ReactElement;
+  const clonedChild = cloneElement(childElement, {
+    ref: (element: Element) => {
+      if ("ref" in childElement) {
+        if (typeof childElement.ref === "function") {
+          childElement.ref(element);
+        } else if (
+          typeof childElement.ref === "object" &&
+          childElement.ref !== null &&
+          "current" in childElement.ref
+        ) {
+          childElement.ref.current = element;
+        }
+      }
+      ref.current = element;
     },
   });
 
   return <>{clonedChild}</>;
 }
 
+type TextNodeWrapperProps = {
+  children: string;
+  pos: number;
+};
+
+class TextNodeWrapper extends Component<TextNodeWrapperProps> {
+  componentDidMount(): void {
+    // There simply is no other way to ref a text node
+    // eslint-disable-next-line react/no-find-dom-node
+    const textNode = findDOMNode(this);
+    if (!textNode) return;
+
+    const { posToDOM, domToPos } = this.context as EditorViewContextValue;
+    posToDOM.set(this.props.pos, textNode);
+    domToPos.set(textNode, this.props.pos);
+  }
+
+  componentDidUpdate(): void {
+    // There simply is no other way to ref a text node
+    // eslint-disable-next-line react/no-find-dom-node
+    const textNode = findDOMNode(this);
+    if (!textNode) return;
+
+    const { posToDOM, domToPos } = this.context as EditorViewContextValue;
+    posToDOM.set(this.props.pos, textNode);
+    domToPos.set(textNode, this.props.pos);
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
+
+TextNodeWrapper.contextType = EditorViewContext;
+
 function buildReactTree(parentElement: JSX.Element, node: Node, pos: number) {
   const childElements: ReactNode[] = [];
   node.forEach((childNode, offset) => {
-    if (childNode.isText) {
-      childElements.push(childNode.text);
+    if (childNode.isText && childNode.text !== undefined) {
+      childElements.push(
+        <TextNodeWrapper pos={pos + offset + 1}>
+          {childNode.text}
+        </TextNodeWrapper>
+      );
       return false;
     }
 
@@ -142,17 +209,21 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     "defaultState" in editorProps ? editorProps.defaultState : null
   );
 
-  const posToDOM = useRef(new Map<number, HTMLElement>());
-  posToDOM.current = new Map<number, HTMLElement>();
-  const domToPos = useRef(new Map<HTMLElement, number>());
-  domToPos.current = new Map<HTMLElement, number>();
+  const posToDOM = useRef(new Map<number, Element | Text>());
+  posToDOM.current = new Map<number, Element | Text>();
+  const domToPos = useRef(new Map<Element | Text, number>());
+  domToPos.current = new Map<Element | Text, number>();
 
+  // We always set internalState above if there's no state prop
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const state = "state" in editorProps ? editorProps.state : internalState!;
+
   const dispatchTransaction = useMemo(
     () =>
       editorProps.dispatchTransaction ??
-      ((tr: Transaction) =>
-        setInternalState((prevState) => prevState?.apply(tr) ?? null)),
+      ((tr: Transaction) => {
+        setInternalState((prevState) => prevState?.apply(tr) ?? null);
+      }),
     [editorProps.dispatchTransaction]
   );
 
@@ -170,6 +241,16 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
             tr.insertText(event.data);
             dispatchTransaction(tr);
           }
+          break;
+        }
+        case "deleteContentBackward": {
+          const deleteContentBackward = chainCommands(
+            deleteSelection,
+            joinBackward,
+            selectNodeBackward
+          );
+          deleteContentBackward(state, dispatchTransaction);
+          break;
         }
       }
     }
@@ -184,10 +265,13 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
       if (!initialAnchorNode) return;
 
       let anchorNode = initialAnchorNode;
-      while (!domToPos.current.has(anchorNode as HTMLElement))
-        anchorNode = anchorNode.parentNode!;
+      while (!domToPos.current.has(anchorNode as Element)) {
+        const parentNode = anchorNode.parentNode;
+        if (!parentNode) return;
+        anchorNode = parentNode;
+      }
 
-      const anchorPos = domToPos.current.get(anchorNode as HTMLElement);
+      const anchorPos = domToPos.current.get(anchorNode as Element);
       if (!anchorPos) return;
 
       const $anchor = doc.resolve(anchorPos + anchorOffset);
@@ -196,10 +280,13 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
       if (!initialHeadNode) return;
 
       let headNode = initialHeadNode;
-      while (!domToPos.current.has(headNode as HTMLElement))
-        headNode = headNode.parentNode!;
+      while (!domToPos.current.has(headNode as Element)) {
+        const parentNode = headNode.parentNode;
+        if (!parentNode) return;
+        headNode = parentNode;
+      }
 
-      const headPos = domToPos.current.get(headNode as HTMLElement);
+      const headPos = domToPos.current.get(headNode as Element);
       if (!headPos) return;
 
       const $head = doc.resolve(headPos + focusOffset);
@@ -212,11 +299,11 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     }
 
     mount.addEventListener("beforeinput", onBeforeInput);
-    mount.addEventListener("selectionchange", onSelectionChange);
+    document.addEventListener("selectionchange", onSelectionChange);
 
     return () => {
       mount.removeEventListener("beforeinput", onBeforeInput);
-      mount.removeEventListener("selectionchange", onSelectionChange);
+      document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [dispatchTransaction, state]);
 
@@ -241,13 +328,10 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     if (!anchorNode || !headNode) return;
 
     const domSelection = document.getSelection();
-    // This is super kludgey and won't work with inline marks. What we actually want
-    // is to track posToDOM for text nodes, but React doesn't have any way to ref
-    // a text node!
     domSelection?.setBaseAndExtent(
-      anchorNode.firstChild!,
+      anchorNode,
       state.selection.anchor - anchorNodePos,
-      headNode.firstChild!,
+      headNode,
       state.selection.head - headNodePos
     );
   }, [state]);
@@ -256,9 +340,10 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     <div
       ref={mountRef}
       contentEditable={editable ? editable(state) : true}
+      suppressContentEditableWarning={true}
     ></div>,
     state.doc,
-    0
+    -1
   );
 
   return (
