@@ -4,12 +4,22 @@ import {
   joinBackward,
   selectNodeBackward,
 } from "prosemirror-commands";
-import { DOMOutputSpec, Node } from "prosemirror-model";
-import { EditorState, TextSelection, Transaction } from "prosemirror-state";
-import { DirectEditorProps } from "prosemirror-view";
+import { keydownHandler } from "prosemirror-keymap";
+import { DOMOutputSpec, Mark, Node } from "prosemirror-model";
+import {
+  Command,
+  EditorState,
+  TextSelection,
+  Transaction,
+} from "prosemirror-state";
+import {
+  DirectEditorProps,
+  EditorView as EditorViewPM,
+} from "prosemirror-view";
 import React, {
   Children,
   Component,
+  KeyboardEventHandler,
   ReactElement,
   ReactNode,
   cloneElement,
@@ -42,7 +52,8 @@ type EditorStateProps =
       defaultState: EditorState;
     };
 
-export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
+export type EditorProps = Omit<DirectEditorProps, "state"> &
+  EditorStateProps & { keymap?: { [key: string]: Command } };
 
 export type Props = EditorProps & {
   children?: ReactNode | null;
@@ -168,15 +179,39 @@ class TextNodeWrapper extends Component<TextNodeWrapperProps> {
 
 TextNodeWrapper.contextType = EditorViewContext;
 
+function wrapInMarks(
+  element: JSX.Element,
+  marks: readonly Mark[],
+  isInline: boolean
+) {
+  return marks.reduce((acc, mark) => {
+    const outputSpec = mark.type.spec.toDOM?.(mark, isInline);
+    if (!outputSpec)
+      throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
+
+    const markElement = renderSpec(outputSpec);
+    if (!isValidElement(markElement)) {
+      throw new Error("Don't yet support marks without holes");
+    }
+
+    return cloneElement(markElement, undefined, acc);
+  }, element);
+}
+
 function buildReactTree(parentElement: JSX.Element, node: Node, pos: number) {
   const childElements: ReactNode[] = [];
   node.forEach((childNode, offset) => {
     if (childNode.isText && childNode.text !== undefined) {
-      childElements.push(
+      const element = wrapInMarks(
         <TextNodeWrapper pos={pos + offset + 1}>
           {childNode.text}
-        </TextNodeWrapper>
+        </TextNodeWrapper>,
+        childNode.marks,
+        childNode.isInline
       );
+
+      childElements.push(element);
+
       return false;
     }
 
@@ -195,14 +230,19 @@ function buildReactTree(parentElement: JSX.Element, node: Node, pos: number) {
     return isValidElement(element);
   });
 
-  return (
-    <NodeWrapper pos={pos}>
-      {cloneElement(parentElement, undefined, ...childElements)}
-    </NodeWrapper>
-  );
+  const element = cloneElement(parentElement, undefined, ...childElements);
+
+  const markedElement = wrapInMarks(element, node.marks, node.isInline);
+
+  return <NodeWrapper pos={pos}>{markedElement}</NodeWrapper>;
 }
 
-export function EditorView({ children, editable, ...editorProps }: Props) {
+export function EditorView({
+  children,
+  editable,
+  keymap = {},
+  ...editorProps
+}: Props) {
   const mountRef = useRef<HTMLDivElement | null>(null);
 
   const [internalState, setInternalState] = useState<EditorState | null>(
@@ -255,6 +295,21 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
       }
     }
 
+    // function onKeyDown(event: KeyboardEvent) {
+    //   if (
+    //     keydownHandler({
+    //       ...(state.schema.marks["em"] && {
+    //         "Mod-i": toggleMark(state.schema.marks["em"]),
+    //       }),
+    //     })(
+    //       { state: state, dispatch: dispatchTransaction } as EditorViewPM,
+    //       event
+    //     )
+    //   ) {
+    //     event.preventDefault();
+    //   }
+    // };
+
     function onSelectionChange() {
       const { doc, tr } = state;
 
@@ -299,10 +354,12 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     }
 
     mount.addEventListener("beforeinput", onBeforeInput);
+    // mount.addEventListener("keydown", onKeydown);
     document.addEventListener("selectionchange", onSelectionChange);
 
     return () => {
       mount.removeEventListener("beforeinput", onBeforeInput);
+      // mount.removeEventListener("keydown", onKeydown);
       document.removeEventListener("selectionchange", onSelectionChange);
     };
   }, [dispatchTransaction, state]);
@@ -318,7 +375,7 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     }
     let headNodePos = 0;
     for (const pos of positions) {
-      if (pos > state.selection.anchor) break;
+      if (pos > state.selection.head) break;
 
       headNodePos = pos;
     }
@@ -336,11 +393,23 @@ export function EditorView({ children, editable, ...editorProps }: Props) {
     );
   }, [state]);
 
+  const onKeyDown: KeyboardEventHandler = (event) => {
+    if (
+      keydownHandler(keymap)(
+        { state: state, dispatch: dispatchTransaction } as EditorViewPM,
+        event.nativeEvent
+      )
+    ) {
+      event.preventDefault();
+    }
+  };
+
   const content = buildReactTree(
     <div
       ref={mountRef}
       contentEditable={editable ? editable(state) : true}
       suppressContentEditableWarning={true}
+      onKeyDown={onKeyDown}
     ></div>,
     state.doc,
     -1

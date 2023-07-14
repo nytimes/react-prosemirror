@@ -1,4 +1,4 @@
-import { baseKeymap } from "prosemirror-commands";
+import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
@@ -43,6 +43,13 @@ const schema = new Schema({
     },
     text: { group: "inline" },
   },
+  marks: {
+    em: {
+      toDOM() {
+        return ["em", 0];
+      },
+    },
+  },
 });
 
 const editorState = EditorState.create({
@@ -85,7 +92,12 @@ function DemoEditor() {
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
-      <EditorView defaultState={editorState}></EditorView>
+      <EditorView
+        defaultState={editorState}
+        keymap={{
+          "Mod-i": toggleMark(schema.marks.em),
+        }}
+      ></EditorView>
     </main>
   );
 }
