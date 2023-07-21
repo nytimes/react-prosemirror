@@ -1,9 +1,11 @@
 // TODO: There are some things that still need to be implemented with React here!
+import { EditorState } from "prosemirror-state";
 import { useContext } from "react";
 
 import * as browser from "../browser.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import { singleRect, textRange } from "../dom.js";
 
 type Rect = { left: number; right: number; top: number; bottom: number };
 
@@ -23,14 +25,23 @@ function targetKludge(dom: HTMLElement, coords: { top: number; left: number }) {
   return dom;
 }
 
+function hasCaretPositionFromPoint(doc: Document): doc is Document & {
+  caretPositionFromPoint: (
+    x: number,
+    y: number
+  ) => { offsetNode: Node; offset: number };
+} {
+  return "caretPositionFromPoint" in doc;
+}
+
 function caretFromPoint(
   doc: Document,
   x: number,
   y: number
 ): { node: Node; offset: number } | undefined {
-  if ((doc as any).caretPositionFromPoint) {
+  if (hasCaretPositionFromPoint(doc)) {
     try {
-      const pos = (doc as any).caretPositionFromPoint(x, y);
+      const pos = doc.caretPositionFromPoint(x, y);
       if (pos) return { node: pos.offsetNode, offset: pos.offset };
     } catch (_) {
       // Firefox throws for this call in hard-to-predict circumstances (#994)
@@ -88,12 +99,193 @@ function elementFromPoint(
   return element;
 }
 
+function nearestNodeDom(start: Node, domNodes: Set<Node>) {
+  let current: Node | null = start;
+  while (current) {
+    if (domNodes.has(current)) {
+      return current;
+    }
+    current = current.parentNode;
+  }
+  return null;
+}
+
+function findOffsetInText(node: Text, coords: { top: number; left: number }) {
+  const len = node.nodeValue!.length;
+  const range = document.createRange();
+  for (let i = 0; i < len; i++) {
+    range.setEnd(node, i + 1);
+    range.setStart(node, i);
+    const rect = singleRect(range, 1);
+    if (rect.top == rect.bottom) continue;
+    if (inRect(coords, rect))
+      return {
+        node,
+        offset: i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0),
+      };
+  }
+  return { node, offset: 0 };
+}
+
+function findOffsetInNode(
+  node: HTMLElement,
+  coords: { top: number; left: number }
+): { node: Node; offset: number } {
+  let closest,
+    dxClosest = 2e8,
+    coordsClosest: { left: number; top: number } | undefined,
+    offset = 0;
+  let rowBot = coords.top,
+    rowTop = coords.top;
+  let firstBelow: Node | undefined,
+    coordsBelow: { left: number; top: number } | undefined;
+  for (
+    let child = node.firstChild, childIndex = 0;
+    child;
+    child = child.nextSibling, childIndex++
+  ) {
+    let rects;
+    if (child.nodeType == 1) rects = (child as HTMLElement).getClientRects();
+    else if (child.nodeType == 3)
+      rects = textRange(child as Text).getClientRects();
+    else continue;
+
+    for (let i = 0; i < rects.length; i++) {
+      const rect = rects[i]!;
+      if (rect.top <= rowBot && rect.bottom >= rowTop) {
+        rowBot = Math.max(rect.bottom, rowBot);
+        rowTop = Math.min(rect.top, rowTop);
+        const dx =
+          rect.left > coords.left
+            ? rect.left - coords.left
+            : rect.right < coords.left
+            ? coords.left - rect.right
+            : 0;
+        if (dx < dxClosest) {
+          closest = child;
+          dxClosest = dx;
+          coordsClosest =
+            dx && closest.nodeType == 3
+              ? {
+                  left: rect.right < coords.left ? rect.right : rect.left,
+                  top: coords.top,
+                }
+              : coords;
+          if (child.nodeType == 1 && dx)
+            offset =
+              childIndex +
+              (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0);
+          continue;
+        }
+      } else if (
+        rect.top > coords.top &&
+        !firstBelow &&
+        rect.left <= coords.left &&
+        rect.right >= coords.left
+      ) {
+        firstBelow = child;
+        coordsBelow = {
+          left: Math.max(rect.left, Math.min(rect.right, coords.left)),
+          top: rect.top,
+        };
+      }
+      if (
+        !closest &&
+        ((coords.left >= rect.right && coords.top >= rect.top) ||
+          (coords.left >= rect.left && coords.top >= rect.bottom))
+      )
+        offset = childIndex + 1;
+    }
+  }
+  if (!closest && firstBelow) {
+    closest = firstBelow;
+    coordsClosest = coordsBelow;
+    dxClosest = 0;
+  }
+  if (closest && closest.nodeType == 3)
+    return findOffsetInText(closest as Text, coordsClosest!);
+  if (!closest || (dxClosest && closest.nodeType == 1)) return { node, offset };
+  return findOffsetInNode(closest as HTMLElement, coordsClosest!);
+}
+
+function posFromDOM(dom: Node, offset: number, bias: number): number {
+  // If the DOM position is in the content, use the child desc after
+  // it to figure out a position.
+  // if (
+  //   this.contentDOM &&
+  //   this.contentDOM.contains(dom.nodeType == 1 ? dom : dom.parentNode)
+  // ) {
+  //   if (bias < 0) {
+  //     let domBefore, desc: ViewDesc | undefined;
+  //     if (dom == this.contentDOM) {
+  //       domBefore = dom.childNodes[offset - 1];
+  //     } else {
+  //       while (dom.parentNode != this.contentDOM) dom = dom.parentNode!;
+  //       domBefore = dom.previousSibling;
+  //     }
+  //     while (
+  //       domBefore &&
+  //       !((desc = domBefore.pmViewDesc) && desc.parent == this)
+  //     )
+  //       domBefore = domBefore.previousSibling;
+  //     return domBefore
+  //       ? this.posBeforeChild(desc!) + desc!.size
+  //       : this.posAtStart;
+  //   } else {
+  //     let domAfter, desc: ViewDesc | undefined;
+  //     if (dom == this.contentDOM) {
+  //       domAfter = dom.childNodes[offset];
+  //     } else {
+  //       while (dom.parentNode != this.contentDOM) dom = dom.parentNode!;
+  //       domAfter = dom.nextSibling;
+  //     }
+  //     while (domAfter && !((desc = domAfter.pmViewDesc) && desc.parent == this))
+  //       domAfter = domAfter.nextSibling;
+  //     return domAfter ? this.posBeforeChild(desc!) : this.posAtEnd;
+  //   }
+  // }
+  // Otherwise, use various heuristics, falling back on the bias
+  // parameter, to determine whether to return the position at the
+  // start or at the end of this view desc.
+  let atEnd;
+  if (dom == this.dom && this.contentDOM) {
+    atEnd = offset > domIndex(this.contentDOM);
+  } else if (
+    this.contentDOM &&
+    this.contentDOM != this.dom &&
+    this.dom.contains(this.contentDOM)
+  ) {
+    atEnd = dom.compareDocumentPosition(this.contentDOM) & 2;
+  } else if (this.dom.firstChild) {
+    if (offset == 0)
+      for (let search = dom; ; search = search.parentNode!) {
+        if (search == this.dom) {
+          atEnd = false;
+          break;
+        }
+        if (search.previousSibling) break;
+      }
+    if (atEnd == null && offset == dom.childNodes.length)
+      for (let search = dom; ; search = search.parentNode!) {
+        if (search == this.dom) {
+          atEnd = true;
+          break;
+        }
+        if (search.nextSibling) break;
+      }
+  }
+  return (atEnd == null ? bias > 0 : atEnd) ? this.posAtEnd : this.posAtStart;
+}
+
 function posFromCaret(
   mount: HTMLDivElement,
+  state: EditorState,
   node: Node,
   offset: number,
-  coords: { top: number; left: number }
+  coords: { top: number; left: number },
+  domToPos: Map<Node, number>
 ) {
+  const domNodes = new Set(domToPos.keys());
   // Browser (in caretPosition/RangeFromPoint) will agressively
   // normalize towards nearby inline nodes. Since we are interested in
   // positions between block nodes too, we first walk up the hierarchy
@@ -103,37 +295,61 @@ function posFromCaret(
   let outsideBlock = -1;
   for (let cur = node, sawBlock = false; ; ) {
     if (cur == mount) break;
-    const desc = view.docView.nearestDesc(cur, true);
-    if (!desc) return null;
+    const nodeDom = nearestNodeDom(cur, domNodes);
+    if (!nodeDom) return null;
+    const nodePos = domToPos.get(nodeDom)!;
+    const $nodePos = state.doc.resolve(nodePos);
     if (
-      desc.dom.nodeType == 1 &&
-      ((desc.node.isBlock && desc.parent && !sawBlock) || !desc.contentDOM)
+      nodeDom.nodeType == 1 &&
+      (($nodePos.nodeAfter?.isBlock && $nodePos.depth && !sawBlock) ||
+        $nodePos.nodeAfter?.isAtom ||
+        $nodePos.nodeAfter?.isLeaf)
     ) {
-      const rect = (desc.dom as HTMLElement).getBoundingClientRect();
-      if (desc.node.isBlock && desc.parent && !sawBlock) {
+      const rect = (nodeDom as HTMLElement).getBoundingClientRect();
+      if ($nodePos.nodeAfter?.isBlock && $nodePos.depth && !sawBlock) {
         sawBlock = true;
         if (rect.left > coords.left || rect.top > coords.top)
-          outsideBlock = desc.posBefore;
+          outsideBlock = $nodePos.before();
         else if (rect.right < coords.left || rect.bottom < coords.top)
-          outsideBlock = desc.posAfter;
+          outsideBlock = $nodePos.after();
       }
-      if (!desc.contentDOM && outsideBlock < 0 && !desc.node.isText) {
+      if (
+        ($nodePos.nodeAfter?.isAtom || $nodePos.nodeAfter?.isLeaf) &&
+        outsideBlock < 0 &&
+        !$nodePos.nodeAfter.isText
+      ) {
         // If we are inside a leaf, return the side of the leaf closer to the coords
-        const before = desc.node.isBlock
+        const before = $nodePos.nodeAfter.isBlock
           ? coords.top < (rect.top + rect.bottom) / 2
           : coords.left < (rect.left + rect.right) / 2;
-        return before ? desc.posBefore : desc.posAfter;
+        return before ? $nodePos.before() : $nodePos.after();
       }
     }
-    cur = desc.dom.parentNode!;
+    cur = nodeDom.parentNode!;
   }
-  return outsideBlock > -1
-    ? outsideBlock
-    : view.docView.posFromDOM(node, offset, -1);
+  return outsideBlock > -1 ? outsideBlock : 0;
+  // TODO: implement posFromDOM
+  // : view.docView.posFromDOM(node, offset, -1);
+}
+
+function posFromElement(
+  elt: HTMLElement,
+  coords: { top: number; left: number }
+) {
+  const { node, offset } = findOffsetInNode(elt, coords);
+  let bias = -1;
+  if (node.nodeType == 1 && !node.firstChild) {
+    const rect = (node as HTMLElement).getBoundingClientRect();
+    bias =
+      rect.left != rect.right && coords.left > (rect.left + rect.right) / 2
+        ? 1
+        : -1;
+  }
+  return view.docView.posFromDOM(node, offset, bias);
 }
 
 export function usePosAtCoords(coords: { top: number; left: number }) {
-  const { mount } = useContext(NodeViewPositionsContext);
+  const { mount, domToPos } = useContext(NodeViewPositionsContext);
   const { state } = useContext(EditorViewContext);
 
   if (!mount) return -1;
@@ -195,10 +411,18 @@ export function usePosAtCoords(coords: { top: number; left: number }) {
       node.nodeType != 1 ||
       node.childNodes[offset - 1]!.nodeName != "BR"
     )
-      pos = posFromCaret(mount, node, offset, coords);
+      pos = posFromCaret(mount, state, node, offset, coords, domToPos);
   }
-  if (pos == null) pos = posFromElement(view, elt, coords);
+  if (pos == null) pos = posFromElement(elt, coords);
 
-  const desc = view.docView.nearestDesc(elt, true);
-  return { pos, inside: desc ? desc.posAtStart - desc.border : -1 };
+  const domNodes = new Set(domToPos.keys());
+  const nodeDom = nearestNodeDom(elt, domNodes);
+  if (!nodeDom) {
+    return { pos, inside: -1 };
+  }
+  const nodePos = domToPos.get(nodeDom)!;
+  const $nodePos = state.doc.resolve(nodePos);
+
+  // TODO: 1 should actually be "border"
+  return { pos, inside: $nodePos.before() - 1 };
 }

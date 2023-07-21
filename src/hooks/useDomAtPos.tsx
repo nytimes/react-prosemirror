@@ -7,7 +7,7 @@ export function useDomAtPos(
   pos: number,
   // TODO: Implement side affinity
   side = 0,
-  effect: (dom: { node: Element | Text; offset: number }) => void
+  effect: (dom: { node: Node; offset: number }) => void
 ) {
   const { posToDOM } = useContext(NodeViewPositionsContext);
   useLayoutGroupEffect(() => {
