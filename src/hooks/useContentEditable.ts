@@ -31,12 +31,14 @@ export function useContentEditable(
           break;
         }
         case "deleteContentBackward": {
-          const deleteContentBackward = chainCommands(
-            deleteSelection,
-            joinBackward,
-            selectNodeBackward
+          const { tr } = state;
+          tr.delete(
+            state.selection.empty
+              ? state.selection.from - 1
+              : state.selection.from,
+            state.selection.from
           );
-          deleteContentBackward(state, dispatchTransaction);
+          dispatchTransaction(tr);
           break;
         }
       }

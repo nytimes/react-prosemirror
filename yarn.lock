@@ -1190,6 +1190,7 @@ __metadata:
     rimraf: ^3.0.2
     typescript: ^4.9.5
     vite: ^4.1.5
+    w3c-keyname: ^2.2.8
   peerDependencies:
     prosemirror-state: ^1.0.0
     prosemirror-view: ^1.0.0
@@ -8293,6 +8294,13 @@ __metadata:
   version: 2.2.6
   resolution: "w3c-keyname@npm:2.2.6"
   checksum: 59a31d23ca9953c01c99ed6695fee5b6ea36eb2412d76a21fe4302ab33a3f5cd96c006a763940b6115c3d042c16d3564eeee1156832217d028af0518098b3a42
+  languageName: node
+  linkType: hard
+
+"w3c-keyname@npm:^2.2.8":
+  version: 2.2.8
+  resolution: "w3c-keyname@npm:2.2.8"
+  checksum: 95bafa4c04fa2f685a86ca1000069c1ec43ace1f8776c10f226a73296caeddd83f893db885c2c220ebeb6c52d424e3b54d7c0c1e963bbf204038ff1a944fbb07
   languageName: node
   linkType: hard
 

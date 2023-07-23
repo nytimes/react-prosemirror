@@ -2,12 +2,13 @@ import { useContext } from "react";
 
 import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
 import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import { DOMNode } from "../dom.js";
 
 export function useDomAtPos(
   pos: number,
   // TODO: Implement side affinity
   side = 0,
-  effect: (dom: { node: Node; offset: number }) => void
+  effect: (dom: { node: DOMNode; offset: number }) => void
 ) {
   const { posToDOM } = useContext(NodeViewPositionsContext);
   useLayoutGroupEffect(() => {

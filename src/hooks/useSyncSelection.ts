@@ -2,11 +2,13 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { MutableRefObject, useEffect } from "react";
 
+import { DOMNode } from "../dom.js";
+
 export function useSyncSelection(
   state: EditorState,
   dispatchTransaction: EditorView["dispatch"],
-  posToDOM: MutableRefObject<Map<number, Element | Text>>,
-  domToPos: MutableRefObject<Map<Element | Text, number>>
+  posToDOM: MutableRefObject<Map<number, DOMNode>>,
+  domToPos: MutableRefObject<Map<DOMNode, number>>
 ) {
   useEffect(() => {
     function onSelectionChange() {

@@ -1,3 +1,12 @@
+export type DOMNode = InstanceType<typeof window.Node>;
+export type DOMSelection = InstanceType<typeof window.Selection>;
+export type DOMSelectionRange = {
+  focusNode: DOMNode | null;
+  focusOffset: number;
+  anchorNode: DOMNode | null;
+  anchorOffset: number;
+};
+
 export const BIDI = /[\u0590-\u05f4\u0600-\u06ff\u0700-\u08ac]/;
 export function nonZero(rect: DOMRect) {
   return rect.top < rect.bottom || rect.left < rect.right;

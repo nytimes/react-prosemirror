@@ -1,4 +1,5 @@
 import { DOMOutputSpec, Mark } from "prosemirror-model";
+import { Decoration, DecorationAttrs } from "prosemirror-view";
 import React, {
   ReactNode,
   cloneElement,
@@ -56,7 +57,7 @@ export function wrapInMarks(
   element: JSX.Element,
   marks: readonly Mark[],
   isInline: boolean
-) {
+): JSX.Element {
   return marks.reduce((acc, mark) => {
     const outputSpec = mark.type.spec.toDOM?.(mark, isInline);
     if (!outputSpec)
@@ -68,5 +69,29 @@ export function wrapInMarks(
     }
 
     return cloneElement(markElement, undefined, acc);
+  }, element);
+}
+
+export function wrapInDecorations(
+  element: JSX.Element,
+  decorations: Decoration[],
+  isInline: boolean
+) {
+  return decorations.reduce((acc, deco) => {
+    const attrs = (deco as Decoration & { type: { attrs: DecorationAttrs } })
+      .type.attrs;
+
+    // TODO: figure out style prop
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { nodeName = "span", class: className, style, ...props } = attrs;
+
+    if (isInline) {
+      return createElement(nodeName, { className, ...props }, acc);
+    }
+
+    return cloneElement(acc, {
+      className: `${className} ${acc.props.className ?? ""}`.trim(),
+      ...props,
+    });
   }, element);
 }
