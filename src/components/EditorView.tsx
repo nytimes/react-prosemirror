@@ -23,6 +23,7 @@ import React, {
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
 import { DOMNode } from "../dom.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
@@ -42,8 +43,12 @@ function makeCuts(cuts: number[], node: Node) {
   let curr = 0;
   for (const cut of sortedCuts) {
     const lastNode = nodes.pop()!;
-    nodes.push(lastNode.cut(0, cut - curr));
-    nodes.push(lastNode.cut(cut - curr));
+    if (cut - curr !== 0) {
+      nodes.push(lastNode.cut(0, cut - curr));
+    }
+    if (lastNode.nodeSize > cut - curr) {
+      nodes.push(lastNode.cut(cut - curr));
+    }
     curr = cut;
   }
   return nodes;
@@ -135,24 +140,39 @@ export function EditorView({
     }
     node.forEach((childNode, offset) => {
       if (childNode.isText) {
-        const inlineDecorations = decorations
-          .find(pos + offset + 1, pos + offset + 1 + childNode.nodeSize)
-          .filter(
-            (decoration) =>
-              (decoration as Decoration & { inline: boolean }).inline
-          );
+        const localDecorations = decorations.find(
+          pos + offset + 1,
+          pos + offset + 1 + childNode.nodeSize
+        );
+        const inlineDecorations = localDecorations.filter(
+          (decoration) =>
+            (decoration as Decoration & { inline: boolean }).inline
+        );
+        const widgetDecorations = localDecorations.filter(
+          (decoration) =>
+            (decoration as Decoration & { type: ReactWidgetType })
+              .type instanceof ReactWidgetType
+        );
         const textNodes: Node[] = makeCuts(
-          inlineDecorations.flatMap((decoration) => [
-            decoration.from - (pos + offset + 1),
-            decoration.to - (pos + offset + 1),
-          ]),
+          inlineDecorations
+            .flatMap((decoration) => [
+              decoration.from - (pos + offset + 1),
+              decoration.to - (pos + offset + 1),
+            ])
+            .concat(
+              widgetDecorations.map(
+                (decoration) => decoration.from - (pos + offset + 1)
+              )
+            ),
           childNode
         );
 
         let subOffset = 0;
         for (const textNode of textNodes) {
+          const textNodeStart = pos + offset + subOffset + 1;
+          const textNodeEnd = pos + offset + subOffset + 1 + textNode.nodeSize;
           const marked = wrapInMarks(
-            <TextNodeWrapper pos={pos + offset + subOffset + 1}>
+            <TextNodeWrapper pos={textNodeStart}>
               {/* Text nodes always have text */}
               {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
               {textNode.text!}
@@ -163,13 +183,23 @@ export function EditorView({
           const decorated = wrapInDecorations(
             marked,
             inlineDecorations.filter(
-              (deco) =>
-                deco.from <= pos + offset + 1 + subOffset &&
-                deco.to >= pos + offset + 1 + subOffset + textNode.nodeSize
+              (deco) => deco.from <= textNodeStart && deco.to >= textNodeEnd
             ),
             true
           );
+
           childElements.push(decorated);
+
+          widgetDecorations.forEach((decoration) => {
+            if (decoration.from !== textNodeEnd) return;
+
+            const decorationType = (
+              decoration as Decoration & { type: ReactWidgetType }
+            ).type;
+
+            childElements.push(<decorationType.Component />);
+          });
+
           subOffset += textNode.nodeSize;
         }
 
@@ -213,20 +243,51 @@ export function EditorView({
       return isValidElement(element);
     });
 
+    const localDecorations = decorations.find(pos, pos + node.nodeSize);
+    const nodeDecorations = localDecorations.filter(
+      (decoration) =>
+        !(decoration as Decoration & { inline: boolean }).inline &&
+        pos === decoration.from &&
+        pos + node.nodeSize === decoration.to
+    );
+    const widgetDecorations = localDecorations.filter(
+      (decoration) =>
+        (decoration as Decoration & { type: ReactWidgetType }).type instanceof
+        ReactWidgetType
+    );
+
+    widgetDecorations.forEach((decoration) => {
+      if (!node.isLeaf && decoration.from !== pos + 1) return;
+
+      const decorationType = (
+        decoration as Decoration & { type: ReactWidgetType }
+      ).type;
+
+      childElements.unshift(<decorationType.Component />);
+    });
+
     const element = cloneElement(parentElement, undefined, ...childElements);
 
     const marked = wrapInMarks(element, node.marks, node.isInline);
-    const nodeDecorations = decorations
-      .find(pos, pos + node.nodeSize)
-      .filter(
-        (decoration) =>
-          !(decoration as Decoration & { inline: boolean }).inline &&
-          pos === decoration.from &&
-          pos + node.nodeSize === decoration.to
-      );
-    const decorated = wrapInDecorations(marked, nodeDecorations, false);
 
-    return <NodeWrapper pos={pos}>{decorated}</NodeWrapper>;
+    const decorated = wrapInDecorations(marked, nodeDecorations, false);
+    const wrapped = <NodeWrapper pos={pos}>{decorated}</NodeWrapper>;
+
+    const elements = [wrapped];
+
+    widgetDecorations.forEach((decoration, index, array) => {
+      if (decoration.from !== pos + node.nodeSize) return;
+
+      const decorationType = (
+        decoration as Decoration & { type: ReactWidgetType }
+      ).type;
+
+      elements.push(<decorationType.Component />);
+
+      array.splice(index, 1);
+    });
+
+    return <>{elements}</>;
   }
 
   const content = buildReactTree(

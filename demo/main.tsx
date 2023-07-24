@@ -20,7 +20,6 @@ import React, {
   HTMLAttributes,
   Ref,
   forwardRef,
-  useState,
 } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -28,6 +27,7 @@ import {
   EditorView,
   NodeViewComponentProps,
 } from "../src/components/EditorView.js";
+import { widget } from "../src/decorations/ReactWidgetType.js";
 
 import "./main.css";
 
@@ -102,6 +102,20 @@ const Paragraph = forwardRef(function Paragraph(
   );
 });
 
+function TestWidget() {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        padding: "0.75rem 1rem",
+        border: "solid thin black",
+      }}
+    >
+      Widget
+    </span>
+  );
+}
+
 function DemoEditor() {
   return (
     <main>
@@ -111,7 +125,7 @@ function DemoEditor() {
         decorations={DecorationSet.create(editorState.doc, [
           Decoration.inline(5, 15, { class: "inline-deco" }),
           Decoration.node(29, 59, { class: "node-deco" }),
-          Decoration.widget(40, () => document.createElement("div")),
+          widget(40, TestWidget, { side: 0 }),
         ])}
         keymap={{
           "Mod-i": toggleMark(schema.marks.em),
