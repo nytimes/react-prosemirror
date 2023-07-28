@@ -18,7 +18,7 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
     const textNode = findDOMNode(this);
     if (!textNode) return;
 
-    const { posToDesc: posToDOM, domToDesc: domToPos } = this
+    const { posToDesc, domToDesc } = this
       .context as NodeViewDescriptorsContextValue;
 
     const desc: NodeViewDescriptor = {
@@ -26,8 +26,8 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
       dom: textNode,
       contentDOM: null,
     };
-    posToDOM.set(this.props.pos, desc);
-    domToPos.set(textNode, desc);
+    posToDesc.set(this.props.pos, desc);
+    domToDesc.set(textNode, desc);
   }
 
   componentDidUpdate(): void {
@@ -36,7 +36,7 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
     const textNode = findDOMNode(this);
     if (!textNode) return;
 
-    const { posToDesc: posToDOM, domToDesc: domToPos } = this
+    const { posToDesc, domToDesc } = this
       .context as NodeViewDescriptorsContextValue;
 
     const desc: NodeViewDescriptor = {
@@ -44,8 +44,8 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
       dom: textNode,
       contentDOM: null,
     };
-    posToDOM.set(this.props.pos, desc);
-    domToPos.set(textNode, desc);
+    posToDesc.set(this.props.pos, desc);
+    domToDesc.set(textNode, desc);
   }
 
   render() {

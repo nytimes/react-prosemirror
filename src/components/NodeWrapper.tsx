@@ -14,25 +14,42 @@ import {
   NodeViewDescriptorsContext,
 } from "../contexts/NodeViewPositionsContext.js";
 
+export function findChildDesc(
+  pos: number,
+  posToDesc: Map<number, NodeViewDescriptor>
+) {
+  const positions = Array.from(posToDesc.keys()).sort((a, b) => b - a);
+
+  let parentPos = null;
+  for (const nodePos of positions) {
+    if (nodePos < pos) break;
+
+    parentPos = nodePos;
+  }
+
+  return parentPos === null ? null : posToDesc.get(parentPos);
+}
+
 type NodeWrapperProps = {
   children: ReactNode;
   pos: number;
 };
 export function NodeWrapper({ children, pos }: NodeWrapperProps) {
-  const { posToDesc: posToDOM, domToDesc: domToPos } = useContext(
-    NodeViewDescriptorsContext
-  );
+  const { posToDesc, domToDesc } = useContext(NodeViewDescriptorsContext);
   const ref = useRef<Element | null>(null);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
+
+    const childDesc = findChildDesc(pos, posToDesc);
+
     const desc: NodeViewDescriptor = {
       pos,
       dom: ref.current,
-      contentDOM: null,
+      contentDOM: childDesc?.dom.parentNode ?? null,
     };
-    posToDOM.set(pos, desc);
-    domToPos.set(ref.current, desc);
+    posToDesc.set(pos, desc);
+    domToDesc.set(ref.current, desc);
   });
 
   const child = Children.only(children);
