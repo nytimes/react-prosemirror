@@ -323,6 +323,9 @@ export function EditorView(props: Props) {
         state: stateProp ?? defaultState,
         dispatchTransaction: dispatchProp,
       },
+      nodeDOM(pos) {
+        return posToDesc.current.get(pos)?.dom ?? null;
+      },
     }),
     [editable, editableProp, state, stateProp, dispatch, dispatchProp]
   );
