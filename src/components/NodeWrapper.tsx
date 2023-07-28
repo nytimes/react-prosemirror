@@ -1,3 +1,5 @@
+import { Node } from "prosemirror-model";
+import { DecorationSet } from "prosemirror-view";
 import React, {
   Children,
   ReactElement,
@@ -9,15 +11,11 @@ import React, {
   useRef,
 } from "react";
 
-import {
-  NodeViewDescriptor,
-  NodeViewDescriptorsContext,
-} from "../contexts/NodeViewPositionsContext.js";
+import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { NodeViewDescriptorsContext } from "../contexts/NodeViewPositionsContext.js";
+import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 
-export function findChildDesc(
-  pos: number,
-  posToDesc: Map<number, NodeViewDescriptor>
-) {
+export function findChildDesc(pos: number, posToDesc: Map<number, ViewDesc>) {
   const positions = Array.from(posToDesc.keys()).sort((a, b) => b - a);
 
   let parentPos = null;
@@ -31,25 +29,41 @@ export function findChildDesc(
 }
 
 type NodeWrapperProps = {
+  node: Node;
   children: ReactNode;
   pos: number;
 };
-export function NodeWrapper({ children, pos }: NodeWrapperProps) {
+
+export function NodeWrapper({ node, children, pos }: NodeWrapperProps) {
   const { posToDesc, domToDesc } = useContext(NodeViewDescriptorsContext);
+  const siblingDescriptors = useContext(ChildDescriptorsContext);
+  const childDescriptors: ViewDesc[] = [];
   const ref = useRef<Element | null>(null);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
 
-    const childDesc = findChildDesc(pos, posToDesc);
+    const firstChildDesc = childDescriptors[0];
 
-    const desc: NodeViewDescriptor = {
-      pos,
-      dom: ref.current,
-      contentDOM: childDesc?.dom.parentNode ?? null,
-    };
+    const desc = new NodeViewDesc(
+      undefined,
+      node,
+      [],
+      DecorationSet.empty,
+      ref.current,
+      firstChildDesc?.dom.parentElement ?? null,
+      ref.current,
+      posToDesc,
+      domToDesc
+    );
+    desc.children = childDescriptors;
     posToDesc.set(pos, desc);
     domToDesc.set(ref.current, desc);
+    siblingDescriptors.push(desc);
+
+    for (const childDesc of childDescriptors) {
+      childDesc.parent = desc;
+    }
   });
 
   const child = Children.only(children);
@@ -73,5 +87,9 @@ export function NodeWrapper({ children, pos }: NodeWrapperProps) {
     },
   });
 
-  return <>{clonedChild}</>;
+  return (
+    <ChildDescriptorsContext.Provider value={childDescriptors}>
+      {clonedChild}
+    </ChildDescriptorsContext.Provider>
+  );
 }

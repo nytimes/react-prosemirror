@@ -21,13 +21,12 @@ import React, {
   useState,
 } from "react";
 
+import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
-import {
-  NodeViewDescriptor,
-  NodeViewDescriptorsContext,
-} from "../contexts/NodeViewPositionsContext.js";
+import { NodeViewDescriptorsContext } from "../contexts/NodeViewPositionsContext.js";
 import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
+import { ViewDesc } from "../descriptors/ViewDesc.js";
 import { DOMNode } from "../dom.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
@@ -106,9 +105,9 @@ export function EditorView(props: Props) {
     defaultState ?? null
   );
 
-  const posToDesc = useRef(new Map<number, NodeViewDescriptor>());
+  const posToDesc = useRef(new Map<number, ViewDesc>());
   posToDesc.current = new Map();
-  const domToDesc = useRef(new Map<DOMNode, NodeViewDescriptor>());
+  const domToDesc = useRef(new Map<DOMNode, ViewDesc>());
   domToDesc.current = new Map();
 
   // We always set internalState above if there's no state prop
@@ -178,11 +177,19 @@ export function EditorView(props: Props) {
           const textNodeStart = pos + offset + subOffset + 1;
           const textNodeEnd = pos + offset + subOffset + 1 + textNode.nodeSize;
           const marked = wrapInMarks(
-            <TextNodeWrapper pos={textNodeStart}>
-              {/* Text nodes always have text */}
-              {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-              {textNode.text!}
-            </TextNodeWrapper>,
+            <ChildDescriptorsContext.Consumer>
+              {(siblingDescriptors) => (
+                <TextNodeWrapper
+                  siblingDescriptors={siblingDescriptors}
+                  pos={textNodeStart}
+                  node={textNode}
+                >
+                  {/* Text nodes always have text */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+                  {textNode.text!}
+                </TextNodeWrapper>
+              )}
+            </ChildDescriptorsContext.Consumer>,
             textNode.marks,
             textNode.isInline
           );
@@ -277,7 +284,11 @@ export function EditorView(props: Props) {
     const marked = wrapInMarks(element, node.marks, node.isInline);
 
     const decorated = wrapInDecorations(marked, nodeDecorations, false);
-    const wrapped = <NodeWrapper pos={pos}>{decorated}</NodeWrapper>;
+    const wrapped = (
+      <NodeWrapper pos={pos} node={node}>
+        {decorated}
+      </NodeWrapper>
+    );
 
     const elements = [wrapped];
 

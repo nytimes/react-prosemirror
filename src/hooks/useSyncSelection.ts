@@ -2,14 +2,14 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { MutableRefObject, useEffect } from "react";
 
-import { NodeViewDescriptor } from "../contexts/NodeViewPositionsContext.js";
+import { ViewDesc } from "../descriptors/ViewDesc.js";
 import { DOMNode } from "../dom.js";
 
 export function useSyncSelection(
   state: EditorState,
   dispatchTransaction: EditorView["dispatch"],
-  posToDesc: MutableRefObject<Map<number, NodeViewDescriptor>>,
-  domToDesc: MutableRefObject<Map<DOMNode, NodeViewDescriptor>>
+  posToDesc: MutableRefObject<Map<number, ViewDesc>>,
+  domToDesc: MutableRefObject<Map<DOMNode, ViewDesc>>
 ) {
   useEffect(() => {
     function onSelectionChange() {
@@ -32,7 +32,7 @@ export function useSyncSelection(
       const anchorDesc = domToDesc.current.get(anchorNode);
       if (!anchorDesc) return;
 
-      const $anchor = doc.resolve(anchorDesc.pos + anchorOffset);
+      const $anchor = doc.resolve(anchorDesc.posAtStart + anchorOffset);
 
       const { focusNode: initialHeadNode, focusOffset } = domSelection;
       if (!initialHeadNode) return;
@@ -47,7 +47,7 @@ export function useSyncSelection(
       const headDesc = domToDesc.current.get(headNode);
       if (!headDesc) return;
 
-      const $head = doc.resolve(headDesc.pos + focusOffset);
+      const $head = doc.resolve(headDesc.posAtStart + focusOffset);
 
       const selection = TextSelection.between($anchor, $head);
       if (!state.selection.eq(selection)) {

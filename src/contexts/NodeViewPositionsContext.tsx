@@ -1,17 +1,12 @@
 import { createContext } from "react";
 
+import { ViewDesc } from "../descriptors/ViewDesc.js";
 import { DOMNode } from "../dom.js";
-
-export type NodeViewDescriptor = {
-  pos: number;
-  dom: DOMNode;
-  contentDOM: DOMNode | null;
-};
 
 export type NodeViewDescriptorsContextValue = {
   mount: HTMLDivElement | null;
-  domToDesc: Map<DOMNode, NodeViewDescriptor>;
-  posToDesc: Map<number, NodeViewDescriptor>;
+  domToDesc: Map<DOMNode, ViewDesc>;
+  posToDesc: Map<number, ViewDesc>;
 };
 
 export const NodeViewDescriptorsContext = createContext(
