@@ -23,7 +23,10 @@ import React, {
 
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
-import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import {
+  NodeViewDescriptor,
+  NodeViewDescriptorsContext,
+} from "../contexts/NodeViewPositionsContext.js";
 import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
 import { DOMNode } from "../dom.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
@@ -101,10 +104,10 @@ export function EditorView({
     defaultState ?? null
   );
 
-  const posToDOM = useRef(new Map<number, DOMNode>());
-  posToDOM.current = new Map<number, DOMNode>();
-  const domToPos = useRef(new Map<DOMNode, number>());
-  domToPos.current = new Map<DOMNode, number>();
+  const posToDesc = useRef(new Map<number, NodeViewDescriptor>());
+  posToDesc.current = new Map();
+  const domToDesc = useRef(new Map<DOMNode, NodeViewDescriptor>());
+  domToDesc.current = new Map();
 
   // We always set internalState above if there's no state prop
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -121,7 +124,7 @@ export function EditorView({
 
   const mountRef = useContentEditable(state, dispatchTransaction);
 
-  useSyncSelection(state, dispatchTransaction, posToDOM, domToPos);
+  useSyncSelection(state, dispatchTransaction, posToDesc, domToDesc);
 
   const onKeyDown: KeyboardEventHandler = (event) => {
     if (keydownHandler(keymap)(state, dispatchTransaction, event.nativeEvent)) {
@@ -316,18 +319,18 @@ export function EditorView({
   return (
     <LayoutGroup>
       <EditorViewContext.Provider value={contextValue}>
-        <NodeViewPositionsContext.Provider
+        <NodeViewDescriptorsContext.Provider
           value={{
             mount: mountRef.current,
-            posToDOM: posToDOM.current,
-            domToPos: domToPos.current,
+            posToDesc: posToDesc.current,
+            domToDesc: domToDesc.current,
           }}
         >
           <>
             {content}
             {children}
           </>
-        </NodeViewPositionsContext.Provider>
+        </NodeViewDescriptorsContext.Provider>
       </EditorViewContext.Provider>
     </LayoutGroup>
   );

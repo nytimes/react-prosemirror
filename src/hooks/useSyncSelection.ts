@@ -2,13 +2,14 @@ import { EditorState, TextSelection } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { MutableRefObject, useEffect } from "react";
 
+import { NodeViewDescriptor } from "../contexts/NodeViewPositionsContext.js";
 import { DOMNode } from "../dom.js";
 
 export function useSyncSelection(
   state: EditorState,
   dispatchTransaction: EditorView["dispatch"],
-  posToDOM: MutableRefObject<Map<number, DOMNode>>,
-  domToPos: MutableRefObject<Map<DOMNode, number>>
+  posToDesc: MutableRefObject<Map<number, NodeViewDescriptor>>,
+  domToDesc: MutableRefObject<Map<DOMNode, NodeViewDescriptor>>
 ) {
   useEffect(() => {
     function onSelectionChange() {
@@ -21,31 +22,32 @@ export function useSyncSelection(
       if (!initialAnchorNode) return;
 
       let anchorNode = initialAnchorNode;
-      while (!domToPos.current.has(anchorNode as Element)) {
+      const nodes = new Set(domToDesc.current.keys());
+      while (!nodes.has(anchorNode)) {
         const parentNode = anchorNode.parentNode;
         if (!parentNode) return;
         anchorNode = parentNode;
       }
 
-      const anchorPos = domToPos.current.get(anchorNode as Element);
-      if (!anchorPos) return;
+      const anchorDesc = domToDesc.current.get(anchorNode);
+      if (!anchorDesc) return;
 
-      const $anchor = doc.resolve(anchorPos + anchorOffset);
+      const $anchor = doc.resolve(anchorDesc.pos + anchorOffset);
 
       const { focusNode: initialHeadNode, focusOffset } = domSelection;
       if (!initialHeadNode) return;
 
       let headNode = initialHeadNode;
-      while (!domToPos.current.has(headNode as Element)) {
+      while (!nodes.has(headNode)) {
         const parentNode = headNode.parentNode;
         if (!parentNode) return;
         headNode = parentNode;
       }
 
-      const headPos = domToPos.current.get(headNode as Element);
-      if (!headPos) return;
+      const headDesc = domToDesc.current.get(headNode);
+      if (!headDesc) return;
 
-      const $head = doc.resolve(headPos + focusOffset);
+      const $head = doc.resolve(headDesc.pos + focusOffset);
 
       const selection = TextSelection.between($anchor, $head);
       if (!state.selection.eq(selection)) {
@@ -59,10 +61,12 @@ export function useSyncSelection(
     return () => {
       document.removeEventListener("selectionchange", onSelectionChange);
     };
-  }, [dispatchTransaction, domToPos, state]);
+  }, [dispatchTransaction, domToDesc, state]);
 
   useEffect(() => {
-    const positions = Array.from(posToDOM.current.keys()).sort((a, b) => a - b);
+    const positions = Array.from(posToDesc.current.keys()).sort(
+      (a, b) => a - b
+    );
 
     let anchorNodePos = 0;
     for (const pos of positions) {
@@ -77,16 +81,16 @@ export function useSyncSelection(
       headNodePos = pos;
     }
 
-    const anchorNode = posToDOM.current.get(anchorNodePos);
-    const headNode = posToDOM.current.get(headNodePos);
-    if (!anchorNode || !headNode) return;
+    const anchorDesc = posToDesc.current.get(anchorNodePos);
+    const headDesc = posToDesc.current.get(headNodePos);
+    if (!anchorDesc || !headDesc) return;
 
     const domSelection = document.getSelection();
     domSelection?.setBaseAndExtent(
-      anchorNode,
+      anchorDesc.dom,
       state.selection.anchor - anchorNodePos,
-      headNode,
+      headDesc.dom,
       state.selection.head - headNodePos
     );
-  }, [posToDOM, state]);
+  }, [posToDesc, state]);
 }

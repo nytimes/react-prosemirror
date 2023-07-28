@@ -9,20 +9,30 @@ import React, {
   useRef,
 } from "react";
 
-import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import {
+  NodeViewDescriptor,
+  NodeViewDescriptorsContext,
+} from "../contexts/NodeViewPositionsContext.js";
 
 type NodeWrapperProps = {
   children: ReactNode;
   pos: number;
 };
 export function NodeWrapper({ children, pos }: NodeWrapperProps) {
-  const { posToDOM, domToPos } = useContext(NodeViewPositionsContext);
+  const { posToDesc: posToDOM, domToDesc: domToPos } = useContext(
+    NodeViewDescriptorsContext
+  );
   const ref = useRef<Element | null>(null);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
-    posToDOM.set(pos, ref.current);
-    domToPos.set(ref.current, pos);
+    const desc: NodeViewDescriptor = {
+      pos,
+      dom: ref.current,
+      contentDOM: null,
+    };
+    posToDOM.set(pos, desc);
+    domToPos.set(ref.current, desc);
   });
 
   const child = Children.only(children);

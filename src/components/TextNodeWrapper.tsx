@@ -2,8 +2,9 @@ import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
 import {
-  NodeViewPositionsContext,
-  NodeViewPositionsContextValue,
+  NodeViewDescriptor,
+  NodeViewDescriptorsContext,
+  NodeViewDescriptorsContextValue,
 } from "../contexts/NodeViewPositionsContext.js";
 
 type TextNodeWrapperProps = {
@@ -17,10 +18,16 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
     const textNode = findDOMNode(this);
     if (!textNode) return;
 
-    const { posToDOM, domToPos } = this
-      .context as NodeViewPositionsContextValue;
-    posToDOM.set(this.props.pos, textNode);
-    domToPos.set(textNode, this.props.pos);
+    const { posToDesc: posToDOM, domToDesc: domToPos } = this
+      .context as NodeViewDescriptorsContextValue;
+
+    const desc: NodeViewDescriptor = {
+      pos: this.props.pos,
+      dom: textNode,
+      contentDOM: null,
+    };
+    posToDOM.set(this.props.pos, desc);
+    domToPos.set(textNode, desc);
   }
 
   componentDidUpdate(): void {
@@ -29,14 +36,20 @@ export class TextNodeWrapper extends Component<TextNodeWrapperProps> {
     const textNode = findDOMNode(this);
     if (!textNode) return;
 
-    const { posToDOM, domToPos } = this
-      .context as NodeViewPositionsContextValue;
-    posToDOM.set(this.props.pos, textNode);
-    domToPos.set(textNode, this.props.pos);
+    const { posToDesc: posToDOM, domToDesc: domToPos } = this
+      .context as NodeViewDescriptorsContextValue;
+
+    const desc: NodeViewDescriptor = {
+      pos: this.props.pos,
+      dom: textNode,
+      contentDOM: null,
+    };
+    posToDOM.set(this.props.pos, desc);
+    domToPos.set(textNode, desc);
   }
 
   render() {
     return this.props.children;
   }
 }
-TextNodeWrapper.contextType = NodeViewPositionsContext;
+TextNodeWrapper.contextType = NodeViewDescriptorsContext;

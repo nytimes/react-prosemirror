@@ -1,7 +1,7 @@
 import { useContext } from "react";
 
 import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
-import { NodeViewPositionsContext } from "../contexts/NodeViewPositionsContext.js";
+import { NodeViewDescriptorsContext } from "../contexts/NodeViewPositionsContext.js";
 import { DOMNode } from "../dom.js";
 
 export function useDomAtPos(
@@ -10,7 +10,7 @@ export function useDomAtPos(
   side = 0,
   effect: (dom: { node: DOMNode; offset: number }) => void
 ) {
-  const { posToDOM } = useContext(NodeViewPositionsContext);
+  const { posToDesc: posToDOM } = useContext(NodeViewDescriptorsContext);
   useLayoutGroupEffect(() => {
     const nodePositions = Array.from(posToDOM.keys()).sort((a, b) => a - b);
 
