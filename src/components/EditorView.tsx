@@ -6,6 +6,7 @@ import {
   Transaction,
 } from "prosemirror-state";
 import { Decoration, DecorationSet, DirectEditorProps } from "prosemirror-view";
+import type { EditorView as EditorViewT } from "prosemirror-view";
 import React, {
   ComponentType,
   DetailedHTMLProps,
@@ -303,7 +304,8 @@ export function EditorView({
     decorations
   );
 
-  const contextValue = useMemo(
+  const contextValue = useMemo<EditorViewT>(
+    // @ts-expect-error - EditorView API not fully implemented yet
     () => ({
       state,
       dispatchTransaction,
