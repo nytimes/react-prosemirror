@@ -303,14 +303,17 @@ export function EditorView({
     decorations
   );
 
+  const contextValue = useMemo(
+    () => ({
+      state,
+      dispatchTransaction,
+    }),
+    [state, dispatchTransaction]
+  );
+
   return (
     <LayoutGroup>
-      <EditorViewContext.Provider
-        value={{
-          state,
-          dispatchTransaction,
-        }}
-      >
+      <EditorViewContext.Provider value={contextValue}>
         <NodeViewPositionsContext.Provider
           value={{
             mount: mountRef.current,
