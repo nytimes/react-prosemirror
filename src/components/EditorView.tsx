@@ -89,17 +89,19 @@ export type EditorProps = Omit<
 export type Props = EditorProps &
   DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
 
-export function EditorView({
-  children,
-  editable,
-  keymap = {},
-  nodeViews = {},
-  dispatchTransaction: dispatchProp,
-  decorations = DecorationSet.empty,
-  defaultState,
-  state: stateProp,
-  ...mountProps
-}: Props) {
+export function EditorView(props: Props) {
+  const {
+    children,
+    editable: editableProp,
+    keymap = {},
+    nodeViews = {},
+    dispatchTransaction: dispatchProp,
+    decorations = DecorationSet.empty,
+    defaultState,
+    state: stateProp,
+    ...mountProps
+  } = props;
+
   const [internalState, setInternalState] = useState<EditorState | null>(
     defaultState ?? null
   );
@@ -113,7 +115,7 @@ export function EditorView({
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const state = stateProp ?? internalState!;
 
-  const dispatchTransaction = useMemo(
+  const dispatch = useMemo(
     () =>
       dispatchProp ??
       ((tr: Transaction) => {
@@ -122,12 +124,12 @@ export function EditorView({
     [dispatchProp]
   );
 
-  const mountRef = useContentEditable(state, dispatchTransaction);
+  const mountRef = useContentEditable(state, dispatch);
 
-  useSyncSelection(state, dispatchTransaction, posToDesc, domToDesc);
+  useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
   const onKeyDown: KeyboardEventHandler = (event) => {
-    if (keydownHandler(keymap)(state, dispatchTransaction, event.nativeEvent)) {
+    if (keydownHandler(keymap)(state, dispatch, event.nativeEvent)) {
       event.preventDefault();
     }
   };
@@ -294,10 +296,12 @@ export function EditorView({
     return <>{elements}</>;
   }
 
+  const editable = editableProp ? editableProp(state) : true;
+
   const content = buildReactTree(
     <div
       ref={mountRef}
-      contentEditable={editable ? editable(state) : true}
+      contentEditable={editable}
       suppressContentEditableWarning={true}
       onKeyDown={onKeyDown}
       {...mountProps}
@@ -310,10 +314,17 @@ export function EditorView({
   const contextValue = useMemo<EditorViewT>(
     // @ts-expect-error - EditorView API not fully implemented yet
     () => ({
+      dom: mountRef.current!,
+      editable,
       state,
-      dispatchTransaction,
+      dispatch,
+      props: {
+        editable: editableProp,
+        state: stateProp ?? defaultState,
+        dispatchTransaction: dispatchProp,
+      },
     }),
-    [state, dispatchTransaction]
+    [editable, editableProp, state, stateProp, dispatch, dispatchProp]
   );
 
   return (
