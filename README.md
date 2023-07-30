@@ -1,6 +1,13 @@
 # React ProseMirror
 
-A fully featured library for safely integrating ProseMirror and React.
+<p align="center">
+  <img src="react-prosemirror-logo.png" alt="React ProseMirror Logo" width="120px" height="120px"/>
+  <br>
+  <em>A fully featured library for safely integrating ProseMirror and React.</em>
+  <br>
+</p>
+
+[![Join the chat at https://gitter.im/nytimes/react-prosemirror](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nytimes/react-prosemirror?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 ## Installation
 
