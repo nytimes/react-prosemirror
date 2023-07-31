@@ -34,6 +34,10 @@ import {
   wrapInDecorations,
   wrapInMarks,
 } from "../nodeViews/render.js";
+import {
+  DecorationInternal,
+  ReactWidgetDecoration,
+} from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 import { DOMNode, DOMSelection } from "../prosemirror-internal/dom.js";
 import {
@@ -135,7 +139,6 @@ export function EditorView(props: Props) {
   useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
   const onKeyDown: KeyboardEventHandler = (event) => {
-    // @ts-expect-error TODO: Reconcile this type with the EditorView class
     if (keydownHandler(keymap)(editorViewRef.current, event.nativeEvent)) {
       event.preventDefault();
     }
@@ -156,16 +159,13 @@ export function EditorView(props: Props) {
         const localDecorations = decorations.find(
           pos + offset + 1,
           pos + offset + 1 + childNode.nodeSize
-        );
+        ) as DecorationInternal[];
         const inlineDecorations = localDecorations.filter(
-          (decoration) =>
-            (decoration as Decoration & { inline: boolean }).inline
+          (decoration) => decoration.inline
         );
         const widgetDecorations = localDecorations.filter(
-          (decoration) =>
-            (decoration as Decoration & { type: ReactWidgetType })
-              .type instanceof ReactWidgetType
-        );
+          (decoration) => decoration.type instanceof ReactWidgetType
+        ) as ReactWidgetDecoration[];
         const textNodes: Node[] = makeCuts(
           inlineDecorations
             .flatMap((decoration) => [
@@ -214,9 +214,7 @@ export function EditorView(props: Props) {
           widgetDecorations.forEach((decoration) => {
             if (decoration.from !== textNodeEnd) return;
 
-            const decorationType = (
-              decoration as Decoration & { type: ReactWidgetType }
-            ).type;
+            const decorationType = decoration.type;
 
             childElements.push(<decorationType.Component />);
           });
@@ -368,7 +366,7 @@ export function EditorView(props: Props) {
         return this.root.activeElement == this.dom;
       },
       get root(): Document | ShadowRoot {
-        const cached = this._root;
+        const cached = this["_root"];
         if (cached == null)
           for (
             let search = this.dom.parentNode;
@@ -377,17 +375,20 @@ export function EditorView(props: Props) {
           ) {
             if (
               search.nodeType == 9 ||
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (search.nodeType == 11 && (search as any).host)
             ) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               if (!(search as any).getSelection)
                 Object.getPrototypeOf(search).getSelection = () =>
-                  (search as DOMNode).ownerDocument!.getSelection();
-              return (this._root = search as Document | ShadowRoot);
+                  (search as DOMNode).ownerDocument?.getSelection();
+              return (this["_root"] = search as Document | ShadowRoot);
             }
           }
         return cached || document;
       },
       domSelection(): DOMSelection {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return (this.root as Document).getSelection()!;
       },
       props: {
@@ -402,11 +403,9 @@ export function EditorView(props: Props) {
         return this.docView.domFromPos(pos, side);
       },
       coordsAtPos(pos, side = 1) {
-        // @ts-expect-error TODO: Reconcile this type with the EditorView class
         return coordsAtPos(this, pos, side);
       },
       posAtCoords(coords) {
-        // @ts-expect-error TODO: Reconcile this type with the EditorView class
         return posAtCoords(this, coords);
       },
       posAtDOM(node: DOMNode, offset: number, bias = -1): number {
@@ -419,7 +418,6 @@ export function EditorView(props: Props) {
         dir: "up" | "down" | "left" | "right" | "forward" | "backward",
         state?: EditorState
       ): boolean {
-        // @ts-expect-error TODO: Reconcile this type with the EditorView class
         return endOfTextblock(this, state || this.state, dir);
       },
     }),

@@ -4,7 +4,7 @@ import { Decoration } from "prosemirror-view";
 import { DOMNode } from "../prosemirror-internal/dom.js";
 
 export interface DecorationType {
-  spec: any;
+  spec: unknown;
   map(
     mapping: Mappable,
     span: Decoration,

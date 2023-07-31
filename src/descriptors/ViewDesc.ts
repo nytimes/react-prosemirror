@@ -1,6 +1,11 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Fragment, Mark, Node, ParseRule } from "prosemirror-model";
-import { Decoration, DecorationSource } from "prosemirror-view";
+import { DecorationSource } from "prosemirror-view";
 
+import {
+  DecorationInternal,
+  ReactWidgetDecoration,
+} from "../prosemirror-internal/DecorationInternal.js";
 import * as browser from "../prosemirror-internal/browser.js";
 import {
   DOMNode,
@@ -8,9 +13,13 @@ import {
   isEquivalentPosition,
 } from "../prosemirror-internal/dom.js";
 
-function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
+function sameOuterDeco(
+  a: readonly DecorationInternal[],
+  b: readonly DecorationInternal[]
+) {
   if (a.length != b.length) return false;
   for (let i = 0; i < a.length; i++)
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     if (!a[i]!.type.eq(b[i]!.type)) return false;
   return true;
 }
@@ -40,6 +49,7 @@ export class ViewDesc {
     // This is the node that holds the child views. It may be null for
     // descs that don't have children.
     public contentDOM: HTMLElement | null,
+    // @ts-expect-error posToDesc will enable performance optimizations later
     private posToDesc: Map<number, ViewDesc>,
     private domToDesc: Map<DOMNode, ViewDesc>
   ) {
@@ -49,7 +59,7 @@ export class ViewDesc {
 
   // Used to check whether a given description corresponds to a
   // widget/mark/node.
-  matchesWidget(_widget: Decoration) {
+  matchesWidget(_widget: DecorationInternal) {
     return false;
   }
   matchesMark(_mark: Mark) {
@@ -57,7 +67,7 @@ export class ViewDesc {
   }
   matchesNode(
     _node: Node,
-    _outerDeco: readonly Decoration[],
+    _outerDeco: readonly DecorationInternal[],
     _innerDeco: DecorationSource
   ) {
     return false;
@@ -201,12 +211,14 @@ export class ViewDesc {
         else return desc;
       }
     }
+    return undefined;
   }
 
   getDesc(dom: DOMNode) {
     const desc = this.domToDesc.get(dom);
     for (let cur: ViewDesc | undefined = desc; cur; cur = cur.parent)
       if (cur == this) return desc;
+    return undefined;
   }
 
   posFromDOM(dom: DOMNode, offset: number, bias: number) {
@@ -231,6 +243,7 @@ export class ViewDesc {
       if (pos < end) return child.descAt(pos - offset - child.border);
       offset = end;
     }
+    return undefined;
   }
 
   domFromPos(
@@ -518,7 +531,10 @@ export class ViewDesc {
   }
 
   ignoreMutation(mutation: MutationRecord): boolean {
-    return !this.contentDOM && (mutation.type as any) != "selection";
+    return (
+      !this.contentDOM &&
+      (mutation.type as MutationRecordType | "selection") != "selection"
+    );
   }
 
   get contentLost() {
@@ -604,7 +620,7 @@ export class TrailingHackViewDesc extends ViewDesc {
 class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc,
-    readonly widget: Decoration,
+    readonly widget: ReactWidgetDecoration,
     dom: DOMNode,
     posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
@@ -613,7 +629,7 @@ class WidgetViewDesc extends ViewDesc {
     this.widget = widget;
   }
 
-  matchesWidget(widget: Decoration) {
+  matchesWidget(widget: ReactWidgetDecoration) {
     return this.dirty == NOT_DIRTY && widget.type.eq(this.widget.type);
   }
 
@@ -628,7 +644,8 @@ class WidgetViewDesc extends ViewDesc {
 
   ignoreMutation(mutation: MutationRecord) {
     return (
-      (mutation.type as any) != "selection" || this.widget.spec.ignoreSelection
+      (mutation.type as MutationRecordType | "selection") != "selection" ||
+      this.widget.spec.ignoreSelection
     );
   }
 
@@ -637,7 +654,7 @@ class WidgetViewDesc extends ViewDesc {
   }
 
   get side() {
-    return (this.widget.type as any).side as number;
+    return this.widget.type.side;
   }
 }
 
@@ -646,7 +663,7 @@ class WidgetViewDesc extends ViewDesc {
 // a fixed nesting order, for simplicity and predictability, so in
 // some cases they will be split more often than would appear
 // necessary.
-class MarkViewDesc extends ViewDesc {
+export class MarkViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc,
     readonly mark: Mark,
@@ -704,7 +721,7 @@ export class NodeViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     public node: Node,
-    public outerDeco: readonly Decoration[],
+    public outerDeco: readonly DecorationInternal[],
     public innerDeco: DecorationSource,
     dom: DOMNode,
     contentDOM: HTMLElement | null,
@@ -730,7 +747,7 @@ export class NodeViewDesc extends ViewDesc {
   // static create(
   //   parent: ViewDesc | undefined,
   //   node: Node,
-  //   outerDeco: readonly Decoration[],
+  //   outerDeco: readonly DecorationInternal[],
   //   innerDeco: DecorationSource,
   //   view: EditorView,
   //   pos: number
@@ -845,13 +862,14 @@ export class NodeViewDesc extends ViewDesc {
 
   matchesNode(
     node: Node,
-    outerDeco: readonly Decoration[],
+    outerDeco: readonly DecorationInternal[],
     innerDeco: DecorationSource
-  ) {
+  ): boolean {
     return (
       this.dirty == NOT_DIRTY &&
       node.eq(this.node) &&
       sameOuterDeco(outerDeco, this.outerDeco) &&
+      // @ts-expect-error .eq is private?
       innerDeco.eq(this.innerDeco)
     );
   }
@@ -882,11 +900,12 @@ export class NodeViewDesc extends ViewDesc {
 export class TextViewDesc extends NodeViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
+    public node: Node,
+    public outerDeco: readonly DecorationInternal[],
+    public innerDeco: DecorationSource,
     dom: DOMNode,
-    nodeDOM: DOMNode,
+    readonly nodeDOM: DOMNode,
+
     posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
@@ -905,9 +924,13 @@ export class TextViewDesc extends NodeViewDesc {
 
   parseRule(): ParseRule {
     let skip = this.nodeDOM.parentNode;
-    while (skip && skip != this.dom && !(skip as any).pmIsDeco)
+    while (
+      skip &&
+      skip != this.dom &&
+      !(skip as ParentNode & { pmIsDeco: boolean }).pmIsDeco
+    )
       skip = skip.parentNode;
-    return { skip: (skip || true) as any };
+    return { skip: !!skip || true };
   }
 
   inParent() {
@@ -929,23 +952,10 @@ export class TextViewDesc extends NodeViewDesc {
 
   ignoreMutation(mutation: MutationRecord) {
     return (
-      mutation.type != "characterData" && (mutation.type as any) != "selection"
+      mutation.type != "characterData" &&
+      (mutation.type as MutationRecordType | "selection") != "selection"
     );
   }
-
-  // slice(from: number, to: number, view: EditorView) {
-  //   const node = this.node.cut(from, to),
-  //     dom = document.createTextNode(node.text!);
-  //   return new TextViewDesc(
-  //     this.parent,
-  //     node,
-  //     this.outerDeco,
-  //     this.innerDeco,
-  //     dom,
-  //     dom,
-  //     view
-  //   );
-  // }
 
   markDirty(from: number, to: number) {
     super.markDirty(from, to);
