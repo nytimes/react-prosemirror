@@ -7,7 +7,9 @@ import React, {
   isValidElement,
 } from "react";
 
-export function renderSpec(outputSpec: DOMOutputSpec): ReactNode {
+import { TrailingHackWrapper } from "../components/TrailingHackWrapper.js";
+
+export function renderSpec(outputSpec: DOMOutputSpec, pos: number): ReactNode {
   if (typeof outputSpec === "string") {
     return outputSpec;
   }
@@ -41,9 +43,13 @@ export function renderSpec(outputSpec: DOMOutputSpec): ReactNode {
             "Content hole must be the only child of its parent node"
           );
         }
-        return createElement(tagName, props, <br />);
+        return createElement(
+          tagName,
+          props,
+          <TrailingHackWrapper pos={pos + 1} />
+        );
       }
-      content.push(renderSpec(child));
+      content.push(renderSpec(child, pos));
     }
     return createElement(tagName, props, ...content);
   }
@@ -63,7 +69,8 @@ export function wrapInMarks(
     if (!outputSpec)
       throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
 
-    const markElement = renderSpec(outputSpec);
+    // TODO: The position doesn't really matter here?
+    const markElement = renderSpec(outputSpec, -1);
     if (!isValidElement(markElement)) {
       throw new Error("Don't yet support marks without holes");
     }

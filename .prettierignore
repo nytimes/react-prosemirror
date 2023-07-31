@@ -2,3 +2,6 @@
 .yarn/
 .yarnrc.yml
 .pnp.*
+
+src/prosemirror-internal/*
+!src/prosemirror-internal/README.md

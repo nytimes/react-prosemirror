@@ -1,7 +1,7 @@
 import { createContext } from "react";
 
 import { ViewDesc } from "../descriptors/ViewDesc.js";
-import { DOMNode } from "../dom.js";
+import { DOMNode } from "../prosemirror-internal/dom.js";
 
 export type NodeViewDescriptorsContextValue = {
   mount: HTMLDivElement | null;

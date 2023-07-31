@@ -1,3 +1,4 @@
+import { keydownHandler } from "prosemirror-keymap";
 import { DOMOutputSpec, Node } from "prosemirror-model";
 import {
   Command,
@@ -6,7 +7,6 @@ import {
   Transaction,
 } from "prosemirror-state";
 import { Decoration, DecorationSet, DirectEditorProps } from "prosemirror-view";
-import type { EditorView as EditorViewT } from "prosemirror-view";
 import React, {
   ComponentType,
   DetailedHTMLProps,
@@ -26,25 +26,32 @@ import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewDescriptorsContext } from "../contexts/NodeViewPositionsContext.js";
 import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
-import { ViewDesc } from "../descriptors/ViewDesc.js";
-import { DOMNode } from "../dom.js";
+import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
-import { keydownHandler } from "../keydownHandler.js";
 import {
   renderSpec,
   wrapInDecorations,
   wrapInMarks,
 } from "../nodeViews/render.js";
+import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
+import { DOMNode, DOMSelection } from "../prosemirror-internal/dom.js";
+import {
+  coordsAtPos,
+  endOfTextblock,
+  posAtCoords,
+} from "../prosemirror-internal/domcoords.js";
 
 import { NodeWrapper } from "./NodeWrapper.js";
 import { TextNodeWrapper } from "./TextNodeWrapper.js";
+import { TrailingHackWrapper } from "./TrailingHackWrapper.js";
 
 function makeCuts(cuts: number[], node: Node) {
   const sortedCuts = cuts.sort((a, b) => a - b);
   const nodes: [Node, ...Node[]] = [node];
   let curr = 0;
   for (const cut of sortedCuts) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const lastNode = nodes.pop()!;
     if (cut - curr !== 0) {
       nodes.push(lastNode.cut(0, cut - curr));
@@ -128,7 +135,8 @@ export function EditorView(props: Props) {
   useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
   const onKeyDown: KeyboardEventHandler = (event) => {
-    if (keydownHandler(keymap)(state, dispatch, event.nativeEvent)) {
+    // @ts-expect-error TODO: Reconcile this type with the EditorView class
+    if (keydownHandler(keymap)(editorViewRef.current, event.nativeEvent)) {
       event.preventDefault();
     }
   };
@@ -141,7 +149,7 @@ export function EditorView(props: Props) {
   ) {
     const childElements: ReactNode[] = [];
     if (node.childCount === 0 && node.isTextblock) {
-      childElements.push(<br />);
+      childElements.push(<TrailingHackWrapper pos={pos + 1} />);
     }
     node.forEach((childNode, offset) => {
       if (childNode.isText) {
@@ -177,7 +185,7 @@ export function EditorView(props: Props) {
           const textNodeStart = pos + offset + subOffset + 1;
           const textNodeEnd = pos + offset + subOffset + 1 + textNode.nodeSize;
           const marked = wrapInMarks(
-            <ChildDescriptorsContext.Consumer>
+            <ChildDescriptorsContext.Consumer key={textNodeStart}>
               {(siblingDescriptors) => (
                 <TextNodeWrapper
                   siblingDescriptors={siblingDescriptors}
@@ -240,7 +248,7 @@ export function EditorView(props: Props) {
               state.selection.node === node,
             pos: pos + offset + 1,
           })
-        : renderSpec(outputSpec);
+        : renderSpec(outputSpec, pos + offset + 1);
 
       if (isValidElement(element)) {
         element = buildReactTree(
@@ -285,7 +293,7 @@ export function EditorView(props: Props) {
 
     const decorated = wrapInDecorations(marked, nodeDecorations, false);
     const wrapped = (
-      <NodeWrapper pos={pos} node={node}>
+      <NodeWrapper key={pos} pos={pos} node={node}>
         {decorated}
       </NodeWrapper>
     );
@@ -322,13 +330,66 @@ export function EditorView(props: Props) {
     decorations
   );
 
-  const contextValue = useMemo<EditorViewT>(
+  // This is only safe to use in effects/layout effects or
+  // event handlers!
+  const editorViewAPI = useMemo<EditorViewInternal>(
     // @ts-expect-error - EditorView API not fully implemented yet
     () => ({
-      dom: mountRef.current!,
+      /* Start TODO */
+      dragging: null,
+      composing: false,
+      someProp: () => {
+        /* */
+      },
+      focus() {
+        /* */
+      },
+      /* End TODO */
+      get dom() {
+        if (!mountRef.current) {
+          throw new Error(
+            "The EditorView should only be accessed in an effect or event handler."
+          );
+        }
+        return mountRef.current;
+      },
+      get docView() {
+        if (!mountRef.current || !domToDesc.current.get(mountRef.current)) {
+          throw new Error(
+            "The EditorView should only be accessed in an effect or event handler."
+          );
+        }
+        return domToDesc.current.get(mountRef.current) as NodeViewDesc;
+      },
       editable,
       state,
       dispatch,
+      hasFocus() {
+        return this.root.activeElement == this.dom;
+      },
+      get root(): Document | ShadowRoot {
+        const cached = this._root;
+        if (cached == null)
+          for (
+            let search = this.dom.parentNode;
+            search;
+            search = search.parentNode
+          ) {
+            if (
+              search.nodeType == 9 ||
+              (search.nodeType == 11 && (search as any).host)
+            ) {
+              if (!(search as any).getSelection)
+                Object.getPrototypeOf(search).getSelection = () =>
+                  (search as DOMNode).ownerDocument!.getSelection();
+              return (this._root = search as Document | ShadowRoot);
+            }
+          }
+        return cached || document;
+      },
+      domSelection(): DOMSelection {
+        return (this.root as Document).getSelection()!;
+      },
       props: {
         editable: editableProp,
         state: stateProp ?? defaultState,
@@ -337,13 +398,51 @@ export function EditorView(props: Props) {
       nodeDOM(pos) {
         return posToDesc.current.get(pos)?.dom ?? null;
       },
+      domAtPos(pos, side = 0) {
+        return this.docView.domFromPos(pos, side);
+      },
+      coordsAtPos(pos, side = 1) {
+        // @ts-expect-error TODO: Reconcile this type with the EditorView class
+        return coordsAtPos(this, pos, side);
+      },
+      posAtCoords(coords) {
+        // @ts-expect-error TODO: Reconcile this type with the EditorView class
+        return posAtCoords(this, coords);
+      },
+      posAtDOM(node: DOMNode, offset: number, bias = -1): number {
+        const pos = this.docView.posFromDOM(node, offset, bias);
+        if (pos == null)
+          throw new RangeError("DOM position not inside the editor");
+        return pos;
+      },
+      endOfTextblock(
+        dir: "up" | "down" | "left" | "right" | "forward" | "backward",
+        state?: EditorState
+      ): boolean {
+        // @ts-expect-error TODO: Reconcile this type with the EditorView class
+        return endOfTextblock(this, state || this.state, dir);
+      },
     }),
-    [editable, editableProp, state, stateProp, dispatch, dispatchProp]
+    [
+      mountRef,
+      posToDesc,
+      domToDesc,
+      editable,
+      state,
+      dispatch,
+      editableProp,
+      stateProp,
+      defaultState,
+      dispatchProp,
+    ]
   );
+
+  const editorViewRef = useRef(editorViewAPI);
+  editorViewRef.current = editorViewAPI;
 
   return (
     <LayoutGroup>
-      <EditorViewContext.Provider value={contextValue}>
+      <EditorViewContext.Provider value={editorViewRef}>
         <NodeViewDescriptorsContext.Provider
           value={{
             mount: mountRef.current,

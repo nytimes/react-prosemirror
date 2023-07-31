@@ -1,4 +1,7 @@
-import type { EditorView as EditorViewT } from "prosemirror-view";
-import { createContext } from "react";
+import { MutableRefObject, createContext } from "react";
 
-export const EditorViewContext = createContext(null as unknown as EditorViewT);
+import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
+
+export const EditorViewContext = createContext(
+  null as unknown as MutableRefObject<EditorViewInternal>
+);

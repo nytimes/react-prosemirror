@@ -1,8 +1,12 @@
 import { Fragment, Mark, Node, ParseRule } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 
-import * as browser from "../browser.js";
-import { DOMNode, domIndex, isEquivalentPosition } from "../dom.js";
+import * as browser from "../prosemirror-internal/browser.js";
+import {
+  DOMNode,
+  domIndex,
+  isEquivalentPosition,
+} from "../prosemirror-internal/dom.js";
 
 function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
   if (a.length != b.length) return false;
@@ -77,7 +81,7 @@ export class ViewDesc {
 
   posBeforeChild(child: ViewDesc): number {
     for (let i = 0, pos = this.posAtStart; ; i++) {
-      const cur = this.children[i];
+      const cur = this.children[i]!;
       if (cur == child) return pos;
       pos += cur.size;
     }
@@ -575,6 +579,23 @@ export class ViewDesc {
 
   get ignoreForCoords() {
     return false;
+  }
+}
+
+// A dummy desc used to tag trailing BR or IMG nodes created to work
+// around contentEditable terribleness.
+export class TrailingHackViewDesc extends ViewDesc {
+  parseRule() {
+    return { ignore: true };
+  }
+  matchesHack(nodeName: string) {
+    return this.dirty == NOT_DIRTY && this.dom.nodeName == nodeName;
+  }
+  get domAtom() {
+    return true;
+  }
+  get ignoreForCoords() {
+    return this.dom.nodeName == "IMG";
   }
 }
 

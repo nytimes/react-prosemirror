@@ -3,7 +3,7 @@ import { EditorView } from "prosemirror-view";
 import { MutableRefObject, useEffect } from "react";
 
 import { ViewDesc } from "../descriptors/ViewDesc.js";
-import { DOMNode } from "../dom.js";
+import { DOMNode } from "../prosemirror-internal/dom.js";
 
 export function useSyncSelection(
   state: EditorState,
@@ -85,11 +85,23 @@ export function useSyncSelection(
     const headDesc = posToDesc.current.get(headNodePos);
     if (!anchorDesc || !headDesc) return;
 
+    // You can't actually put a selection inside of a <br> tag,
+    // but we use them to handle contenteditable issues with
+    // empty textblocks
+    const anchorNode =
+      anchorDesc.dom.nodeName === "BR"
+        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          anchorDesc.dom.parentNode!
+        : anchorDesc.dom;
+    const headNode =
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      headDesc.dom.nodeName === "BR" ? headDesc.dom.parentNode! : headDesc.dom;
+
     const domSelection = document.getSelection();
     domSelection?.setBaseAndExtent(
-      anchorDesc.dom,
+      anchorNode,
       state.selection.anchor - anchorNodePos,
-      headDesc.dom,
+      headNode,
       state.selection.head - headNodePos
     );
   }, [posToDesc, state]);

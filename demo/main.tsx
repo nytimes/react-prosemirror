@@ -28,6 +28,7 @@ import {
   NodeViewComponentProps,
 } from "../src/components/EditorView.js";
 import { widget } from "../src/decorations/ReactWidgetType.js";
+import { useView } from "../src/hooks/useView.js";
 
 import "./main.css";
 
@@ -88,6 +89,7 @@ const Paragraph = forwardRef(function Paragraph(
   {
     children,
     className,
+    pos,
   }: NodeViewComponentProps &
     DetailedHTMLProps<
       HTMLAttributes<HTMLParagraphElement>,
@@ -95,6 +97,10 @@ const Paragraph = forwardRef(function Paragraph(
     >,
   ref: Ref<HTMLParagraphElement>
 ) {
+  useView((view) => {
+    // eslint-disable-next-line no-console
+    // console.log(pos, view.coordsAtPos(pos));
+  });
   return (
     <p ref={ref} className={className}>
       {children}

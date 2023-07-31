@@ -1,9 +1,3 @@
-import {
-  chainCommands,
-  deleteSelection,
-  joinBackward,
-  selectNodeBackward,
-} from "prosemirror-commands";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import { useEffect, useRef } from "react";
