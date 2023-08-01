@@ -9,7 +9,7 @@ import {
 } from "../contexts/NodeViewContext.js";
 import { TextViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 
-import { OutputSpec } from "./OutputSpec.js";
+import { MarkView } from "./MarkView.js";
 
 type Props = {
   node: Node;
@@ -75,13 +75,10 @@ export class TextNodeView extends Component<Props> {
   }
 
   render() {
-    return this.props.node.marks.reduce<JSX.Element>((children, mark) => {
-      const outputSpec = mark.type.spec.toDOM?.(mark, true);
-      if (!outputSpec)
-        throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
-
-      return <OutputSpec outputSpec={outputSpec}>{children}</OutputSpec>;
-    }, <>{this.props.node.text}</>);
+    return this.props.node.marks.reduce<JSX.Element>(
+      (children, mark) => <MarkView mark={mark}>{children}</MarkView>,
+      <>{this.props.node.text}</>
+    );
   }
 }
 

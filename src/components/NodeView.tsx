@@ -14,6 +14,7 @@ import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js"
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 
+import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
 import { TextNodeView } from "./TextNodeView.js";
@@ -29,10 +30,10 @@ export function NodeView({ node, pos }: Props) {
     useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
-  const ref = useRef<HTMLElement | null>(null);
+  const domRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
-    if (!ref.current) return;
+    if (!domRef.current) return;
 
     const firstChildDesc = childDescriptors[0];
 
@@ -41,15 +42,15 @@ export function NodeView({ node, pos }: Props) {
       node,
       [],
       DecorationSet.empty,
-      ref.current,
+      domRef.current,
       firstChildDesc?.dom.parentElement ?? null,
-      ref.current,
+      domRef.current,
       posToDesc,
       domToDesc
     );
     desc.children = childDescriptors;
     posToDesc.set(pos, desc);
-    domToDesc.set(ref.current, desc);
+    domToDesc.set(domRef.current, desc);
     siblingDescriptors.push(desc);
 
     for (const childDesc of childDescriptors) {
@@ -57,12 +58,12 @@ export function NodeView({ node, pos }: Props) {
     }
   });
 
-  const children: ReactNode[] = [];
+  const content: ReactNode[] = [];
   const innerPos = pos + 1;
   node.content.forEach((childNode, offset) => {
     const childPos = innerPos + offset;
     if (childNode.isText) {
-      children.push(
+      content.push(
         <ChildDescriptorsContext.Consumer key={childPos}>
           {(siblingDescriptors) => (
             <TextNodeView
@@ -74,15 +75,19 @@ export function NodeView({ node, pos }: Props) {
         </ChildDescriptorsContext.Consumer>
       );
     } else {
-      children.push(
-        <NodeView key={childPos} node={childNode} pos={childPos} />
-      );
+      content.push(<NodeView key={childPos} node={childNode} pos={childPos} />);
     }
   });
 
-  if (!children.length) {
-    children.push(<TrailingHackView pos={innerPos} />);
+  if (!content.length) {
+    content.push(<TrailingHackView key={innerPos} pos={innerPos} />);
   }
+
+  const children = (
+    <ChildDescriptorsContext.Provider value={childDescriptors}>
+      {content}
+    </ChildDescriptorsContext.Provider>
+  );
 
   const Component:
     | ForwardRefExoticComponent<
@@ -91,9 +96,10 @@ export function NodeView({ node, pos }: Props) {
     | undefined = nodeViews[node.type.name];
 
   if (Component) {
-    return (
+    return node.marks.reduce(
+      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
       <Component
-        ref={ref}
+        ref={domRef}
         node={node}
         pos={pos}
         decorations={[]}
@@ -102,9 +108,7 @@ export function NodeView({ node, pos }: Props) {
           state.selection.node === node
         }
       >
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
-          {children}
-        </ChildDescriptorsContext.Provider>
+        {children}
       </Component>
     );
   }
@@ -112,11 +116,10 @@ export function NodeView({ node, pos }: Props) {
   const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
 
   if (outputSpec) {
-    return (
-      <OutputSpec ref={ref} outputSpec={outputSpec}>
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
-          {children}
-        </ChildDescriptorsContext.Provider>
+    return node.marks.reduce(
+      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+      <OutputSpec ref={domRef} outputSpec={outputSpec}>
+        {children}
       </OutputSpec>
     );
   }

@@ -68,7 +68,7 @@ const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
     schema.nodes.paragraph.create({}, [
-      schema.text("This", [schema.marks.em.create()]),
+      schema.text("This", [schema.marks.em.create(), schema.marks.em.create()]),
       schema.text(" is the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
