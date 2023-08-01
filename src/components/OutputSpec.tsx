@@ -7,7 +7,7 @@ type Props = {
 };
 
 export const OutputSpec = forwardRef(function OutputSpec(
-  { outputSpec, children }: Props,
+  { outputSpec, children, ...initialProps }: Props,
   ref
 ) {
   if (typeof outputSpec === "string") {
@@ -23,7 +23,7 @@ export const OutputSpec = forwardRef(function OutputSpec(
   const tagName = tagSpec.replace(" ", ":");
   const attrs = outputSpec[1];
 
-  const props: Record<string, unknown> = { ref };
+  const props: Record<string, unknown> = { ...initialProps, ref };
   let start = 1;
   if (
     attrs &&

@@ -5,6 +5,8 @@ import React, {
   ForwardRefExoticComponent,
   ReactNode,
   RefAttributes,
+  cloneElement,
+  createElement,
   useContext,
   useLayoutEffect,
   useRef,
@@ -12,8 +14,13 @@ import React, {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
-import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
+import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
+import { NodeViewDesc, ViewDesc, iterDeco } from "../descriptors/ViewDesc.js";
+import {
+  DecorationInternal,
+  DecorationSourceInternal,
+  NonWidgetType,
+} from "../prosemirror-internal/DecorationInternal.js";
 
 import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -24,10 +31,17 @@ import { TrailingHackView } from "./TrailingHackView.js";
 type Props = {
   node: Node;
   pos: number;
-  decorations: DecorationSourceInternal;
+  decorations: readonly DecorationInternal[];
+  innerDecorations: DecorationSourceInternal;
 };
 
-export function NodeView({ node, pos, decorations }: Props) {
+export function NodeView({
+  node,
+  pos,
+  decorations,
+  innerDecorations,
+  ...props
+}: Props) {
   const { posToDesc, domToDesc, nodeViews, state } =
     useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
@@ -63,31 +77,44 @@ export function NodeView({ node, pos, decorations }: Props) {
 
   const content: ReactNode[] = [];
   const innerPos = pos + 1;
-  node.content.forEach((childNode, offset) => {
-    const childPos = innerPos + offset;
-    if (childNode.isText) {
+  iterDeco(
+    node,
+    innerDecorations,
+    (widget, offset, index) => {
       content.push(
-        <ChildDescriptorsContext.Consumer key={childPos}>
-          {(siblingDescriptors) => (
-            <TextNodeView
-              node={childNode}
-              pos={childPos}
-              siblingDescriptors={siblingDescriptors}
-            />
-          )}
-        </ChildDescriptorsContext.Consumer>
+        createElement((widget.type as ReactWidgetType).Component, {
+          key: `${innerPos + offset}-${index}`,
+        })
       );
-    } else {
-      content.push(
-        <NodeView
-          key={childPos}
-          node={childNode}
-          pos={childPos}
-          decorations={decorations.forChild(offset, childNode)}
-        />
-      );
+    },
+    (childNode, outerDeco, innerDeco, offset) => {
+      const childPos = innerPos + offset;
+      if (childNode.isText) {
+        content.push(
+          <ChildDescriptorsContext.Consumer key={childPos}>
+            {(siblingDescriptors) => (
+              <TextNodeView
+                node={childNode}
+                pos={childPos}
+                siblingDescriptors={siblingDescriptors}
+                decorations={outerDeco}
+              />
+            )}
+          </ChildDescriptorsContext.Consumer>
+        );
+      } else {
+        content.push(
+          <NodeView
+            key={childPos}
+            node={childNode}
+            pos={childPos}
+            decorations={outerDeco}
+            innerDecorations={innerDeco}
+          />
+        );
+      }
     }
-  });
+  );
 
   if (!content.length) {
     content.push(<TrailingHackView key={innerPos} pos={innerPos} />);
@@ -99,6 +126,8 @@ export function NodeView({ node, pos, decorations }: Props) {
     </ChildDescriptorsContext.Provider>
   );
 
+  let element: JSX.Element | null = null;
+
   const Component:
     | ForwardRefExoticComponent<
         NodeViewComponentProps & RefAttributes<HTMLElement>
@@ -106,21 +135,18 @@ export function NodeView({ node, pos, decorations }: Props) {
     | undefined = nodeViews[node.type.name];
 
   if (Component) {
-    return node.marks.reduce(
-      (element, mark) => (
-        <MarkView mark={mark} ref={nodeDomRef}>
-          {element}
-        </MarkView>
-      ),
+    element = (
       <Component
         ref={domRef}
         node={node}
         pos={pos}
-        decorations={[]}
+        decorations={decorations}
+        innerDecorations={innerDecorations}
         isSelected={
           state.selection instanceof NodeSelection &&
           state.selection.node === node
         }
+        {...props}
       >
         {children}
       </Component>
@@ -130,17 +156,61 @@ export function NodeView({ node, pos, decorations }: Props) {
   const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
 
   if (outputSpec) {
-    return node.marks.reduce(
-      (element, mark) => (
-        <MarkView ref={nodeDomRef} mark={mark}>
-          {element}
-        </MarkView>
-      ),
-      <OutputSpec ref={domRef} outputSpec={outputSpec}>
+    element = (
+      <OutputSpec ref={domRef} outputSpec={outputSpec} {...props}>
         {children}
       </OutputSpec>
     );
   }
 
-  throw new Error(`Node spec for ${node.type.name} is missing toDOM`);
+  if (!element) {
+    throw new Error(`Node spec for ${node.type.name} is missing toDOM`);
+  }
+
+  const wrapDecorations: DecorationInternal[] = [];
+  for (const decoration of decorations) {
+    if ((decoration.type as NonWidgetType).attrs.nodeName) {
+      wrapDecorations.push(decoration);
+    } else {
+      const {
+        class: className,
+        style: _,
+        ...attrs
+      } = (decoration.type as NonWidgetType).attrs;
+      element = cloneElement(element, {
+        className,
+        ...attrs,
+      });
+    }
+  }
+
+  return wrapDecorations.reduce(
+    (element, deco) => {
+      const {
+        nodeName,
+        class: className,
+        style: _,
+        ...attrs
+      } = (deco.type as NonWidgetType).attrs;
+
+      return createElement(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        nodeName!,
+        {
+          className,
+          ...attrs,
+        },
+        element
+      );
+    },
+
+    node.marks.reduce(
+      (element, mark) => (
+        <MarkView ref={nodeDomRef} mark={mark}>
+          {element}
+        </MarkView>
+      ),
+      element
+    )
+  );
 }

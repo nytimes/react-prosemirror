@@ -5,6 +5,7 @@ import React, {
   ForwardedRef,
   HTMLAttributes,
   ReactNode,
+  createElement,
   forwardRef,
   useContext,
   useLayoutEffect,
@@ -13,10 +14,12 @@ import React, {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
+import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
+import { NodeViewDesc, ViewDesc, iterDeco } from "../descriptors/ViewDesc.js";
 import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 
 import { NodeView } from "./NodeView.js";
+import { TextNodeView } from "./TextNodeView.js";
 
 type Props = {
   node: Node;
@@ -61,17 +64,44 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
   const children: ReactNode[] = [];
   const innerPos = 0;
-  node.content.forEach((childNode, offset) => {
-    const childPos = innerPos + offset;
-    children.push(
-      <NodeView
-        key={childPos}
-        node={childNode}
-        pos={childPos}
-        decorations={decorations.forChild(offset, childNode)}
-      />
-    );
-  });
+  iterDeco(
+    node,
+    decorations,
+    (widget, offset, index) => {
+      children.push(
+        createElement((widget.type as ReactWidgetType).Component, {
+          key: `${innerPos + offset}-${index}`,
+        })
+      );
+    },
+    (childNode, outerDeco, innerDeco, offset) => {
+      const childPos = innerPos + offset;
+      if (childNode.isText) {
+        children.push(
+          <ChildDescriptorsContext.Consumer key={childPos}>
+            {(siblingDescriptors) => (
+              <TextNodeView
+                node={childNode}
+                pos={childPos}
+                siblingDescriptors={siblingDescriptors}
+                decorations={outerDeco}
+              />
+            )}
+          </ChildDescriptorsContext.Consumer>
+        );
+      } else {
+        children.push(
+          <NodeView
+            key={childPos}
+            node={childNode}
+            pos={childPos}
+            decorations={outerDeco}
+            innerDecorations={innerDeco}
+          />
+        );
+      }
+    }
+  );
 
   return (
     <div

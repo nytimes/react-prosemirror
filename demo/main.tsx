@@ -20,6 +20,7 @@ import React, {
   HTMLAttributes,
   Ref,
   forwardRef,
+  useState,
 } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -68,7 +69,7 @@ const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
     schema.nodes.paragraph.create({}, [
-      schema.text("This", [schema.marks.em.create(), schema.marks.em.create()]),
+      schema.text("This", [schema.marks.em.create()]),
       schema.text(" is the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
@@ -122,16 +123,30 @@ function TestWidget() {
 }
 
 function DemoEditor() {
+  const [state, setState] = useState(editorState);
+
+  const decorations = [Decoration.inline(5, 15, { class: "inline-deco" })];
+  state.doc.forEach((node, offset, index) => {
+    if (index === 1) {
+      decorations.push(
+        Decoration.node(offset, offset + node.nodeSize, {
+          nodeName: "div",
+          class: "node-deco",
+        })
+      );
+    }
+    if (index === 3) {
+      decorations.push(widget(offset + 10, TestWidget, { side: 0 }));
+    }
+  });
+
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
       <EditorView
-        defaultState={editorState}
-        decorations={DecorationSet.create(editorState.doc, [
-          Decoration.inline(5, 15, { class: "inline-deco" }),
-          Decoration.node(29, 59, { class: "node-deco" }),
-          widget(40, TestWidget, { side: 0 }),
-        ])}
+        state={state}
+        dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
+        decorations={DecorationSet.create(state.doc, decorations)}
         keymap={{
           "Mod-i": toggleMark(schema.marks.em),
           Backspace: chainCommands(

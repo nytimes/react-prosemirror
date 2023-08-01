@@ -1,6 +1,6 @@
 import { Node } from "prosemirror-model";
 import { DecorationSet } from "prosemirror-view";
-import React, { Component } from "react";
+import React, { Component, createElement } from "react";
 import { findDOMNode } from "react-dom";
 
 import {
@@ -8,6 +8,10 @@ import {
   NodeViewContextValue,
 } from "../contexts/NodeViewContext.js";
 import { TextViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
+import {
+  DecorationInternal,
+  NonWidgetType,
+} from "../prosemirror-internal/DecorationInternal.js";
 
 import { MarkView } from "./MarkView.js";
 
@@ -15,6 +19,7 @@ type Props = {
   node: Node;
   pos: number;
   siblingDescriptors: ViewDesc[];
+  decorations: readonly DecorationInternal[];
 };
 
 export class TextNodeView extends Component<Props> {
@@ -75,9 +80,28 @@ export class TextNodeView extends Component<Props> {
   }
 
   render() {
-    return this.props.node.marks.reduce<JSX.Element>(
-      (children, mark) => <MarkView mark={mark}>{children}</MarkView>,
-      <>{this.props.node.text}</>
+    return this.props.decorations.reduce(
+      (element, deco) => {
+        const {
+          nodeName,
+          class: className,
+          style: _,
+          ...attrs
+        } = (deco.type as NonWidgetType).attrs;
+
+        return createElement(
+          nodeName ?? "span",
+          {
+            className,
+            ...attrs,
+          },
+          element
+        );
+      },
+      this.props.node.marks.reduce<JSX.Element>(
+        (children, mark) => <MarkView mark={mark}>{children}</MarkView>,
+        <>{this.props.node.text}</>
+      )
     );
   }
 }
