@@ -167,24 +167,7 @@ export function NodeView({
     throw new Error(`Node spec for ${node.type.name} is missing toDOM`);
   }
 
-  const wrapDecorations: DecorationInternal[] = [];
-  for (const decoration of decorations) {
-    if ((decoration.type as NonWidgetType).attrs.nodeName) {
-      wrapDecorations.push(decoration);
-    } else {
-      const {
-        class: className,
-        style: _,
-        ...attrs
-      } = (decoration.type as NonWidgetType).attrs;
-      element = cloneElement(element, {
-        className,
-        ...attrs,
-      });
-    }
-  }
-
-  return wrapDecorations.reduce(
+  return decorations.reduce(
     (element, deco) => {
       const {
         nodeName,
@@ -193,15 +176,21 @@ export function NodeView({
         ...attrs
       } = (deco.type as NonWidgetType).attrs;
 
-      return createElement(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        nodeName!,
-        {
-          className,
-          ...attrs,
-        },
-        element
-      );
+      if (nodeName) {
+        return createElement(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          nodeName!,
+          {
+            className,
+            ...attrs,
+          },
+          element
+        );
+      }
+      return cloneElement(element, {
+        className,
+        ...attrs,
+      });
     },
 
     node.marks.reduce(
