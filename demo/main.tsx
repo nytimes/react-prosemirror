@@ -240,6 +240,7 @@ root.render(<DemoEditor />);
 //           DecorationSet.create(state.doc, [
 //             Decoration.inline(5, 15, { class: "inline-deco" }),
 //             Decoration.node(35, 55, { class: "node-deco" }),
+//             Decoration.widget(40, () => document.createElement("div")),
 //           ])
 //         }
 //       >

@@ -16,6 +16,7 @@ import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
+import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 import { DOMNode, DOMSelection } from "../prosemirror-internal/dom.js";
 import {
@@ -61,7 +62,7 @@ export function EditorView(props: Props) {
     // keymap = {},
     nodeViews = {},
     dispatchTransaction: dispatchProp,
-    // decorations = DecorationSet.empty,
+    decorations = DecorationSet.empty,
     defaultState,
     state: stateProp,
     // ...mountProps
@@ -222,6 +223,7 @@ export function EditorView(props: Props) {
               ref={mountRef}
               node={state.doc}
               contentEditable={editable}
+              decorations={decorations as unknown as DecorationSourceInternal}
               // {...mountProps}
             />
             {children}

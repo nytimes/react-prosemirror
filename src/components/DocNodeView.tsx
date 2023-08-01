@@ -14,16 +14,18 @@ import React, {
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
+import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 
 import { NodeView } from "./NodeView.js";
 
 type Props = {
   node: Node;
   contentEditable: boolean;
+  decorations: DecorationSourceInternal;
 } & DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { node, contentEditable, ...props }: Props,
+  { node, contentEditable, decorations, ...props }: Props,
   ref: ForwardedRef<HTMLDivElement>
 ) {
   const { posToDesc, domToDesc } = useContext(NodeViewContext);
@@ -61,7 +63,14 @@ export const DocNodeView = forwardRef(function DocNodeView(
   const innerPos = 0;
   node.content.forEach((childNode, offset) => {
     const childPos = innerPos + offset;
-    children.push(<NodeView key={childPos} node={childNode} pos={childPos} />);
+    children.push(
+      <NodeView
+        key={childPos}
+        node={childNode}
+        pos={childPos}
+        decorations={decorations.forChild(offset, childNode)}
+      />
+    );
   });
 
   return (

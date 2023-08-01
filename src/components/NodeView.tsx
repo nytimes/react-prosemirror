@@ -13,6 +13,7 @@ import React, {
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
+import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 
 import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -23,14 +24,16 @@ import { TrailingHackView } from "./TrailingHackView.js";
 type Props = {
   node: Node;
   pos: number;
+  decorations: DecorationSourceInternal;
 };
 
-export function NodeView({ node, pos }: Props) {
+export function NodeView({ node, pos, decorations }: Props) {
   const { posToDesc, domToDesc, nodeViews, state } =
     useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
   const domRef = useRef<HTMLElement | null>(null);
+  const nodeDomRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     if (!domRef.current) return;
@@ -44,7 +47,7 @@ export function NodeView({ node, pos }: Props) {
       DecorationSet.empty,
       domRef.current,
       firstChildDesc?.dom.parentElement ?? null,
-      domRef.current,
+      nodeDomRef.current ?? domRef.current,
       posToDesc,
       domToDesc
     );
@@ -75,7 +78,14 @@ export function NodeView({ node, pos }: Props) {
         </ChildDescriptorsContext.Consumer>
       );
     } else {
-      content.push(<NodeView key={childPos} node={childNode} pos={childPos} />);
+      content.push(
+        <NodeView
+          key={childPos}
+          node={childNode}
+          pos={childPos}
+          decorations={decorations.forChild(offset, childNode)}
+        />
+      );
     }
   });
 
@@ -97,7 +107,11 @@ export function NodeView({ node, pos }: Props) {
 
   if (Component) {
     return node.marks.reduce(
-      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+      (element, mark) => (
+        <MarkView mark={mark} ref={nodeDomRef}>
+          {element}
+        </MarkView>
+      ),
       <Component
         ref={domRef}
         node={node}
@@ -117,7 +131,11 @@ export function NodeView({ node, pos }: Props) {
 
   if (outputSpec) {
     return node.marks.reduce(
-      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+      (element, mark) => (
+        <MarkView ref={nodeDomRef} mark={mark}>
+          {element}
+        </MarkView>
+      ),
       <OutputSpec ref={domRef} outputSpec={outputSpec}>
         {children}
       </OutputSpec>
