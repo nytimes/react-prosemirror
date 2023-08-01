@@ -65,7 +65,7 @@ export function EditorView(props: Props) {
     decorations = DecorationSet.empty,
     defaultState,
     state: stateProp,
-    // ...mountProps
+    ...mountProps
   } = props;
 
   const [internalState, setInternalState] = useState<EditorState | null>(
@@ -220,11 +220,11 @@ export function EditorView(props: Props) {
         >
           <>
             <DocNodeView
+              {...mountProps}
               ref={mountRef}
               node={state.doc}
               contentEditable={editable}
               decorations={decorations as unknown as DecorationSourceInternal}
-              // {...mountProps}
             />
             {children}
           </>

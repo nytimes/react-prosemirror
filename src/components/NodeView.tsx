@@ -137,6 +137,7 @@ export function NodeView({
   if (Component) {
     element = (
       <Component
+        {...props}
         ref={domRef}
         node={node}
         pos={pos}
@@ -146,7 +147,6 @@ export function NodeView({
           state.selection instanceof NodeSelection &&
           state.selection.node === node
         }
-        {...props}
       >
         {children}
       </Component>
@@ -157,7 +157,7 @@ export function NodeView({
 
   if (outputSpec) {
     element = (
-      <OutputSpec ref={domRef} outputSpec={outputSpec} {...props}>
+      <OutputSpec {...props} ref={domRef} outputSpec={outputSpec}>
         {children}
       </OutputSpec>
     );

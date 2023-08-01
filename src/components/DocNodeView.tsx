@@ -1,9 +1,7 @@
 import { Node } from "prosemirror-model";
 import { DecorationSet } from "prosemirror-view";
 import React, {
-  DetailedHTMLProps,
   ForwardedRef,
-  HTMLAttributes,
   ReactNode,
   createElement,
   forwardRef,
@@ -25,7 +23,7 @@ type Props = {
   node: Node;
   contentEditable: boolean;
   decorations: DecorationSourceInternal;
-} & DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>;
+};
 
 export const DocNodeView = forwardRef(function DocNodeView(
   { node, contentEditable, decorations, ...props }: Props,
