@@ -1,43 +1,21 @@
-import { keydownHandler } from "prosemirror-keymap";
-import { DOMOutputSpec, Node } from "prosemirror-model";
-import {
-  Command,
-  EditorState,
-  NodeSelection,
-  Transaction,
-} from "prosemirror-state";
-import { Decoration, DecorationSet, DirectEditorProps } from "prosemirror-view";
+import { Command, EditorState, Transaction } from "prosemirror-state";
+import { DecorationSet, DirectEditorProps } from "prosemirror-view";
 import React, {
-  ComponentType,
   DetailedHTMLProps,
+  ForwardRefExoticComponent,
   HTMLAttributes,
-  KeyboardEventHandler,
-  ReactNode,
-  cloneElement,
-  createElement,
-  isValidElement,
+  RefAttributes,
   useMemo,
   useRef,
   useState,
 } from "react";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
-import { NodeViewDescriptorsContext } from "../contexts/NodeViewPositionsContext.js";
-import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
+import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
-import {
-  renderSpec,
-  wrapInDecorations,
-  wrapInMarks,
-} from "../nodeViews/render.js";
-import {
-  DecorationInternal,
-  ReactWidgetDecoration,
-} from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 import { DOMNode, DOMSelection } from "../prosemirror-internal/dom.js";
 import {
@@ -46,35 +24,8 @@ import {
   posAtCoords,
 } from "../prosemirror-internal/domcoords.js";
 
-import { NodeWrapper } from "./NodeWrapper.js";
-import { TextNodeWrapper } from "./TextNodeWrapper.js";
-import { TrailingHackWrapper } from "./TrailingHackWrapper.js";
-
-function makeCuts(cuts: number[], node: Node) {
-  const sortedCuts = cuts.sort((a, b) => a - b);
-  const nodes: [Node, ...Node[]] = [node];
-  let curr = 0;
-  for (const cut of sortedCuts) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const lastNode = nodes.pop()!;
-    if (cut - curr !== 0) {
-      nodes.push(lastNode.cut(0, cut - curr));
-    }
-    if (lastNode.nodeSize > cut - curr) {
-      nodes.push(lastNode.cut(cut - curr));
-    }
-    curr = cut;
-  }
-  return nodes;
-}
-
-export type NodeViewComponentProps = {
-  decorations: readonly Decoration[];
-  node: Node;
-  children?: ReactNode | ReactNode[];
-  isSelected: boolean;
-  pos: number;
-};
+import { DocNodeView } from "./DocNodeView.js";
+import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 
 type EditorStateProps =
   | {
@@ -92,7 +43,11 @@ export type EditorProps = Omit<
 > &
   EditorStateProps & {
     keymap?: { [key: string]: Command };
-    nodeViews?: { [nodeType: string]: ComponentType<NodeViewComponentProps> };
+    nodeViews?: {
+      [nodeType: string]: ForwardRefExoticComponent<
+        NodeViewComponentProps & RefAttributes<HTMLElement>
+      >;
+    };
     decorations?: DecorationSet;
   };
 
@@ -103,13 +58,13 @@ export function EditorView(props: Props) {
   const {
     children,
     editable: editableProp,
-    keymap = {},
+    // keymap = {},
     nodeViews = {},
     dispatchTransaction: dispatchProp,
-    decorations = DecorationSet.empty,
+    // decorations = DecorationSet.empty,
     defaultState,
     state: stateProp,
-    ...mountProps
+    // ...mountProps
   } = props;
 
   const [internalState, setInternalState] = useState<EditorState | null>(
@@ -138,195 +93,7 @@ export function EditorView(props: Props) {
 
   useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
-  const onKeyDown: KeyboardEventHandler = (event) => {
-    if (keydownHandler(keymap)(editorViewRef.current, event.nativeEvent)) {
-      event.preventDefault();
-    }
-  };
-
-  function buildReactTree(
-    parentElement: JSX.Element,
-    node: Node,
-    pos: number,
-    decorations: DecorationSet
-  ) {
-    const childElements: ReactNode[] = [];
-    if (node.childCount === 0 && node.isTextblock) {
-      childElements.push(<TrailingHackWrapper pos={pos + 1} />);
-    }
-    node.forEach((childNode, offset) => {
-      if (childNode.isText) {
-        const localDecorations = decorations.find(
-          pos + offset + 1,
-          pos + offset + 1 + childNode.nodeSize
-        ) as DecorationInternal[];
-        const inlineDecorations = localDecorations.filter(
-          (decoration) => decoration.inline
-        );
-        const widgetDecorations = localDecorations.filter(
-          (decoration) => decoration.type instanceof ReactWidgetType
-        ) as ReactWidgetDecoration[];
-        const textNodes: Node[] = makeCuts(
-          inlineDecorations
-            .flatMap((decoration) => [
-              decoration.from - (pos + offset + 1),
-              decoration.to - (pos + offset + 1),
-            ])
-            .concat(
-              widgetDecorations.map(
-                (decoration) => decoration.from - (pos + offset + 1)
-              )
-            ),
-          childNode
-        );
-
-        let subOffset = 0;
-        for (const textNode of textNodes) {
-          const textNodeStart = pos + offset + subOffset + 1;
-          const textNodeEnd = pos + offset + subOffset + 1 + textNode.nodeSize;
-          const marked = wrapInMarks(
-            <ChildDescriptorsContext.Consumer key={textNodeStart}>
-              {(siblingDescriptors) => (
-                <TextNodeWrapper
-                  siblingDescriptors={siblingDescriptors}
-                  pos={textNodeStart}
-                  node={textNode}
-                >
-                  {/* Text nodes always have text */}
-                  {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-                  {textNode.text!}
-                </TextNodeWrapper>
-              )}
-            </ChildDescriptorsContext.Consumer>,
-            textNode.marks,
-            textNode.isInline
-          );
-          const decorated = wrapInDecorations(
-            marked,
-            inlineDecorations.filter(
-              (deco) => deco.from <= textNodeStart && deco.to >= textNodeEnd
-            ),
-            true
-          );
-
-          childElements.push(decorated);
-
-          widgetDecorations.forEach((decoration) => {
-            if (decoration.from !== textNodeEnd) return;
-
-            const decorationType = decoration.type;
-
-            childElements.push(<decorationType.Component />);
-          });
-
-          subOffset += textNode.nodeSize;
-        }
-
-        return false;
-      }
-
-      const outputSpec: DOMOutputSpec | undefined =
-        childNode.type.spec.toDOM?.(childNode);
-      if (!outputSpec)
-        throw new Error(
-          `Node spec for ${childNode.type.name} is missing toDOM`
-        );
-
-      const Component: ComponentType<NodeViewComponentProps> | undefined =
-        nodeViews[childNode.type.name];
-
-      let element: ReactNode = Component
-        ? createElement(Component, {
-            node: childNode,
-            decorations: [],
-            // TODO: This is how I'm reading the prosemirror-view code,
-            // but I would have expected this to be broader?
-            isSelected:
-              state.selection instanceof NodeSelection &&
-              state.selection.node === node,
-            pos: pos + offset + 1,
-          })
-        : renderSpec(outputSpec, pos + offset + 1);
-
-      if (isValidElement(element)) {
-        element = buildReactTree(
-          element,
-          childNode,
-          pos + offset + 1,
-          decorations
-        );
-      }
-
-      childElements.push(element);
-
-      return isValidElement(element);
-    });
-
-    const localDecorations = decorations.find(pos, pos + node.nodeSize);
-    const nodeDecorations = localDecorations.filter(
-      (decoration) =>
-        !(decoration as Decoration & { inline: boolean }).inline &&
-        pos === decoration.from &&
-        pos + node.nodeSize === decoration.to
-    );
-    const widgetDecorations = localDecorations.filter(
-      (decoration) =>
-        (decoration as Decoration & { type: ReactWidgetType }).type instanceof
-        ReactWidgetType
-    );
-
-    widgetDecorations.forEach((decoration) => {
-      if (!node.isLeaf && decoration.from !== pos + 1) return;
-
-      const decorationType = (
-        decoration as Decoration & { type: ReactWidgetType }
-      ).type;
-
-      childElements.unshift(<decorationType.Component />);
-    });
-
-    const element = cloneElement(parentElement, undefined, ...childElements);
-
-    const marked = wrapInMarks(element, node.marks, node.isInline);
-
-    const decorated = wrapInDecorations(marked, nodeDecorations, false);
-    const wrapped = (
-      <NodeWrapper key={pos} pos={pos} node={node}>
-        {decorated}
-      </NodeWrapper>
-    );
-
-    const elements = [wrapped];
-
-    widgetDecorations.forEach((decoration, index, array) => {
-      if (decoration.from !== pos + node.nodeSize) return;
-
-      const decorationType = (
-        decoration as Decoration & { type: ReactWidgetType }
-      ).type;
-
-      elements.push(<decorationType.Component />);
-
-      array.splice(index, 1);
-    });
-
-    return <>{elements}</>;
-  }
-
   const editable = editableProp ? editableProp(state) : true;
-
-  const content = buildReactTree(
-    <div
-      ref={mountRef}
-      contentEditable={editable}
-      suppressContentEditableWarning={true}
-      onKeyDown={onKeyDown}
-      {...mountProps}
-    ></div>,
-    state.doc,
-    -1,
-    decorations
-  );
 
   // This is only safe to use in effects/layout effects or
   // event handlers!
@@ -441,18 +208,25 @@ export function EditorView(props: Props) {
   return (
     <LayoutGroup>
       <EditorViewContext.Provider value={editorViewRef}>
-        <NodeViewDescriptorsContext.Provider
+        <NodeViewContext.Provider
           value={{
             mount: mountRef.current,
             posToDesc: posToDesc.current,
             domToDesc: domToDesc.current,
+            nodeViews,
+            state,
           }}
         >
           <>
-            {content}
+            <DocNodeView
+              ref={mountRef}
+              node={state.doc}
+              contentEditable={editable}
+              // {...mountProps}
+            />
             {children}
           </>
-        </NodeViewDescriptorsContext.Provider>
+        </NodeViewContext.Provider>
       </EditorViewContext.Provider>
     </LayoutGroup>
   );

@@ -23,10 +23,8 @@ import React, {
 } from "react";
 import { createRoot } from "react-dom/client";
 
-import {
-  EditorView,
-  NodeViewComponentProps,
-} from "../src/components/EditorView.js";
+import { EditorView } from "../src/components/EditorView.js";
+import { NodeViewComponentProps } from "../src/components/NodeViewComponentProps.js";
 import { widget } from "../src/decorations/ReactWidgetType.js";
 import { useView } from "../src/hooks/useView.js";
 
@@ -69,14 +67,15 @@ const schema = new Schema({
 const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
-    schema.nodes.paragraph.create(
-      {},
-      schema.text("This is the first paragraph")
-    ),
+    schema.nodes.paragraph.create({}, [
+      schema.text("This", [schema.marks.em.create()]),
+      schema.text(" is the first paragraph"),
+    ]),
     schema.nodes.paragraph.create(
       {},
       schema.text("This is the second paragraph")
     ),
+    schema.nodes.paragraph.create(),
     schema.nodes.paragraph.create(
       {},
       schema.text("This is the third paragraph")
@@ -147,6 +146,7 @@ function DemoEditor() {
             splitBlock
           ),
         }}
+        // @ts-expect-error TODO: Gotta fix these types
         nodeViews={{ paragraph: Paragraph }}
       ></EditorView>
     </main>
