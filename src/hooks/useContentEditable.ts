@@ -1,49 +1,94 @@
-import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import { useEffect, useRef } from "react";
+import { MutableRefObject, useEffect } from "react";
+
+import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 
 export function useContentEditable(
-  state: EditorState,
-  dispatchTransaction: EditorView["dispatch"]
+  viewRef: MutableRefObject<EditorViewInternal>
 ) {
-  const mountRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
-    const mount = mountRef.current;
-    if (!mount) return;
+    const attachedHandlers: Record<string, (e: Event) => void> = {};
+    for (const [type, handler] of Object.entries(
+      viewRef.current.someProp("handleDOMEvents") ?? {}
+    )) {
+      if (!handler) continue;
+      const eventHandler = (event: Event) => {
+        if (event.defaultPrevented) return;
+        handler(viewRef.current, event);
+      };
+
+      attachedHandlers[type] = eventHandler;
+
+      viewRef.current.dom.addEventListener(
+        type as keyof HTMLElementEventMap,
+        eventHandler
+      );
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (viewRef.current.someProp("handleKeyDown")?.(viewRef.current, event)) {
+        event.preventDefault();
+      }
+    }
+
+    viewRef.current.dom.addEventListener("keydown", onKeyDown);
+
+    function onKeyPress(event: KeyboardEvent) {
+      if (
+        viewRef.current.someProp("handleKeyPress")?.(viewRef.current, event)
+      ) {
+        event.preventDefault();
+      }
+    }
+
+    viewRef.current.dom.addEventListener("keypress", onKeyPress);
 
     function onBeforeInput(event: InputEvent) {
-      event.preventDefault();
-
       switch (event.inputType) {
         case "insertText": {
-          const { tr } = state;
-          if (event.data !== null) {
-            tr.insertText(event.data);
-            dispatchTransaction(tr);
+          if (event.data === null) return;
+
+          if (
+            viewRef.current.someProp("handleTextInput")?.(
+              viewRef.current,
+              viewRef.current.state.selection.from,
+              viewRef.current.state.selection.to,
+              event.data ?? ""
+            )
+          ) {
+            event.preventDefault();
+            break;
           }
+
+          const { tr } = viewRef.current.state;
+          tr.insertText(event.data);
+          viewRef.current.dispatch(tr);
+          event.preventDefault();
           break;
         }
         case "deleteContentBackward": {
-          const { tr } = state;
+          const { tr } = viewRef.current.state;
           tr.delete(
-            state.selection.empty
-              ? state.selection.from - 1
-              : state.selection.from,
-            state.selection.from
+            viewRef.current.state.selection.empty
+              ? viewRef.current.state.selection.from - 1
+              : viewRef.current.state.selection.from,
+            viewRef.current.state.selection.from
           );
-          dispatchTransaction(tr);
+          viewRef.current.dispatch(tr);
+          event.preventDefault();
           break;
         }
       }
     }
 
-    mount.addEventListener("beforeinput", onBeforeInput);
+    viewRef.current.dom.addEventListener("beforeinput", onBeforeInput);
 
     return () => {
-      mount.removeEventListener("beforeinput", onBeforeInput);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      viewRef.current.dom.removeEventListener("beforeinput", onBeforeInput);
+      for (const [type, handler] of Object.entries(attachedHandlers)) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        viewRef.current.dom.removeEventListener(type, handler);
+      }
     };
-  }, [dispatchTransaction, state]);
-
-  return mountRef;
+  }, [viewRef]);
 }

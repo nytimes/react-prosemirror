@@ -1,15 +1,4 @@
-import {
-  baseKeymap,
-  chainCommands,
-  createParagraphNear,
-  deleteSelection,
-  joinBackward,
-  liftEmptyBlock,
-  newlineInCode,
-  selectNodeBackward,
-  splitBlock,
-  toggleMark,
-} from "prosemirror-commands";
+import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
@@ -144,23 +133,11 @@ function DemoEditor() {
     <main>
       <h1>React ProseMirror Demo</h1>
       <EditorView
+        className="ProseMirror"
         state={state}
         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
         decorations={DecorationSet.create(state.doc, decorations)}
-        keymap={{
-          "Mod-i": toggleMark(schema.marks.em),
-          Backspace: chainCommands(
-            deleteSelection,
-            joinBackward,
-            selectNodeBackward
-          ),
-          Enter: chainCommands(
-            newlineInCode,
-            createParagraphNear,
-            liftEmptyBlock,
-            splitBlock
-          ),
-        }}
+        plugins={[keymap(baseKeymap)]}
         // @ts-expect-error TODO: Gotta fix these types
         nodeViews={{ paragraph: Paragraph }}
       ></EditorView>

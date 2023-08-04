@@ -65,6 +65,20 @@ export function EditorView(props: Props) {
     decorations = DecorationSet.empty,
     defaultState,
     state: stateProp,
+    handleDOMEvents,
+    handleKeyDown,
+    handleKeyPress,
+    handleTextInput,
+    handleClick,
+    handleClickOn,
+    handleDoubleClick,
+    handleDoubleClickOn,
+    handleDrop,
+    handlePaste,
+    handleScrollToSelection,
+    handleTripleClick,
+    handleTripleClickOn,
+    plugins = [],
     ...mountProps
   } = props;
 
@@ -90,7 +104,7 @@ export function EditorView(props: Props) {
     [dispatchProp]
   );
 
-  const mountRef = useContentEditable(state, dispatch);
+  const mountRef = useRef<HTMLDivElement | null>(null);
 
   useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
@@ -104,13 +118,25 @@ export function EditorView(props: Props) {
       /* Start TODO */
       dragging: null,
       composing: false,
-      someProp: () => {
-        /* */
-      },
       focus() {
         /* */
       },
       /* End TODO */
+      _props: {
+        handleDOMEvents,
+        handleClick,
+        handleClickOn,
+        handleDoubleClick,
+        handleDoubleClickOn,
+        handleDrop,
+        handleKeyDown,
+        handleKeyPress,
+        handlePaste,
+        handleScrollToSelection,
+        handleTextInput,
+        handleTripleClick,
+        handleTripleClickOn,
+      },
       get dom() {
         if (!mountRef.current) {
           throw new Error(
@@ -130,6 +156,32 @@ export function EditorView(props: Props) {
       editable,
       state,
       dispatch,
+      someProp<PropName extends keyof EditorProps, Result>(
+        propName: PropName,
+        f?: (value: NonNullable<EditorProps[PropName]>) => Result
+      ): Result | undefined {
+        const prop = this["_props"][propName];
+        if (prop != null) {
+          return f ? f(prop) : prop;
+        }
+        for (const plugin of plugins) {
+          const prop = plugin.props[propName as keyof typeof plugin.props];
+          if (prop != null) {
+            return f
+              ? f(prop as NonNullable<EditorProps[PropName]>)
+              : (prop as Result);
+          }
+        }
+        for (const plugin of this.state.plugins) {
+          const prop = plugin.props[propName as keyof typeof plugin.props];
+          if (prop != null) {
+            return f
+              ? f(prop as NonNullable<EditorProps[PropName]>)
+              : (prop as Result);
+          }
+        }
+        return;
+      },
       hasFocus() {
         return this.root.activeElement == this.dom;
       },
@@ -190,9 +242,19 @@ export function EditorView(props: Props) {
       },
     }),
     [
-      mountRef,
-      posToDesc,
-      domToDesc,
+      handleDOMEvents,
+      handleClick,
+      handleClickOn,
+      handleDoubleClick,
+      handleDoubleClickOn,
+      handleDrop,
+      handleKeyDown,
+      handleKeyPress,
+      handlePaste,
+      handleScrollToSelection,
+      handleTextInput,
+      handleTripleClick,
+      handleTripleClickOn,
       editable,
       state,
       dispatch,
@@ -200,11 +262,14 @@ export function EditorView(props: Props) {
       stateProp,
       defaultState,
       dispatchProp,
+      plugins,
     ]
   );
 
   const editorViewRef = useRef(editorViewAPI);
   editorViewRef.current = editorViewAPI;
+
+  useContentEditable(editorViewRef);
 
   return (
     <LayoutGroup>
