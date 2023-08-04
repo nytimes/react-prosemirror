@@ -3,9 +3,12 @@ import {dropPoint} from "prosemirror-transform"
 import {Slice, Node} from "prosemirror-model"
 
 import * as browser from "./browser"
-import {captureKeyDown} from "./capturekeys.js"
+// $$FORK: trying to drop this for now
+// import {captureKeyDown} from "./capturekeys.js"
 import {parseFromClipboard, serializeForClipboard} from "./clipboard.js"
-import {selectionBetween, selectionToDOM, selectionFromDOM} from "./selection.js"
+// $$FORK: selectionToDOM is handled in our sync selection hook
+// import {selectionBetween, selectionToDOM, selectionFromDOM} from "./selection.js"
+import {selectionBetween, selectionFromDOM} from "./selection.js"
 import {keyEvent, DOMNode} from "./dom"
 import { EditorViewInternal as EditorView } from "./EditorViewInternal.js"
 import {ViewDesc} from "../descriptors/ViewDesc.js"
@@ -124,7 +127,10 @@ editHandlers.keydown = (view: EditorView, _event: Event) => {
         view.input.lastIOSEnter = 0
       }
     }, 200)
-  } else if (view.someProp("handleKeyDown", f => f(view, event)) || captureKeyDown(view, event)) {
+  // $$FORK: drop capturekeydown? As far as I can tell, everything it's attempting to
+  // do just works natively.
+  // } else if (view.someProp("handleKeyDown", f => f(view, event)) || captureKeyDown(view, event)) {
+  } else if (view.someProp("handleKeyDown", f => f(view, event))) {
     event.preventDefault()
   } else {
     setSelectionOrigin(view, "key")
@@ -145,13 +151,14 @@ editHandlers.keypress = (view, _event) => {
     return
   }
 
-  let sel = view.state.selection
-  if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
-    let text = String.fromCharCode(event.charCode)
-    if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
-      view.dispatch(view.state.tr.insertText(text).scrollIntoView())
-    event.preventDefault()
-  }
+  // $$FORK: We handle this in our beforeinput handler
+  // let sel = view.state.selection
+  // if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
+  //   let text = String.fromCharCode(event.charCode)
+  //   if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
+  //     view.dispatch(view.state.tr.insertText(text).scrollIntoView())
+  //   event.preventDefault()
+  // }
 }
 
 function eventCoords(event: MouseEvent) { return {left: event.clientX, top: event.clientY} }
@@ -743,7 +750,7 @@ handlers.focus = view => {
 }
 
 handlers.blur = (view, _event) => {
-  let event = _event as FocusEvent
+  // let event = _event as FocusEvent
   if (view.focused) {
     // $$FORK: We don't use a dom observer
     // view.domObserver.stop()

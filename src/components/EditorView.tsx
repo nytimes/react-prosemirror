@@ -22,7 +22,6 @@ import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.j
 import * as browser from "../prosemirror-internal/browser.js";
 import {
   DOMNode,
-  DOMSelection,
   deepActiveElement,
   safariShadowSelectionRange,
 } from "../prosemirror-internal/dom.js";

@@ -19,7 +19,7 @@ export function useContentEditable(
               viewRef.current,
               viewRef.current.state.selection.from,
               viewRef.current.state.selection.to,
-              event.data ?? ""
+              event.data
             )
           ) {
             event.preventDefault();
