@@ -4,6 +4,7 @@ import React, {
   DetailedHTMLProps,
   ForwardRefExoticComponent,
   HTMLAttributes,
+  MutableRefObject,
   RefAttributes,
   useMemo,
   useRef,
@@ -18,12 +19,19 @@ import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
-import { DOMNode, DOMSelection } from "../prosemirror-internal/dom.js";
+import * as browser from "../prosemirror-internal/browser.js";
+import {
+  DOMNode,
+  DOMSelection,
+  deepActiveElement,
+  safariShadowSelectionRange,
+} from "../prosemirror-internal/dom.js";
 import {
   coordsAtPos,
   endOfTextblock,
   posAtCoords,
 } from "../prosemirror-internal/domcoords.js";
+import { InputState } from "../prosemirror-internal/input.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -110,9 +118,11 @@ export function EditorView(props: Props) {
 
   const editable = editableProp ? editableProp(state) : true;
 
+  const editorViewRefInternal = useRef<EditorViewInternal | null>(null);
+
   // This is only safe to use in effects/layout effects or
   // event handlers!
-  const editorViewAPI = useMemo<EditorViewInternal>(
+  const editorViewAPI: EditorViewInternal = useMemo<EditorViewInternal>(
     // @ts-expect-error - EditorView API not fully implemented yet
     () => ({
       /* Start TODO */
@@ -137,6 +147,9 @@ export function EditorView(props: Props) {
         handleTripleClick,
         handleTripleClickOn,
       },
+      focused: editorViewRefInternal.current?.focused ?? false,
+      markCursor: editorViewRefInternal.current?.markCursor ?? null,
+      input: editorViewRefInternal.current?.input ?? new InputState(),
       get dom() {
         if (!mountRef.current) {
           throw new Error(
@@ -207,9 +220,16 @@ export function EditorView(props: Props) {
           }
         return cached || document;
       },
-      domSelection(): DOMSelection {
+      domSelection() {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return (this.root as Document).getSelection()!;
+      },
+      domSelectionRange() {
+        return browser.safari &&
+          this.root.nodeType === 11 &&
+          deepActiveElement(this.dom.ownerDocument) == this.dom
+          ? safariShadowSelectionRange(this)
+          : this.domSelection();
       },
       props: {
         editable: editableProp,
@@ -266,8 +286,10 @@ export function EditorView(props: Props) {
     ]
   );
 
-  const editorViewRef = useRef(editorViewAPI);
-  editorViewRef.current = editorViewAPI;
+  editorViewRefInternal.current = editorViewAPI;
+
+  const editorViewRef =
+    editorViewRefInternal as MutableRefObject<EditorViewInternal>;
 
   useContentEditable(editorViewRef);
 

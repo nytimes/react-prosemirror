@@ -1,46 +1,13 @@
 import { MutableRefObject, useEffect } from "react";
 
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
+import { initInput } from "../prosemirror-internal/input.js";
 
 export function useContentEditable(
   viewRef: MutableRefObject<EditorViewInternal>
 ) {
   useEffect(() => {
-    const attachedHandlers: Record<string, (e: Event) => void> = {};
-    for (const [type, handler] of Object.entries(
-      viewRef.current.someProp("handleDOMEvents") ?? {}
-    )) {
-      if (!handler) continue;
-      const eventHandler = (event: Event) => {
-        if (event.defaultPrevented) return;
-        handler(viewRef.current, event);
-      };
-
-      attachedHandlers[type] = eventHandler;
-
-      viewRef.current.dom.addEventListener(
-        type as keyof HTMLElementEventMap,
-        eventHandler
-      );
-    }
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (viewRef.current.someProp("handleKeyDown")?.(viewRef.current, event)) {
-        event.preventDefault();
-      }
-    }
-
-    viewRef.current.dom.addEventListener("keydown", onKeyDown);
-
-    function onKeyPress(event: KeyboardEvent) {
-      if (
-        viewRef.current.someProp("handleKeyPress")?.(viewRef.current, event)
-      ) {
-        event.preventDefault();
-      }
-    }
-
-    viewRef.current.dom.addEventListener("keypress", onKeyPress);
+    initInput(viewRef);
 
     function onBeforeInput(event: InputEvent) {
       switch (event.inputType) {
@@ -81,14 +48,5 @@ export function useContentEditable(
     }
 
     viewRef.current.dom.addEventListener("beforeinput", onBeforeInput);
-
-    return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      viewRef.current.dom.removeEventListener("beforeinput", onBeforeInput);
-      for (const [type, handler] of Object.entries(attachedHandlers)) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        viewRef.current.dom.removeEventListener(type, handler);
-      }
-    };
   }, [viewRef]);
 }
