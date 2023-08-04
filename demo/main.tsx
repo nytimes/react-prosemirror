@@ -1,7 +1,7 @@
 import { baseKeymap } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
-import { EditorState } from "prosemirror-state";
+import { EditorState, Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, {
@@ -111,6 +111,32 @@ function TestWidget() {
   );
 }
 
+const viewPlugin = new Plugin({
+  view(view) {
+    const coords = view.coordsAtPos(view.state.selection.from);
+    const dom = document.createElement("div");
+    dom.style.width = "4px";
+    dom.style.height = "4px";
+    dom.style.position = "absolute";
+    dom.style.top = `${coords.top - 2}px`;
+    dom.style.left = `${coords.left - 2}px`;
+    dom.style.backgroundColor = "blue";
+    document.body.appendChild(dom);
+    return {
+      update(view) {
+        const coords = view.coordsAtPos(view.state.selection.from);
+        dom.style.top = `${coords.top - 2}px`;
+        dom.style.left = `${coords.left - 2}px`;
+      },
+      destroy() {
+        document.body.removeChild(dom);
+      },
+    };
+  },
+});
+
+const plugins = [keymap(baseKeymap), viewPlugin];
+
 function DemoEditor() {
   const [state, setState] = useState(editorState);
 
@@ -137,7 +163,7 @@ function DemoEditor() {
         state={state}
         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
         decorations={DecorationSet.create(state.doc, decorations)}
-        plugins={[keymap(baseKeymap)]}
+        plugins={plugins}
         // @ts-expect-error TODO: Gotta fix these types
         nodeViews={{ paragraph: Paragraph }}
       ></EditorView>

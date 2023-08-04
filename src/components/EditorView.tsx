@@ -17,6 +17,7 @@ import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
+import { usePluginViews } from "../hooks/useViewPlugins.js";
 import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 import * as browser from "../prosemirror-internal/browser.js";
@@ -291,6 +292,7 @@ export function EditorView(props: Props) {
     editorViewRefInternal as MutableRefObject<EditorViewInternal>;
 
   useContentEditable(editorViewRef);
+  usePluginViews(editorViewRef, plugins);
 
   return (
     <LayoutGroup>
