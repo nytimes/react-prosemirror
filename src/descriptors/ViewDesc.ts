@@ -619,9 +619,9 @@ export class TrailingHackViewDesc extends ViewDesc {
 
 // A widget desc represents a widget decoration, which is a DOM node
 // drawn between the document nodes.
-class WidgetViewDesc extends ViewDesc {
+export class WidgetViewDesc extends ViewDesc {
   constructor(
-    parent: ViewDesc,
+    parent: ViewDesc | undefined,
     readonly widget: ReactWidgetDecoration,
     dom: DOMNode,
     posToDesc: Map<number, ViewDesc>,
@@ -667,14 +667,15 @@ class WidgetViewDesc extends ViewDesc {
 // necessary.
 export class MarkViewDesc extends ViewDesc {
   constructor(
-    parent: ViewDesc,
+    parent: ViewDesc | undefined,
+    children: ViewDesc[],
     readonly mark: Mark,
     dom: DOMNode,
     contentDOM: HTMLElement,
     posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
-    super(parent, [], dom, contentDOM, posToDesc, domToDesc);
+    super(parent, children, dom, contentDOM, posToDesc, domToDesc);
   }
 
   parseRule(): ParseRule | null {
@@ -722,6 +723,7 @@ export class NodeViewDesc extends ViewDesc {
 
   constructor(
     parent: ViewDesc | undefined,
+    children: ViewDesc[],
     public node: Node,
     public outerDeco: readonly DecorationInternal[],
     public innerDeco: DecorationSource,
@@ -732,7 +734,7 @@ export class NodeViewDesc extends ViewDesc {
     posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
-    super(parent, [], dom, contentDOM, posToDesc, domToDesc);
+    super(parent, children, dom, contentDOM, posToDesc, domToDesc);
     this.size = this.node.nodeSize;
     this.border = this.node.isLeaf ? 0 : 1;
   }
@@ -912,6 +914,7 @@ export class TextViewDesc extends NodeViewDesc {
   ) {
     super(
       parent,
+      [],
       node,
       outerDeco,
       innerDeco,
@@ -921,6 +924,8 @@ export class TextViewDesc extends NodeViewDesc {
       posToDesc,
       domToDesc
     );
+
+    this.size = this.node.text!.length;
   }
 
   parseRule(): ParseRule {

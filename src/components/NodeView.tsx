@@ -1,6 +1,5 @@
 import { DOMOutputSpec, Node } from "prosemirror-model";
 import { NodeSelection } from "prosemirror-state";
-import { DecorationSet } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactNode,
@@ -47,7 +46,6 @@ export function NodeView({
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
   const domRef = useRef<HTMLElement | null>(null);
-  const nodeDomRef = useRef<HTMLElement | null>(null);
 
   useLayoutEffect(() => {
     if (!domRef.current) return;
@@ -56,16 +54,16 @@ export function NodeView({
 
     const desc = new NodeViewDesc(
       undefined,
+      childDescriptors,
       node,
       [],
-      DecorationSet.empty,
+      innerDecorations,
       domRef.current,
       firstChildDesc?.dom.parentElement ?? null,
-      nodeDomRef.current ?? domRef.current,
+      domRef.current ?? domRef.current,
       posToDesc,
       domToDesc
     );
-    desc.children = childDescriptors;
     posToDesc.set(pos, desc);
     domToDesc.set(domRef.current, desc);
     siblingDescriptors.push(desc);
@@ -75,13 +73,14 @@ export function NodeView({
     }
   });
 
-  const content: ReactNode[] = [];
+  const children: ReactNode[] = [];
   const innerPos = pos + 1;
+
   iterDeco(
     node,
     innerDecorations,
     (widget, offset, index) => {
-      content.push(
+      children.push(
         createElement((widget.type as ReactWidgetType).Component, {
           key: `${innerPos + offset}-${index}`,
         })
@@ -89,42 +88,65 @@ export function NodeView({
     },
     (childNode, outerDeco, innerDeco, offset) => {
       const childPos = innerPos + offset;
-      if (childNode.isText) {
-        content.push(
-          <ChildDescriptorsContext.Consumer key={childPos}>
-            {(siblingDescriptors) => (
-              <TextNodeView
-                node={childNode}
-                pos={childPos}
-                siblingDescriptors={siblingDescriptors}
-                decorations={outerDeco}
-              />
-            )}
-          </ChildDescriptorsContext.Consumer>
-        );
-      } else {
-        content.push(
-          <NodeView
-            key={childPos}
-            node={childNode}
-            pos={childPos}
-            decorations={outerDeco}
-            innerDecorations={innerDeco}
-          />
-        );
-      }
+      const nodeElement = childNode.isText ? (
+        <ChildDescriptorsContext.Consumer>
+          {(siblingDescriptors) => (
+            <TextNodeView
+              node={childNode}
+              pos={childPos}
+              siblingDescriptors={siblingDescriptors}
+              decorations={outerDeco}
+            />
+          )}
+        </ChildDescriptorsContext.Consumer>
+      ) : (
+        <NodeView
+          node={childNode}
+          pos={childPos}
+          decorations={outerDeco}
+          innerDecorations={innerDeco}
+        />
+      );
+
+      const childElement = outerDeco.reduce(
+        (element, deco) => {
+          const {
+            nodeName,
+            class: className,
+            style: _,
+            ...attrs
+          } = (deco.type as NonWidgetType).attrs;
+
+          if (nodeName) {
+            return createElement(
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              nodeName!,
+              {
+                className,
+                ...attrs,
+              },
+              element
+            );
+          }
+          return cloneElement(element, {
+            className,
+            ...attrs,
+          });
+        },
+
+        childNode.marks.reduce(
+          (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+          nodeElement
+        )
+      );
+
+      children.push(cloneElement(childElement, { key: childPos }));
     }
   );
 
-  if (!content.length) {
-    content.push(<TrailingHackView key={innerPos} pos={innerPos} />);
+  if (!children.length) {
+    children.push(<TrailingHackView key={innerPos} pos={innerPos} />);
   }
-
-  const children = (
-    <ChildDescriptorsContext.Provider value={childDescriptors}>
-      {content}
-    </ChildDescriptorsContext.Provider>
-  );
 
   let element: JSX.Element | null = null;
 
@@ -167,39 +189,9 @@ export function NodeView({
     throw new Error(`Node spec for ${node.type.name} is missing toDOM`);
   }
 
-  return decorations.reduce(
-    (element, deco) => {
-      const {
-        nodeName,
-        class: className,
-        style: _,
-        ...attrs
-      } = (deco.type as NonWidgetType).attrs;
-
-      if (nodeName) {
-        return createElement(
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          nodeName!,
-          {
-            className,
-            ...attrs,
-          },
-          element
-        );
-      }
-      return cloneElement(element, {
-        className,
-        ...attrs,
-      });
-    },
-
-    node.marks.reduce(
-      (element, mark) => (
-        <MarkView ref={nodeDomRef} mark={mark}>
-          {element}
-        </MarkView>
-      ),
-      element
-    )
+  return (
+    <ChildDescriptorsContext.Provider value={childDescriptors}>
+      {element}
+    </ChildDescriptorsContext.Provider>
   );
 }

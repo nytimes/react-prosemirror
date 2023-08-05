@@ -1,7 +1,7 @@
 import { Mark } from "prosemirror-model";
 import { Mappable } from "prosemirror-transform";
 import { Decoration } from "prosemirror-view";
-import { ComponentType } from "react";
+import { ComponentType, ForwardRefExoticComponent, RefAttributes } from "react";
 
 import { DecorationType } from "./DecorationType.js";
 
@@ -30,7 +30,10 @@ export class ReactWidgetType implements DecorationType {
   side: number;
   spec: ReactWidgetSpec;
 
-  constructor(public Component: ComponentType, spec: ReactWidgetSpec) {
+  constructor(
+    public Component: ForwardRefExoticComponent<RefAttributes<HTMLElement>>,
+    spec: ReactWidgetSpec
+  ) {
     this.spec = spec ?? noSpec;
     this.side = this.spec.side ?? 0;
   }

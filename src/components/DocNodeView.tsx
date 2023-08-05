@@ -3,9 +3,11 @@ import { DecorationSet } from "prosemirror-view";
 import React, {
   ForwardedRef,
   ReactNode,
+  cloneElement,
   createElement,
   forwardRef,
   useContext,
+  useImperativeHandle,
   useLayoutEffect,
   useRef,
 } from "react";
@@ -14,8 +16,12 @@ import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js"
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
 import { NodeViewDesc, ViewDesc, iterDeco } from "../descriptors/ViewDesc.js";
-import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
+import {
+  DecorationSourceInternal,
+  NonWidgetType,
+} from "../prosemirror-internal/DecorationInternal.js";
 
+import { MarkView } from "./MarkView.js";
 import { NodeView } from "./NodeView.js";
 import { TextNodeView } from "./TextNodeView.js";
 
@@ -27,12 +33,20 @@ type Props = {
 
 export const DocNodeView = forwardRef(function DocNodeView(
   { node, contentEditable, decorations, ...props }: Props,
-  ref: ForwardedRef<HTMLDivElement>
+  ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const { posToDesc, domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
-  const innerRef = useRef<Element | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
+
+  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
+    ref,
+    () => {
+      return innerRef.current;
+    },
+    []
+  );
 
   useLayoutEffect(() => {
     if (!innerRef.current) return;
@@ -41,6 +55,7 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
     const desc = new NodeViewDesc(
       undefined,
+      childDescriptors,
       node,
       [],
       DecorationSet.empty,
@@ -50,7 +65,6 @@ export const DocNodeView = forwardRef(function DocNodeView(
       posToDesc,
       domToDesc
     );
-    desc.children = childDescriptors;
     posToDesc.set(-1, desc);
     domToDesc.set(innerRef.current, desc);
     siblingDescriptors.push(desc);
@@ -62,6 +76,7 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
   const children: ReactNode[] = [];
   const innerPos = 0;
+
   iterDeco(
     node,
     decorations,
@@ -74,30 +89,59 @@ export const DocNodeView = forwardRef(function DocNodeView(
     },
     (childNode, outerDeco, innerDeco, offset) => {
       const childPos = innerPos + offset;
-      if (childNode.isText) {
-        children.push(
-          <ChildDescriptorsContext.Consumer key={childPos}>
-            {(siblingDescriptors) => (
-              <TextNodeView
-                node={childNode}
-                pos={childPos}
-                siblingDescriptors={siblingDescriptors}
-                decorations={outerDeco}
-              />
-            )}
-          </ChildDescriptorsContext.Consumer>
-        );
-      } else {
-        children.push(
-          <NodeView
-            key={childPos}
-            node={childNode}
-            pos={childPos}
-            decorations={outerDeco}
-            innerDecorations={innerDeco}
-          />
-        );
-      }
+      const nodeElement = childNode.isText ? (
+        <ChildDescriptorsContext.Consumer>
+          {(siblingDescriptors) => (
+            <TextNodeView
+              node={childNode}
+              pos={childPos}
+              siblingDescriptors={siblingDescriptors}
+              decorations={outerDeco}
+            />
+          )}
+        </ChildDescriptorsContext.Consumer>
+      ) : (
+        <NodeView
+          node={childNode}
+          pos={childPos}
+          decorations={outerDeco}
+          innerDecorations={innerDeco}
+        />
+      );
+
+      const childElement = outerDeco.reduce(
+        (element, deco) => {
+          const {
+            nodeName,
+            class: className,
+            style: _,
+            ...attrs
+          } = (deco.type as NonWidgetType).attrs;
+
+          if (nodeName) {
+            return createElement(
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              nodeName!,
+              {
+                className,
+                ...attrs,
+              },
+              element
+            );
+          }
+          return cloneElement(element, {
+            className,
+            ...attrs,
+          });
+        },
+
+        childNode.marks.reduce(
+          (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+          nodeElement
+        )
+      );
+
+      children.push(cloneElement(childElement, { key: childPos }));
     }
   );
 
