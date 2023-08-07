@@ -1,6 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { render } from "@testing-library/react";
 import { EditorState } from "prosemirror-state";
-import { doc, em, li, p, schema, strong, ul } from "prosemirror-test-builder";
+import {
+  doc,
+  em,
+  hr,
+  li,
+  p,
+  schema,
+  strong,
+  ul,
+} from "prosemirror-test-builder";
 import React from "react";
 
 import { useView } from "../../hooks/useView.js";
@@ -132,5 +143,92 @@ describe("EditorView", () => {
       );
     }
     render(<TestEditor />);
+  });
+
+  it("can be queried for a node's DOM representation", () => {
+    const state = EditorState.create({
+      doc: doc(p("foo"), hr()),
+    });
+
+    function Test() {
+      useView((view) => {
+        expect(view.nodeDOM(0)!.nodeName).toBe("P");
+        expect(view.nodeDOM(5)!.nodeName).toBe("HR");
+        expect(view.nodeDOM(3)).toBeNull();
+      });
+
+      return null;
+    }
+
+    function TestEditor() {
+      return (
+        <EditorView defaultState={state}>
+          <Test></Test>
+        </EditorView>
+      );
+    }
+    render(<TestEditor />);
+  });
+
+  it("can map DOM positions to doc positions", () => {
+    const state = EditorState.create({
+      doc: doc(p("foo"), hr()),
+    });
+
+    function Test() {
+      useView((view) => {
+        expect(view.posAtDOM(view.dom.firstChild!.firstChild!, 2)).toBe(3);
+        expect(view.posAtDOM(view.dom, 1)).toBe(5);
+        expect(view.posAtDOM(view.dom, 2)).toBe(6);
+        expect(view.posAtDOM(view.dom.lastChild!, 0, -1)).toBe(5);
+        expect(view.posAtDOM(view.dom.lastChild!, 0, 1)).toBe(6);
+      });
+
+      return null;
+    }
+
+    function TestEditor() {
+      return (
+        <EditorView defaultState={state}>
+          <Test></Test>
+        </EditorView>
+      );
+    }
+    render(<TestEditor />);
+  });
+
+  it("binds this to itself in dispatchTransaction prop", () => {
+    const state = EditorState.create({
+      doc: doc(p("foo"), hr()),
+    });
+
+    let view: any;
+    let thisBinding: any;
+
+    function Test() {
+      useView((v) => {
+        view = v;
+      });
+
+      return null;
+    }
+
+    function TestEditor() {
+      return (
+        <EditorView
+          defaultState={state}
+          dispatchTransaction={function () {
+            // eslint-disable-next-line @typescript-eslint/no-this-alias
+            thisBinding = this;
+            return this.state;
+          }}
+        >
+          <Test></Test>
+        </EditorView>
+      );
+    }
+    render(<TestEditor />);
+    view.dispatch(view.state.tr.insertText("x"));
+    expect(view).toBe(thisBinding);
   });
 });

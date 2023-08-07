@@ -1,5 +1,9 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
-import { DecorationSet, DirectEditorProps } from "prosemirror-view";
+import {
+  DecorationSet,
+  DirectEditorProps,
+  EditorView as EditorViewT,
+} from "prosemirror-view";
 import React, {
   DetailedHTMLProps,
   ForwardRefExoticComponent,
@@ -48,7 +52,7 @@ type EditorStateProps =
 
 export type EditorProps = Omit<
   DirectEditorProps,
-  "state" | "nodeViews" | "decorations"
+  "state" | "nodeViews" | "decorations" | "dispatchTransaction"
 > &
   EditorStateProps & {
     keymap?: { [key: string]: Command };
@@ -58,6 +62,7 @@ export type EditorProps = Omit<
       >;
     };
     decorations?: DecorationSet;
+    dispatchTransaction?: (this: EditorViewT, tr: Transaction) => EditorState;
   };
 
 export type Props = EditorProps &
