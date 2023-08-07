@@ -6,6 +6,7 @@ import { Decoration, DecorationSet } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, {
   DetailedHTMLProps,
+  ForwardedRef,
   HTMLAttributes,
   Ref,
   forwardRef,
@@ -51,6 +52,11 @@ const schema = new Schema({
         return ["em", 0];
       },
     },
+    strong: {
+      toDOM() {
+        return ["strong", 0];
+      },
+    },
   },
 });
 
@@ -58,8 +64,12 @@ const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
     schema.nodes.paragraph.create({}, [
-      schema.text("This", [schema.marks.em.create()]),
-      schema.text(" is the first paragraph"),
+      schema.text("This ", [schema.marks.em.create()]),
+      schema.text("is", [
+        schema.marks.em.create(),
+        schema.marks.strong.create(),
+      ]),
+      schema.text(" the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
       {},
@@ -97,9 +107,13 @@ const Paragraph = forwardRef(function Paragraph(
   );
 });
 
-function TestWidget() {
+const TestWidget = forwardRef(function TestWidget(
+  _props,
+  ref: ForwardedRef<HTMLSpanElement>
+) {
   return (
     <span
+      ref={ref}
       style={{
         display: "inline-block",
         padding: "0.75rem 1rem",
@@ -109,7 +123,7 @@ function TestWidget() {
       Widget
     </span>
   );
-}
+});
 
 const viewPlugin = new Plugin({
   view(view) {

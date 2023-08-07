@@ -17,29 +17,27 @@ import {
 
 type ChildNode = {
   node: Node;
+  marks: readonly Mark[];
   innerDeco: DecorationSourceInternal;
   offset: number;
 };
 
-type ChildrenNodeViewProps = {
-  outerDeco: readonly DecorationInternal[];
+type SharedMarksProps = {
   sharedMarks: readonly Mark[];
+  outerDeco: readonly DecorationInternal[];
   innerPos: number;
   nodes: ChildNode[];
 };
 
-function ChildrenNodeView({
+function SharedMarks({
   outerDeco,
   sharedMarks,
   innerPos,
   nodes,
-}: ChildrenNodeViewProps) {
-  const childElements: JSX.Element[] = [];
-  let queuedSharedMarks: readonly Mark[] = [];
-  let queuedNodes: ChildNode[] = [];
+}: SharedMarksProps) {
   if (nodes.length === 1) {
-    const { node, offset, innerDeco } = nodes[0]!;
-
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const { node, marks, offset, innerDeco } = nodes[0]!;
     const childPos = innerPos + offset;
     const nodeElement = node.isText ? (
       <ChildDescriptorsContext.Consumer>
@@ -61,54 +59,78 @@ function ChildrenNodeView({
       />
     );
 
-    const uniqueMarks: Mark[] = node.marks.filter(
-      (mark) => !mark.isInSet(sharedMarks)
-    );
-    const markedElement = uniqueMarks.reduce(
-      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
-      nodeElement
-    );
+    const markedElement = sharedMarks
+      .concat(marks)
+      .reduce(
+        (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+        nodeElement
+      );
 
-    childElements.push(cloneElement(markedElement, { key: childPos }));
-  } else {
-    nodes.forEach((childNode) => {
-      const uniqueMarks = childNode.node.marks.filter(
-        (mark) => !mark.isInSet(sharedMarks)
-      );
-      const sharedUniqueMarks = uniqueMarks.filter((mark, index) =>
-        queuedSharedMarks[index]?.eq(mark)
-      );
-      if (sharedUniqueMarks.length) {
-        queuedSharedMarks = sharedUniqueMarks;
-        queuedNodes.push(childNode);
-      } else {
-        if (queuedNodes.length) {
-          childElements.push(
-            <ChildrenNodeView
-              outerDeco={[]}
-              sharedMarks={queuedSharedMarks}
-              innerPos={innerPos}
-              nodes={queuedNodes}
-            />
-          );
-        }
-        queuedNodes = [childNode];
-        queuedSharedMarks = childNode.node.marks;
-      }
-    });
+    return cloneElement(markedElement, { key: childPos });
   }
 
-  if (queuedNodes.length) {
+  const childElements: JSX.Element[] = [];
+
+  let queuedSharedMarks: readonly Mark[] = [];
+  let queuedChildNodes: ChildNode[] = [];
+
+  for (const childNode of nodes) {
+    const filteredMarks = childNode.marks.filter((mark, index) =>
+      queuedSharedMarks[index]?.eq(mark)
+    );
+    if (filteredMarks.length) {
+      queuedSharedMarks = filteredMarks;
+      queuedChildNodes.push(childNode);
+    } else {
+      if (queuedChildNodes.length) {
+        childElements.push(
+          <SharedMarks
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            key={`${innerPos + queuedChildNodes[0]!.offset}`}
+            sharedMarks={queuedSharedMarks}
+            outerDeco={outerDeco}
+            innerPos={innerPos}
+            nodes={queuedChildNodes.map((childNode) => ({
+              ...childNode,
+              marks: childNode.marks.slice(queuedSharedMarks.length),
+            }))}
+          />
+        );
+      }
+      queuedSharedMarks = childNode.marks;
+      queuedChildNodes = [childNode];
+    }
+  }
+
+  if (queuedChildNodes.length) {
     childElements.push(
-      <ChildrenNodeView
-        outerDeco={[]}
+      <SharedMarks
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        key={`${innerPos + queuedChildNodes[0]!.offset}`}
         sharedMarks={queuedSharedMarks}
+        outerDeco={outerDeco}
         innerPos={innerPos}
-        nodes={queuedNodes}
+        nodes={queuedChildNodes.map((childNode) => ({
+          ...childNode,
+          marks: childNode.marks.slice(queuedSharedMarks.length),
+        }))}
       />
     );
   }
 
+  return sharedMarks.reduce(
+    (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+    <>{childElements}</>
+  );
+}
+
+type OuterDecoViewProps = {
+  outerDeco: readonly DecorationInternal[];
+  innerPos: number;
+  nodes: ChildNode[];
+};
+
+function OuterDecoView({ outerDeco, innerPos, nodes }: OuterDecoViewProps) {
   return outerDeco.reduce(
     (element, deco) => {
       const {
@@ -118,20 +140,14 @@ function ChildrenNodeView({
         ...attrs
       } = (deco.type as NonWidgetType).attrs;
 
-      if (nodeName) {
+      if (nodeName || nodes[0]?.node.isText) {
         return createElement(
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          nodeName!,
+          nodeName ?? "span",
           {
             className,
             ...attrs,
           },
           element
-        );
-      }
-      if (Array.isArray(element)) {
-        return (
-          <>{element.map((el) => cloneElement(el, { className, ...attrs }))}</>
         );
       }
       return cloneElement(element, {
@@ -140,10 +156,12 @@ function ChildrenNodeView({
       });
     },
 
-    sharedMarks.reduce(
-      (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
-      <>{childElements}</>
-    )
+    <SharedMarks
+      sharedMarks={[]}
+      nodes={nodes}
+      innerPos={innerPos}
+      outerDeco={outerDeco}
+    ></SharedMarks>
   );
 }
 
@@ -156,7 +174,6 @@ export function useChildNodeViews(
   const innerPos = pos + 1;
 
   let queuedOuterDeco: readonly DecorationInternal[] = [];
-  let queuedSharedMarks: readonly Mark[] = [];
   let queuedChildNodes: ChildNode[] = [];
 
   iterDeco(
@@ -165,10 +182,10 @@ export function useChildNodeViews(
     (widget, offset, index) => {
       if (queuedChildNodes.length) {
         children.push(
-          <ChildrenNodeView
-            key={`${innerPos + offset}`}
+          <OuterDecoView
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            key={`${innerPos + queuedChildNodes[0]!.offset}`}
             outerDeco={queuedOuterDeco}
-            sharedMarks={queuedSharedMarks}
             nodes={queuedChildNodes}
             innerPos={innerPos}
           />
@@ -180,41 +197,43 @@ export function useChildNodeViews(
           widget={widget as ReactWidgetDecoration}
         />
       );
+      queuedChildNodes = [];
+      queuedOuterDeco = [];
     },
     (childNode, outerDeco, innerDeco, offset) => {
-      const sharedMarks = childNode.marks.filter((mark, index) =>
-        queuedSharedMarks[index]?.eq(mark)
-      );
       if (!sameOuterDeco(queuedOuterDeco, outerDeco)) {
         if (queuedChildNodes.length) {
           children.push(
-            <ChildrenNodeView
-              key={`${innerPos + offset}`}
+            <OuterDecoView
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              key={`${innerPos + queuedChildNodes[0]!.offset}`}
               outerDeco={queuedOuterDeco}
-              sharedMarks={queuedSharedMarks}
               nodes={queuedChildNodes}
               innerPos={innerPos}
             />
           );
         }
         queuedOuterDeco = outerDeco;
-        queuedChildNodes = [{ node: childNode, innerDeco, offset }];
-        queuedSharedMarks = childNode.marks;
+        queuedChildNodes = [
+          { node: childNode, marks: childNode.marks, innerDeco, offset },
+        ];
       } else {
-        queuedChildNodes.push({ node: childNode, innerDeco, offset });
-        queuedSharedMarks = sharedMarks;
+        queuedChildNodes.push({
+          node: childNode,
+          marks: childNode.marks,
+          innerDeco,
+          offset,
+        });
       }
     }
   );
 
   if (queuedChildNodes.length) {
     children.push(
-      <ChildrenNodeView
-        // This only runs if there's at least one node is the queue
+      <OuterDecoView
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         key={`${innerPos + queuedChildNodes[0]!.offset}`}
         outerDeco={queuedOuterDeco}
-        sharedMarks={queuedSharedMarks}
         nodes={queuedChildNodes}
         innerPos={innerPos}
       />
