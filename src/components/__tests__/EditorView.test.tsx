@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { EditorState } from "prosemirror-state";
-import { doc, li, p, schema, strong, ul } from "prosemirror-test-builder";
+import { doc, em, li, p, schema, strong, ul } from "prosemirror-test-builder";
 import React from "react";
 
 import { useView } from "../../hooks/useView.js";
@@ -76,6 +76,49 @@ describe("EditorView", () => {
         const afterP = view.domAtPos(7);
         expect(afterP.offset).toBe(1);
         expect(afterP.node.nodeName).toBe("LI");
+      });
+
+      return null;
+    }
+
+    function TestEditor() {
+      return (
+        <EditorView defaultState={state}>
+          <Test></Test>
+        </EditorView>
+      );
+    }
+    render(<TestEditor />);
+  });
+
+  it("can bias DOM position queries to enter nodes", () => {
+    const state = EditorState.create({
+      doc: doc(p(em(strong("a"), "b"), "c")),
+    });
+
+    function Test() {
+      useView((view) => {
+        function get(pos: number, bias: number) {
+          const r = view.domAtPos(pos, bias);
+          return (
+            (r.node.nodeType == 1 ? r.node.nodeName : r.node.nodeValue) +
+            "@" +
+            r.offset
+          );
+        }
+
+        expect(get(1, 0)).toBe("P@0");
+        expect(get(1, -1)).toBe("P@0");
+        expect(get(1, 1)).toBe("a@0");
+        expect(get(2, -1)).toBe("a@1");
+        expect(get(2, 0)).toBe("EM@1");
+        expect(get(2, 1)).toBe("b@0");
+        expect(get(3, -1)).toBe("b@1");
+        expect(get(3, 0)).toBe("P@1");
+        expect(get(3, 1)).toBe("c@0");
+        expect(get(4, -1)).toBe("c@1");
+        expect(get(4, 0)).toBe("P@2");
+        expect(get(4, 1)).toBe("P@2");
       });
 
       return null;

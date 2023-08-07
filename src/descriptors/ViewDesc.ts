@@ -15,7 +15,7 @@ import {
   isEquivalentPosition,
 } from "../prosemirror-internal/dom.js";
 
-function sameOuterDeco(
+export function sameOuterDeco(
   a: readonly DecorationInternal[],
   b: readonly DecorationInternal[]
 ) {
