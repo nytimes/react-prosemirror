@@ -62,7 +62,7 @@ export type EditorProps = Omit<
       >;
     };
     decorations?: DecorationSet;
-    dispatchTransaction?: (this: EditorViewT, tr: Transaction) => EditorState;
+    dispatchTransaction?: (this: EditorViewT, tr: Transaction) => void;
   };
 
 export type Props = EditorProps &
