@@ -108,11 +108,12 @@ const Paragraph = forwardRef(function Paragraph(
 });
 
 const TestWidget = forwardRef(function TestWidget(
-  _props,
+  props,
   ref: ForwardedRef<HTMLSpanElement>
 ) {
   return (
     <span
+      {...props}
       ref={ref}
       style={{
         display: "inline-block",
@@ -156,7 +157,7 @@ function DemoEditor() {
 
   const decorations = [Decoration.inline(5, 15, { class: "inline-deco" })];
   state.doc.forEach((node, offset, index) => {
-    if (index === 1) {
+    if (index === 1 || index === 2) {
       decorations.push(
         Decoration.node(offset, offset + node.nodeSize, {
           nodeName: "div",
@@ -222,6 +223,11 @@ root.render(<DemoEditor />);
 //         return ["em", 0];
 //       },
 //     },
+//     strong: {
+//       toDOM() {
+//         return ["strong", 0];
+//       },
+//     },
 //   },
 // });
 
@@ -229,14 +235,18 @@ root.render(<DemoEditor />);
 //   schema,
 //   doc: schema.nodes.doc.create({}, [
 //     schema.nodes.paragraph.create({}, [
-//       schema.text("This is "),
-//       schema.text("the", [schema.marks.em.create()]),
-//       schema.text(" first paragraph"),
+//       schema.text("This ", [schema.marks.em.create()]),
+//       schema.text("is", [
+//         schema.marks.em.create(),
+//         schema.marks.strong.create(),
+//       ]),
+//       schema.text(" the first paragraph"),
 //     ]),
 //     schema.nodes.paragraph.create(
 //       {},
 //       schema.text("This is the second paragraph")
 //     ),
+//     schema.nodes.paragraph.create(),
 //     schema.nodes.paragraph.create(
 //       {},
 //       schema.text("This is the third paragraph")
@@ -260,21 +270,44 @@ root.render(<DemoEditor />);
 // function DemoEditor() {
 //   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
 //   const [mount, setMount] = useState<HTMLDivElement | null>(null);
+//   const [state, setState] = useState(editorState);
 
 //   return (
 //     <main>
 //       <h1>React ProseMirror Demo</h1>
 //       <ProseMirror
 //         mount={mount}
-//         defaultState={editorState}
+//         state={state}
+//         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
 //         nodeViews={nodeViews}
-//         decorations={(state) =>
-//           DecorationSet.create(state.doc, [
+//         decorations={(s) => {
+//           const decorations = [
 //             Decoration.inline(5, 15, { class: "inline-deco" }),
-//             Decoration.node(35, 55, { class: "node-deco" }),
-//             Decoration.widget(40, () => document.createElement("div")),
-//           ])
-//         }
+//           ];
+//           state.doc.forEach((node, offset, index) => {
+//             if (index === 1 || index === 2) {
+//               decorations.push(
+//                 Decoration.node(offset, offset + node.nodeSize, {
+//                   nodeName: "div",
+//                   class: "node-deco",
+//                 })
+//               );
+//             }
+//             if (index === 3) {
+//               decorations.push(
+//                 Decoration.widget(offset + 10, () => {
+//                   const el = document.createElement("div");
+//                   el.style.display = "inline-block";
+//                   el.style.padding = "0.75rem 1rem";
+//                   el.style.border = "solid thin black";
+//                   el.innerText = "Widget";
+//                   return el;
+//                 })
+//               );
+//             }
+//           });
+//           return DecorationSet.create(s.doc, decorations);
+//         }}
 //       >
 //         <div ref={setMount} />
 //         {renderNodeViews()}

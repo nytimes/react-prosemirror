@@ -9,21 +9,27 @@ export interface NonWidgetType extends DecorationType {
     class?: string;
     style?: string;
     [attr: string]: string | undefined;
-  }
+  };
 }
 
 export interface DecorationInternal extends Decoration {
-  type: NonWidgetType | ReactWidgetType
-  inline: boolean
+  type: NonWidgetType | ReactWidgetType;
+  inline: boolean;
 }
 
 export interface ReactWidgetDecoration extends Decoration {
-  type: ReactWidgetType
-  inline: false
+  type: ReactWidgetType;
+  inline: false;
 }
 
 export interface DecorationSourceInternal extends DecorationSource {
-  locals(node: Node): readonly DecorationInternal[]
-  forChild(offset: number, child: Node): DecorationSourceInternal
-  eq(other: DecorationSource): boolean
+  locals(node: Node): readonly DecorationInternal[];
+  forChild(offset: number, child: Node): DecorationSourceInternal;
+  eq(other: DecorationSource): boolean;
+}
+
+export interface DecorationSetInternal extends DecorationSourceInternal {
+  local: DecorationInternal[];
+  children: DecorationSetInternal[];
+  find(): DecorationInternal[];
 }

@@ -35,7 +35,9 @@ export const DocNodeView = forwardRef(function DocNodeView(
     -1,
     node,
     innerRef,
-    decorations
+    innerRef,
+    decorations,
+    []
   );
 
   const children = useChildNodeViews(-1, node, decorations);

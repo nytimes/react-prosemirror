@@ -108,18 +108,7 @@ export function EditorView(props: Props) {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const state = stateProp ?? internalState!;
 
-  const dispatch = useMemo(
-    () =>
-      dispatchProp ??
-      ((tr: Transaction) => {
-        setInternalState((prevState) => prevState?.apply(tr) ?? null);
-      }),
-    [dispatchProp]
-  );
-
   const mountRef = useRef<HTMLDivElement | null>(null);
-
-  useSyncSelection(state, dispatch, posToDesc, domToDesc);
 
   const editable = editableProp ? editableProp(state) : true;
 
@@ -173,7 +162,16 @@ export function EditorView(props: Props) {
       },
       editable,
       state,
-      dispatch,
+      updateState(state) {
+        setInternalState(state);
+      },
+      dispatch(tr) {
+        if (dispatchProp) {
+          dispatchProp.call(this, tr);
+        } else {
+          this.updateState(this.state.apply(tr));
+        }
+      },
       someProp<PropName extends keyof EditorProps, Result>(
         propName: PropName,
         f?: (value: NonNullable<EditorProps[PropName]>) => Result
@@ -282,7 +280,6 @@ export function EditorView(props: Props) {
       handleTripleClickOn,
       editable,
       state,
-      dispatch,
       editableProp,
       stateProp,
       defaultState,
@@ -296,12 +293,13 @@ export function EditorView(props: Props) {
   const editorViewRef =
     editorViewRefInternal as MutableRefObject<EditorViewInternal>;
 
+  useSyncSelection(state, editorViewAPI.dispatch, posToDesc, domToDesc);
   useContentEditable(editorViewRef);
   usePluginViews(editorViewRef, plugins);
 
   return (
     <LayoutGroup>
-      <EditorViewContext.Provider value={editorViewRef}>
+      <EditorViewContext.Provider value={editorViewAPI}>
         <NodeViewContext.Provider
           value={{
             mount: mountRef.current,

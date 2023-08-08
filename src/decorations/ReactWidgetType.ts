@@ -31,7 +31,9 @@ export class ReactWidgetType implements DecorationType {
   spec: ReactWidgetSpec;
 
   constructor(
-    public Component: ForwardRefExoticComponent<RefAttributes<HTMLElement>>,
+    public Component: ForwardRefExoticComponent<
+      RefAttributes<HTMLElement> & { contentEditable: boolean }
+    >,
     spec: ReactWidgetSpec
   ) {
     this.spec = spec ?? noSpec;

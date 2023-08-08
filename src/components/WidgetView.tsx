@@ -31,5 +31,5 @@ export function WidgetView({ widget }: Props) {
 
   const { Component } = widget.type;
 
-  return <Component ref={domRef} />;
+  return <Component ref={domRef} contentEditable={false} />;
 }

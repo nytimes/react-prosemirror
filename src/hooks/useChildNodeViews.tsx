@@ -1,5 +1,11 @@
 import { Mark, Node } from "prosemirror-model";
-import React, { ReactNode, cloneElement, createElement } from "react";
+import React, {
+  MutableRefObject,
+  ReactNode,
+  cloneElement,
+  createElement,
+  useRef,
+} from "react";
 
 import { MarkView } from "../components/MarkView.js";
 import { NodeView } from "../components/NodeView.js";
@@ -15,6 +21,32 @@ import {
   ReactWidgetDecoration,
 } from "../prosemirror-internal/DecorationInternal.js";
 
+import { useNodeViewDescriptor } from "./useNodeViewDescriptor.js";
+
+function wrapInDeco(element: JSX.Element, deco: DecorationInternal) {
+  const {
+    nodeName,
+    class: className,
+    style: _,
+    ...attrs
+  } = (deco.type as NonWidgetType).attrs;
+
+  if (nodeName || deco.inline) {
+    return createElement(
+      nodeName ?? "span",
+      {
+        className,
+        ...attrs,
+      },
+      element
+    );
+  }
+  return cloneElement(element, {
+    className,
+    ...attrs,
+  });
+}
+
 type ChildNode = {
   node: Node;
   marks: readonly Mark[];
@@ -27,6 +59,8 @@ type SharedMarksProps = {
   outerDeco: readonly DecorationInternal[];
   innerPos: number;
   nodes: ChildNode[];
+  nodeDomRef?: MutableRefObject<HTMLElement | null>;
+  domRef?: MutableRefObject<HTMLElement | null>;
 };
 
 function SharedMarks({
@@ -34,6 +68,8 @@ function SharedMarks({
   sharedMarks,
   innerPos,
   nodes,
+  nodeDomRef,
+  domRef,
 }: SharedMarksProps) {
   if (nodes.length === 1) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -56,14 +92,21 @@ function SharedMarks({
         pos={childPos}
         decorations={outerDeco}
         innerDecorations={innerDeco}
+        // We always pass a nodeDomRef if we're rendering
+        // non-inline nodes
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        nodeDomRef={nodeDomRef!}
+        domRef={domRef}
       />
     );
+
+    const inlineDecorations = outerDeco.filter((deco) => deco.inline);
 
     const markedElement = sharedMarks
       .concat(marks)
       .reduce(
         (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
-        nodeElement
+        inlineDecorations.reduce(wrapInDeco, nodeElement)
       );
 
     return cloneElement(markedElement, { key: childPos });
@@ -94,6 +137,8 @@ function SharedMarks({
               ...childNode,
               marks: childNode.marks.slice(queuedSharedMarks.length),
             }))}
+            nodeDomRef={nodeDomRef}
+            domRef={domRef}
           />
         );
       }
@@ -114,6 +159,8 @@ function SharedMarks({
           ...childNode,
           marks: childNode.marks.slice(queuedSharedMarks.length),
         }))}
+        nodeDomRef={nodeDomRef}
+        domRef={domRef}
       />
     );
   }
@@ -124,44 +171,53 @@ function SharedMarks({
   );
 }
 
-type OuterDecoViewProps = {
+type NodeDecoViewProps = {
   outerDeco: readonly DecorationInternal[];
-  innerPos: number;
-  nodes: ChildNode[];
+  pos: number;
+  node: Node;
+  innerDeco: DecorationSourceInternal;
 };
 
-function OuterDecoView({ outerDeco, innerPos, nodes }: OuterDecoViewProps) {
-  return outerDeco.reduce(
-    (element, deco) => {
-      const {
-        nodeName,
-        class: className,
-        style: _,
-        ...attrs
-      } = (deco.type as NonWidgetType).attrs;
+function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
+  const domRef = useRef<HTMLElement | null>(null);
+  const nodeDomRef = useRef<HTMLElement | null>(null);
 
-      if (nodeName || nodes[0]?.node.isText) {
-        return createElement(
-          nodeName ?? "span",
-          {
-            className,
-            ...attrs,
-          },
-          element
-        );
-      }
-      return cloneElement(element, {
-        className,
-        ...attrs,
-      });
-    },
+  const childDescriptors = useNodeViewDescriptor(
+    pos,
+    node,
+    domRef,
+    nodeDomRef,
+    innerDeco,
+    outerDeco
+  );
 
-    <SharedMarks
-      sharedMarks={[]}
-      nodes={nodes}
-      innerPos={innerPos}
-      outerDeco={outerDeco}
-    ></SharedMarks>
+  const markedElement = node.marks.reduce(
+    (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+    <NodeView
+      node={node}
+      pos={pos}
+      decorations={outerDeco}
+      innerDecorations={innerDeco}
+      nodeDomRef={nodeDomRef}
+      domRef={domRef}
+    />
+  );
+
+  const nodeDecorations = outerDeco.filter((deco) => !deco.inline);
+  if (!nodeDecorations.length) {
+    return (
+      <ChildDescriptorsContext.Provider value={childDescriptors}>
+        {markedElement}
+      </ChildDescriptorsContext.Provider>
+    );
+  }
+
+  const decoratedElement = nodeDecorations.reduce(wrapInDeco, markedElement);
+
+  return (
+    <ChildDescriptorsContext.Provider value={childDescriptors}>
+      {cloneElement(decoratedElement, { ref: domRef })}
+    </ChildDescriptorsContext.Provider>
   );
 }
 
@@ -182,13 +238,14 @@ export function useChildNodeViews(
     (widget, offset, index) => {
       if (queuedChildNodes.length) {
         children.push(
-          <OuterDecoView
+          <SharedMarks
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             key={`${innerPos + queuedChildNodes[0]!.offset}`}
+            sharedMarks={[]}
             outerDeco={queuedOuterDeco}
             nodes={queuedChildNodes}
             innerPos={innerPos}
-          />
+          ></SharedMarks>
         );
       }
       children.push(
@@ -201,16 +258,29 @@ export function useChildNodeViews(
       queuedOuterDeco = [];
     },
     (childNode, outerDeco, innerDeco, offset) => {
+      if (!childNode.isInline) {
+        children.push(
+          <NodeDecoView
+            key={`${innerPos + offset}`}
+            outerDeco={outerDeco}
+            node={childNode}
+            innerDeco={innerDeco}
+            pos={innerPos + offset}
+          />
+        );
+        return;
+      }
       if (!sameOuterDeco(queuedOuterDeco, outerDeco)) {
         if (queuedChildNodes.length) {
           children.push(
-            <OuterDecoView
+            <SharedMarks
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
               key={`${innerPos + queuedChildNodes[0]!.offset}`}
+              sharedMarks={[]}
               outerDeco={queuedOuterDeco}
               nodes={queuedChildNodes}
               innerPos={innerPos}
-            />
+            ></SharedMarks>
           );
         }
         queuedOuterDeco = outerDeco;
@@ -230,13 +300,14 @@ export function useChildNodeViews(
 
   if (queuedChildNodes.length) {
     children.push(
-      <OuterDecoView
+      <SharedMarks
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         key={`${innerPos + queuedChildNodes[0]!.offset}`}
+        sharedMarks={[]}
         outerDeco={queuedOuterDeco}
         nodes={queuedChildNodes}
         innerPos={innerPos}
-      />
+      ></SharedMarks>
     );
   }
 

@@ -4,20 +4,25 @@ import { MutableRefObject, useContext, useLayoutEffect } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
-import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
+import {
+  DecorationInternal,
+  DecorationSourceInternal,
+} from "../prosemirror-internal/DecorationInternal.js";
 
 export function useNodeViewDescriptor(
   pos: number,
   node: Node,
-  domRef: MutableRefObject<HTMLElement | null>,
-  innerDecorations: DecorationSourceInternal
+  domRef: undefined | MutableRefObject<HTMLElement | null>,
+  nodeDomRef: MutableRefObject<HTMLElement | null>,
+  innerDecorations: DecorationSourceInternal,
+  outerDecorations: readonly DecorationInternal[]
 ) {
   const { posToDesc, domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
 
   useLayoutEffect(() => {
-    if (!domRef.current) return;
+    if (!nodeDomRef.current) return;
 
     const firstChildDesc = childDescriptors[0];
 
@@ -25,16 +30,16 @@ export function useNodeViewDescriptor(
       undefined,
       childDescriptors,
       node,
-      [],
+      outerDecorations,
       innerDecorations,
-      domRef.current,
+      domRef?.current ?? nodeDomRef.current,
       firstChildDesc?.dom.parentElement ?? null,
-      domRef.current ?? domRef.current,
+      nodeDomRef.current,
       posToDesc,
       domToDesc
     );
     posToDesc.set(pos, desc);
-    domToDesc.set(domRef.current, desc);
+    domToDesc.set(nodeDomRef.current, desc);
     siblingDescriptors.push(desc);
 
     for (const childDesc of childDescriptors) {
