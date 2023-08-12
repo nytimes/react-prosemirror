@@ -10,14 +10,13 @@ import {
 } from "../prosemirror-internal/DecorationInternal.js";
 
 export function useNodeViewDescriptor(
-  pos: number,
   node: Node,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSourceInternal,
   outerDecorations: readonly DecorationInternal[]
 ) {
-  const { posToDesc, domToDesc } = useContext(NodeViewContext);
+  const { domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
 
@@ -35,10 +34,8 @@ export function useNodeViewDescriptor(
       domRef?.current ?? nodeDomRef.current,
       firstChildDesc?.dom.parentElement ?? null,
       nodeDomRef.current,
-      posToDesc,
       domToDesc
     );
-    posToDesc.set(pos, desc);
     domToDesc.set(nodeDomRef.current, desc);
     siblingDescriptors.push(desc);
 

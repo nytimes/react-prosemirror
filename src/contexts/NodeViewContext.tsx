@@ -8,7 +8,6 @@ import { DOMNode } from "../prosemirror-internal/dom.js";
 export type NodeViewContextValue = {
   mount: HTMLDivElement | null;
   domToDesc: Map<DOMNode, ViewDesc>;
-  posToDesc: Map<number, ViewDesc>;
   nodeViews: Record<
     string,
     ForwardRefExoticComponent<

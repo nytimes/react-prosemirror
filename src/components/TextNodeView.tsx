@@ -12,7 +12,6 @@ import { DecorationInternal } from "../prosemirror-internal/DecorationInternal.j
 
 type Props = {
   node: Node;
-  pos: number;
   siblingDescriptors: ViewDesc[];
   decorations: readonly DecorationInternal[];
 };
@@ -29,7 +28,7 @@ export class TextNodeView extends Component<Props> {
       textNode = textNode?.firstChild as Element | Text;
     }
 
-    const { posToDesc, domToDesc } = this.context as NodeViewContextValue;
+    const { domToDesc } = this.context as NodeViewContextValue;
 
     const desc = new TextViewDesc(
       undefined,
@@ -38,10 +37,8 @@ export class TextNodeView extends Component<Props> {
       DecorationSet.empty,
       textNode,
       nodeDom,
-      posToDesc,
       domToDesc
     );
-    posToDesc.set(this.props.pos, desc);
     domToDesc.set(textNode, desc);
     this.props.siblingDescriptors.push(desc);
   }
@@ -57,7 +54,7 @@ export class TextNodeView extends Component<Props> {
       textNode = textNode?.firstChild as Element | Text;
     }
 
-    const { posToDesc, domToDesc } = this.context as NodeViewContextValue;
+    const { domToDesc } = this.context as NodeViewContextValue;
 
     const desc = new TextViewDesc(
       undefined,
@@ -66,10 +63,8 @@ export class TextNodeView extends Component<Props> {
       DecorationSet.empty,
       textNode,
       nodeDom,
-      posToDesc,
       domToDesc
     );
-    posToDesc.set(this.props.pos, desc);
     domToDesc.set(textNode, desc);
     this.props.siblingDescriptors.push(desc);
   }

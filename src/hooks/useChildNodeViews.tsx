@@ -80,7 +80,6 @@ function SharedMarks({
         {(siblingDescriptors) => (
           <TextNodeView
             node={node}
-            pos={childPos}
             siblingDescriptors={siblingDescriptors}
             decorations={outerDeco}
           />
@@ -183,7 +182,6 @@ function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
   const nodeDomRef = useRef<HTMLElement | null>(null);
 
   const childDescriptors = useNodeViewDescriptor(
-    pos,
     node,
     domRef,
     nodeDomRef,
@@ -312,7 +310,7 @@ export function useChildNodeViews(
   }
 
   if (!children.length) {
-    children.push(<TrailingHackView key={innerPos} pos={innerPos} />);
+    children.push(<TrailingHackView key={innerPos} />);
   }
 
   return children;

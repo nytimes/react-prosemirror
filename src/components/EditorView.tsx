@@ -101,8 +101,6 @@ export function EditorView(props: Props) {
     defaultState ?? null
   );
 
-  const posToDesc = useRef(new Map<number, ViewDesc>());
-  posToDesc.current = new Map();
   const domToDesc = useRef(new Map<DOMNode, ViewDesc>());
   domToDesc.current = new Map();
 
@@ -248,7 +246,8 @@ export function EditorView(props: Props) {
         dispatchTransaction: dispatchProp,
       },
       nodeDOM(pos) {
-        return posToDesc.current.get(pos)?.dom ?? null;
+        const desc = this.docView.descAt(pos);
+        return desc ? (desc as NodeViewDesc).nodeDOM : null;
       },
       domAtPos(pos, side = 0) {
         return this.docView.domFromPos(pos, side);
@@ -315,7 +314,6 @@ export function EditorView(props: Props) {
         <NodeViewContext.Provider
           value={{
             mount: mountRef.current,
-            posToDesc: posToDesc.current,
             domToDesc: domToDesc.current,
             nodeViews,
             state,

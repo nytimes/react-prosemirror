@@ -10,7 +10,7 @@ type Props = {
 };
 
 export function WidgetView({ widget }: Props) {
-  const { posToDesc, domToDesc } = useContext(NodeViewContext);
+  const { domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const domRef = useRef<HTMLElement | null>(null);
 
@@ -21,10 +21,8 @@ export function WidgetView({ widget }: Props) {
       undefined,
       widget,
       domRef.current,
-      posToDesc,
       domToDesc
     );
-    // posToDesc.set(pos, desc);
     domToDesc.set(domRef.current, desc);
     siblingDescriptors.push(desc);
   });

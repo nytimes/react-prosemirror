@@ -51,8 +51,6 @@ export class ViewDesc {
     // This is the node that holds the child views. It may be null for
     // descs that don't have children.
     public contentDOM: HTMLElement | null,
-    // @ts-expect-error posToDesc will enable performance optimizations later
-    private posToDesc: Map<number, ViewDesc>,
     private domToDesc: Map<DOMNode, ViewDesc>
   ) {
     this.size = this.children.reduce((acc, { size }) => acc + size, 0);
@@ -624,10 +622,9 @@ export class WidgetViewDesc extends ViewDesc {
     parent: ViewDesc | undefined,
     readonly widget: ReactWidgetDecoration,
     dom: DOMNode,
-    posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
-    super(parent, [], dom, null, posToDesc, domToDesc);
+    super(parent, [], dom, null, domToDesc);
     this.widget = widget;
   }
 
@@ -672,10 +669,9 @@ export class MarkViewDesc extends ViewDesc {
     readonly mark: Mark,
     dom: DOMNode,
     contentDOM: HTMLElement,
-    posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
-    super(parent, children, dom, contentDOM, posToDesc, domToDesc);
+    super(parent, children, dom, contentDOM, domToDesc);
   }
 
   parseRule(): ParseRule | null {
@@ -731,10 +727,9 @@ export class NodeViewDesc extends ViewDesc {
     contentDOM: HTMLElement | null,
     readonly nodeDOM: DOMNode,
 
-    posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
-    super(parent, children, dom, contentDOM, posToDesc, domToDesc);
+    super(parent, children, dom, contentDOM, domToDesc);
     this.size = this.node.nodeSize;
     this.border = this.node.isLeaf ? 0 : 1;
   }
@@ -909,7 +904,6 @@ export class TextViewDesc extends NodeViewDesc {
     dom: DOMNode,
     readonly nodeDOM: DOMNode,
 
-    posToDesc: Map<number, ViewDesc>,
     domToDesc: Map<DOMNode, ViewDesc>
   ) {
     super(
@@ -921,7 +915,6 @@ export class TextViewDesc extends NodeViewDesc {
       dom,
       null,
       nodeDOM,
-      posToDesc,
       domToDesc
     );
 
