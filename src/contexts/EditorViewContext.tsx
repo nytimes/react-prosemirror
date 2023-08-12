@@ -1,4 +1,4 @@
-import { MutableRefObject, createContext } from "react";
+import { createContext } from "react";
 
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 

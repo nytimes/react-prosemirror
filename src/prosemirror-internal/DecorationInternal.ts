@@ -1,7 +1,7 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
-import { DecorationType } from "../decorations/DecorationType";
-import { ReactWidgetType } from "../decorations/ReactWidgetType";
+import { DecorationType } from "../decorations/DecorationType.js";
+import { ReactWidgetType } from "../decorations/ReactWidgetType.js";
 
 export interface NonWidgetType extends DecorationType {
   attrs: {

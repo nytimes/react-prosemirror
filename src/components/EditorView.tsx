@@ -10,6 +10,7 @@ import React, {
   HTMLAttributes,
   MutableRefObject,
   RefAttributes,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -35,6 +36,7 @@ import {
   endOfTextblock,
   posAtCoords,
 } from "../prosemirror-internal/domcoords.js";
+import { DOMObserver } from "../prosemirror-internal/domobserver.js";
 import { InputState } from "../prosemirror-internal/input.js";
 
 import { DocNodeView } from "./DocNodeView.js";
@@ -116,15 +118,17 @@ export function EditorView(props: Props) {
 
   // This is only safe to use in effects/layout effects or
   // event handlers!
-  const editorViewAPI: EditorViewInternal = useMemo<EditorViewInternal>(
+  const editorViewAPI: EditorViewInternal = useMemo<EditorViewInternal>(() => {
     // @ts-expect-error - EditorView API not fully implemented yet
-    () => ({
+    const api: EditorViewInternal = {
       /* Start TODO */
       dragging: null,
       composing: false,
       focus() {
         /* */
       },
+      // I do not know what this is or what it's for yet
+      cursorWrapper: editorViewRefInternal.current?.cursorWrapper ?? null,
       /* End TODO */
       _props: {
         handleDOMEvents,
@@ -144,6 +148,10 @@ export function EditorView(props: Props) {
       focused: editorViewRefInternal.current?.focused ?? false,
       markCursor: editorViewRefInternal.current?.markCursor ?? null,
       input: editorViewRefInternal.current?.input ?? new InputState(),
+      domObserver:
+        editorViewRefInternal.current?.domObserver ??
+        new DOMObserver(editorViewRefInternal),
+      lastSelectedViewDesc: editorViewRefInternal.current?.lastSelectedViewDesc,
       get dom() {
         if (!mountRef.current) {
           throw new Error(
@@ -263,37 +271,41 @@ export function EditorView(props: Props) {
       ): boolean {
         return endOfTextblock(this, state || this.state, dir);
       },
-    }),
-    [
-      handleDOMEvents,
-      handleClick,
-      handleClickOn,
-      handleDoubleClick,
-      handleDoubleClickOn,
-      handleDrop,
-      handleKeyDown,
-      handleKeyPress,
-      handlePaste,
-      handleScrollToSelection,
-      handleTextInput,
-      handleTripleClick,
-      handleTripleClickOn,
-      editable,
-      state,
-      editableProp,
-      stateProp,
-      defaultState,
-      dispatchProp,
-      plugins,
-    ]
-  );
+    };
+    api.dispatch = api.dispatch.bind(api);
+    return api;
+  }, [
+    handleDOMEvents,
+    handleClick,
+    handleClickOn,
+    handleDoubleClick,
+    handleDoubleClickOn,
+    handleDrop,
+    handleKeyDown,
+    handleKeyPress,
+    handlePaste,
+    handleScrollToSelection,
+    handleTextInput,
+    handleTripleClick,
+    handleTripleClickOn,
+    editable,
+    state,
+    editableProp,
+    stateProp,
+    defaultState,
+    dispatchProp,
+    plugins,
+  ]);
 
   editorViewRefInternal.current = editorViewAPI;
 
   const editorViewRef =
     editorViewRefInternal as MutableRefObject<EditorViewInternal>;
 
-  useSyncSelection(state, editorViewAPI.dispatch, posToDesc, domToDesc);
+  useEffect(() => {
+    editorViewRef.current.domObserver.connectSelection();
+  }, [editorViewRef]);
+  useSyncSelection(editorViewRef);
   useContentEditable(editorViewRef);
   usePluginViews(editorViewRef, plugins);
 

@@ -5,7 +5,7 @@
  */
 
 import {EditorState} from "prosemirror-state"
-import {nodeSize, textRange, parentNode, caretFromPoint} from "./dom"
+import {nodeSize, textRange, parentNode, caretFromPoint} from "./dom.js"
 import * as browser from "./browser.js"
 import {EditorView} from "prosemirror-view"
 

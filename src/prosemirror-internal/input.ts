@@ -2,14 +2,12 @@ import {Selection, NodeSelection, TextSelection} from "prosemirror-state"
 import {dropPoint} from "prosemirror-transform"
 import {Slice, Node} from "prosemirror-model"
 
-import * as browser from "./browser"
+import * as browser from "./browser.js"
 // $$FORK: trying to drop this for now
 // import {captureKeyDown} from "./capturekeys.js"
 import {parseFromClipboard, serializeForClipboard} from "./clipboard.js"
-// $$FORK: selectionToDOM is handled in our sync selection hook
-// import {selectionBetween, selectionToDOM, selectionFromDOM} from "./selection.js"
-import {selectionBetween, selectionFromDOM} from "./selection.js"
-import {keyEvent, DOMNode} from "./dom"
+import {selectionBetween, selectionToDOM, selectionFromDOM} from "./selection.js"
+import {keyEvent, DOMNode} from "./dom.js"
 import { EditorViewInternal as EditorView } from "./EditorViewInternal.js"
 import {ViewDesc} from "../descriptors/ViewDesc.js"
 import { MutableRefObject } from "react"
@@ -151,14 +149,13 @@ editHandlers.keypress = (view, _event) => {
     return
   }
 
-  // $$FORK: We handle this in our beforeinput handler
-  // let sel = view.state.selection
-  // if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
-  //   let text = String.fromCharCode(event.charCode)
-  //   if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
-  //     view.dispatch(view.state.tr.insertText(text).scrollIntoView())
-  //   event.preventDefault()
-  // }
+  let sel = view.state.selection
+  if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
+    let text = String.fromCharCode(event.charCode)
+    if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
+      view.dispatch(view.state.tr.insertText(text).scrollIntoView())
+    event.preventDefault()
+  }
 }
 
 function eventCoords(event: MouseEvent) { return {left: event.clientX, top: event.clientY} }
@@ -370,7 +367,7 @@ class MouseDown {
       if (this.mightDrag.setUneditable) this.target.removeAttribute("contentEditable")
       // this.view.domObserver.start()
     }
-    // if (this.delayedSelectionSync) setTimeout(() => selectionToDOM(this.view))
+    if (this.delayedSelectionSync) setTimeout(() => selectionToDOM(this.view))
     this.view.input.mouseDown = null
   }
 
@@ -740,25 +737,22 @@ handlers.focus = view => {
     // view.domObserver.start()
     view.focused = true
     setTimeout(() => {
-      // $$FORK: We don't use a dom observer
-      // if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
-      // TODO: what should happen here?
-      // if (view.docView && view.hasFocus())
-        // selectionToDOM(view)
+      if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
+      if (view.docView && view.hasFocus())
+        selectionToDOM(view)
     }, 20)
   }
 }
 
 handlers.blur = (view, _event) => {
-  // let event = _event as FocusEvent
+  let event = _event as FocusEvent
   if (view.focused) {
     // $$FORK: We don't use a dom observer
     // view.domObserver.stop()
     view.dom.classList.remove("ProseMirror-focused")
     // view.domObserver.start()
-    // TODO: what should happen here?
-    // if (event.relatedTarget && view.dom.contains(event.relatedTarget as HTMLElement))
-    //   view.domObserver.currentSelection.clear()
+    if (event.relatedTarget && view.dom.contains(event.relatedTarget as HTMLElement))
+      view.domObserver.currentSelection.clear()
     view.focused = false
   }
 }
