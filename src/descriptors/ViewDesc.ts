@@ -50,11 +50,12 @@ export class ViewDesc {
     public dom: DOMNode,
     // This is the node that holds the child views. It may be null for
     // descs that don't have children.
-    public contentDOM: HTMLElement | null,
-    private domToDesc: Map<DOMNode, ViewDesc>
+    public contentDOM: HTMLElement | null
   ) {
     this.size = this.children.reduce((acc, { size }) => acc + size, 0);
     this.border = 0;
+    // @ts-expect-error Can't override global declaration from prosemirror-view
+    this.dom.pmViewDesc = this;
   }
 
   // Used to check whether a given description corresponds to a
@@ -131,7 +132,8 @@ export class ViewDesc {
         }
         while (
           domBefore &&
-          !((desc = this.domToDesc.get(domBefore)) && desc.parent == this)
+          // @ts-expect-error Can't override global declaration from prosemirror-view
+          !((desc = domBefore.pmViewDesc) && desc.parent == this)
         )
           domBefore = domBefore.previousSibling;
         return domBefore
@@ -147,7 +149,8 @@ export class ViewDesc {
         }
         while (
           domAfter &&
-          !((desc = this.domToDesc.get(domAfter)) && desc.parent == this)
+          // @ts-expect-error Can't override global declaration from prosemirror-view
+          !((desc = domAfter.pmViewDesc) && desc.parent == this)
         )
           domAfter = domAfter.nextSibling;
         return domAfter ? this.posBeforeChild(desc!) : this.posAtEnd;
@@ -215,7 +218,8 @@ export class ViewDesc {
   }
 
   getDesc(dom: DOMNode) {
-    const desc = this.domToDesc.get(dom);
+    // @ts-expect-error Can't override global declaration from prosemirror-view
+    const desc: ViewDesc = dom.pmViewDesc;
     for (let cur: ViewDesc | undefined = desc; cur; cur = cur.parent)
       if (cur == this) return desc;
     return undefined;
@@ -455,7 +459,7 @@ export class ViewDesc {
                 };
               break;
             }
-            const desc = this.domToDesc.get(scan);
+            const desc = scan.pmViewDesc;
             if (desc && desc.node && desc.node.isBlock) break;
           }
         }
@@ -621,10 +625,9 @@ export class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     readonly widget: ReactWidgetDecoration,
-    dom: DOMNode,
-    domToDesc: Map<DOMNode, ViewDesc>
+    dom: DOMNode
   ) {
-    super(parent, [], dom, null, domToDesc);
+    super(parent, [], dom, null);
     this.widget = widget;
   }
 
@@ -668,10 +671,9 @@ export class MarkViewDesc extends ViewDesc {
     children: ViewDesc[],
     readonly mark: Mark,
     dom: DOMNode,
-    contentDOM: HTMLElement,
-    domToDesc: Map<DOMNode, ViewDesc>
+    contentDOM: HTMLElement
   ) {
-    super(parent, children, dom, contentDOM, domToDesc);
+    super(parent, children, dom, contentDOM);
   }
 
   parseRule(): ParseRule | null {
@@ -725,11 +727,9 @@ export class NodeViewDesc extends ViewDesc {
     public innerDeco: DecorationSource,
     dom: DOMNode,
     contentDOM: HTMLElement | null,
-    readonly nodeDOM: DOMNode,
-
-    domToDesc: Map<DOMNode, ViewDesc>
+    readonly nodeDOM: DOMNode
   ) {
-    super(parent, children, dom, contentDOM, domToDesc);
+    super(parent, children, dom, contentDOM);
     this.size = this.node.nodeSize;
     this.border = this.node.isLeaf ? 0 : 1;
   }
@@ -902,21 +902,9 @@ export class TextViewDesc extends NodeViewDesc {
     public outerDeco: readonly DecorationInternal[],
     public innerDeco: DecorationSource,
     dom: DOMNode,
-    readonly nodeDOM: DOMNode,
-
-    domToDesc: Map<DOMNode, ViewDesc>
+    readonly nodeDOM: DOMNode
   ) {
-    super(
-      parent,
-      [],
-      node,
-      outerDeco,
-      innerDeco,
-      dom,
-      null,
-      nodeDOM,
-      domToDesc
-    );
+    super(parent, [], node, outerDeco, innerDeco, dom, null, nodeDOM);
 
     this.size = this.node.text!.length;
   }

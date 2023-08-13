@@ -44,6 +44,10 @@ export function useContentEditable(
           event.preventDefault();
           break;
         }
+        default: {
+          event.preventDefault();
+          break;
+        }
       }
     }
 

@@ -3,10 +3,6 @@ import { DecorationSet } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
-import {
-  NodeViewContext,
-  NodeViewContextValue,
-} from "../contexts/NodeViewContext.js";
 import { TextViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import { DecorationInternal } from "../prosemirror-internal/DecorationInternal.js";
 
@@ -28,18 +24,14 @@ export class TextNodeView extends Component<Props> {
       textNode = textNode?.firstChild as Element | Text;
     }
 
-    const { domToDesc } = this.context as NodeViewContextValue;
-
     const desc = new TextViewDesc(
       undefined,
       this.props.node,
       [],
       DecorationSet.empty,
       textNode,
-      nodeDom,
-      domToDesc
+      nodeDom
     );
-    domToDesc.set(textNode, desc);
     this.props.siblingDescriptors.push(desc);
   }
 
@@ -54,18 +46,14 @@ export class TextNodeView extends Component<Props> {
       textNode = textNode?.firstChild as Element | Text;
     }
 
-    const { domToDesc } = this.context as NodeViewContextValue;
-
     const desc = new TextViewDesc(
       undefined,
       this.props.node,
       [],
       DecorationSet.empty,
       textNode,
-      nodeDom,
-      domToDesc
+      nodeDom
     );
-    domToDesc.set(textNode, desc);
     this.props.siblingDescriptors.push(desc);
   }
 
@@ -73,5 +61,3 @@ export class TextNodeView extends Component<Props> {
     return this.props.node.text;
   }
 }
-
-TextNodeView.contextType = NodeViewContext;

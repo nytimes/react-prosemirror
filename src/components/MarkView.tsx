@@ -9,7 +9,6 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { MarkViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 
 import { OutputSpec } from "./OutputSpec.js";
@@ -23,7 +22,6 @@ export const MarkView = forwardRef(function MarkView(
   { mark, children }: Props,
   ref
 ) {
-  const { domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
   const domRef = useRef<HTMLElement | null>(null);
@@ -50,10 +48,8 @@ export const MarkView = forwardRef(function MarkView(
       childDescriptors,
       mark,
       domRef.current,
-      firstChildDesc?.dom.parentElement ?? domRef.current,
-      domToDesc
+      firstChildDesc?.dom.parentElement ?? domRef.current
     );
-    domToDesc.set(domRef.current, desc);
     siblingDescriptors.push(desc);
 
     for (const childDesc of childDescriptors) {

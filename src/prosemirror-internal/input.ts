@@ -149,13 +149,14 @@ editHandlers.keypress = (view, _event) => {
     return
   }
 
-  let sel = view.state.selection
-  if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
-    let text = String.fromCharCode(event.charCode)
-    if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
-      view.dispatch(view.state.tr.insertText(text).scrollIntoView())
-    event.preventDefault()
-  }
+  // $$FORK: We handle this in our useContentEditable hook
+  // let sel = view.state.selection
+  // if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
+  //   let text = String.fromCharCode(event.charCode)
+  //   if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
+  //     view.dispatch(view.state.tr.insertText(text).scrollIntoView())
+  //   event.preventDefault()
+  // }
 }
 
 function eventCoords(event: MouseEvent) { return {left: event.clientX, top: event.clientY} }

@@ -2,12 +2,9 @@ import { EditorState } from "prosemirror-state";
 import { ForwardRefExoticComponent, RefAttributes, createContext } from "react";
 
 import { NodeViewComponentProps } from "../components/NodeViewComponentProps.js";
-import { ViewDesc } from "../descriptors/ViewDesc.js";
-import { DOMNode } from "../prosemirror-internal/dom.js";
 
 export type NodeViewContextValue = {
   mount: HTMLDivElement | null;
-  domToDesc: Map<DOMNode, ViewDesc>;
   nodeViews: Record<
     string,
     ForwardRefExoticComponent<

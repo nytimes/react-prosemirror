@@ -2,7 +2,6 @@ import { Node } from "prosemirror-model";
 import { MutableRefObject, useContext, useLayoutEffect } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import {
   DecorationInternal,
@@ -16,7 +15,6 @@ export function useNodeViewDescriptor(
   innerDecorations: DecorationSourceInternal,
   outerDecorations: readonly DecorationInternal[]
 ) {
-  const { domToDesc } = useContext(NodeViewContext);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
 
@@ -33,10 +31,8 @@ export function useNodeViewDescriptor(
       innerDecorations,
       domRef?.current ?? nodeDomRef.current,
       firstChildDesc?.dom.parentElement ?? null,
-      nodeDomRef.current,
-      domToDesc
+      nodeDomRef.current
     );
-    domToDesc.set(nodeDomRef.current, desc);
     siblingDescriptors.push(desc);
 
     for (const childDesc of childDescriptors) {

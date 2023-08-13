@@ -19,7 +19,7 @@ import React, {
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
+import { NodeViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
@@ -101,9 +101,6 @@ export function EditorView(props: Props) {
     defaultState ?? null
   );
 
-  const domToDesc = useRef(new Map<DOMNode, ViewDesc>());
-  domToDesc.current = new Map();
-
   // We always set internalState above if there's no state prop
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const state = stateProp ?? internalState!;
@@ -159,12 +156,13 @@ export function EditorView(props: Props) {
         return mountRef.current;
       },
       get docView() {
-        if (!mountRef.current || !domToDesc.current.get(mountRef.current)) {
+        if (!mountRef.current || !mountRef.current.pmViewDesc) {
           throw new Error(
             "The EditorView should only be accessed in an effect or event handler."
           );
         }
-        return domToDesc.current.get(mountRef.current) as NodeViewDesc;
+        // @ts-expect-error Can't override global declaration from prosemirror-view
+        return mountRef.current.pmViewDesc as NodeViewDesc;
       },
       editable,
       state,
@@ -314,7 +312,6 @@ export function EditorView(props: Props) {
         <NodeViewContext.Provider
           value={{
             mount: mountRef.current,
-            domToDesc: domToDesc.current,
             nodeViews,
             state,
           }}

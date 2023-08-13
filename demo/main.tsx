@@ -1,4 +1,4 @@
-import { baseKeymap } from "prosemirror-commands";
+import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
@@ -150,7 +150,14 @@ const viewPlugin = new Plugin({
   },
 });
 
-const plugins = [keymap(baseKeymap), viewPlugin];
+const plugins = [
+  keymap({
+    ...baseKeymap,
+    "Mod-i": toggleMark(schema.marks.em),
+    "Mod-b": toggleMark(schema.marks.strong),
+  }),
+  viewPlugin,
+];
 
 function DemoEditor() {
   const [state, setState] = useState(editorState);
@@ -214,7 +221,13 @@ root.render(<DemoEditor />);
 // const schema = new Schema({
 //   nodes: {
 //     doc: { content: "block+" },
-//     paragraph: { group: "block", content: "inline*" },
+//     paragraph: {
+//       group: "block",
+//       content: "inline*",
+//       toDOM(node) {
+//         return ["p", 0];
+//       },
+//     },
 //     text: { group: "inline" },
 //   },
 //   marks: {
@@ -246,7 +259,7 @@ root.render(<DemoEditor />);
 //       {},
 //       schema.text("This is the second paragraph")
 //     ),
-//     schema.nodes.paragraph.create(),
+//     // schema.nodes.paragraph.create(),
 //     schema.nodes.paragraph.create(
 //       {},
 //       schema.text("This is the third paragraph")
@@ -279,35 +292,35 @@ root.render(<DemoEditor />);
 //         mount={mount}
 //         state={state}
 //         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
-//         nodeViews={nodeViews}
-//         decorations={(s) => {
-//           const decorations = [
-//             Decoration.inline(5, 15, { class: "inline-deco" }),
-//           ];
-//           state.doc.forEach((node, offset, index) => {
-//             if (index === 1 || index === 2) {
-//               decorations.push(
-//                 Decoration.node(offset, offset + node.nodeSize, {
-//                   nodeName: "div",
-//                   class: "node-deco",
-//                 })
-//               );
-//             }
-//             if (index === 3) {
-//               decorations.push(
-//                 Decoration.widget(offset + 10, () => {
-//                   const el = document.createElement("div");
-//                   el.style.display = "inline-block";
-//                   el.style.padding = "0.75rem 1rem";
-//                   el.style.border = "solid thin black";
-//                   el.innerText = "Widget";
-//                   return el;
-//                 })
-//               );
-//             }
-//           });
-//           return DecorationSet.create(s.doc, decorations);
-//         }}
+//         // nodeViews={nodeViews}
+//         // decorations={(s) => {
+//         //   const decorations = [
+//         //     Decoration.inline(5, 15, { class: "inline-deco" }),
+//         //   ];
+//         //   state.doc.forEach((node, offset, index) => {
+//         //     if (index === 1 || index === 2) {
+//         //       decorations.push(
+//         //         Decoration.node(offset, offset + node.nodeSize, {
+//         //           nodeName: "div",
+//         //           class: "node-deco",
+//         //         })
+//         //       );
+//         //     }
+//         //     if (index === 3) {
+//         //       decorations.push(
+//         //         Decoration.widget(offset + 10, () => {
+//         //           const el = document.createElement("div");
+//         //           el.style.display = "inline-block";
+//         //           el.style.padding = "0.75rem 1rem";
+//         //           el.style.border = "solid thin black";
+//         //           el.innerText = "Widget";
+//         //           return el;
+//         //         })
+//         //       );
+//         //     }
+//         //   });
+//         //   return DecorationSet.create(s.doc, decorations);
+//         // }}
 //       >
 //         <div ref={setMount} />
 //         {renderNodeViews()}
