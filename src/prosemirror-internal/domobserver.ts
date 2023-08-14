@@ -32,6 +32,7 @@ export class DOMObserver {
   currentSelection = new SelectionState
   onCharData: ((e: Event) => void) | null = null
   suppressingSelectionUpdates = false
+  private dom: HTMLElement | null = null;
 
   constructor(
     readonly view: MutableRefObject<EditorView | null>,
@@ -46,10 +47,11 @@ export class DOMObserver {
 
   connectSelection() {
     this.view.current!.dom.ownerDocument.addEventListener("selectionchange", this.onSelectionChange)
+    this.dom = this.view.current!.dom
   }
 
   disconnectSelection() {
-    this.view.current!.dom.ownerDocument.removeEventListener("selectionchange", this.onSelectionChange)
+    this.dom?.ownerDocument.removeEventListener("selectionchange", this.onSelectionChange)
   }
 
   onSelectionChange() {

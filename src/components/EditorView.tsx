@@ -1,4 +1,9 @@
-import { Command, EditorState, Transaction } from "prosemirror-state";
+import {
+  Command,
+  EditorState,
+  NodeSelection,
+  Transaction,
+} from "prosemirror-state";
 import {
   DecorationSet,
   DirectEditorProps,
@@ -34,10 +39,13 @@ import {
 import {
   coordsAtPos,
   endOfTextblock,
+  focusPreventScroll,
   posAtCoords,
+  scrollRectIntoView,
 } from "../prosemirror-internal/domcoords.js";
 import { DOMObserver } from "../prosemirror-internal/domobserver.js";
 import { InputState } from "../prosemirror-internal/input.js";
+import { selectionToDOM } from "../prosemirror-internal/selection.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -117,11 +125,6 @@ export function EditorView(props: Props) {
     // @ts-expect-error - EditorView API not fully implemented yet
     const api: EditorViewInternal = {
       /* Start TODO */
-      dragging: null,
-      composing: false,
-      focus() {
-        /* */
-      },
       // I do not know what this is or what it's for yet
       cursorWrapper: editorViewRefInternal.current?.cursorWrapper ?? null,
       /* End TODO */
@@ -139,6 +142,10 @@ export function EditorView(props: Props) {
         handleTextInput,
         handleTripleClick,
         handleTripleClickOn,
+      },
+      dragging: null,
+      get composing() {
+        return this.input.composing;
       },
       focused: editorViewRefInternal.current?.focused ?? false,
       markCursor: editorViewRefInternal.current?.markCursor ?? null,
@@ -202,7 +209,26 @@ export function EditorView(props: Props) {
         }
         return;
       },
+      focus() {
+        if (this.editable) focusPreventScroll(this.dom);
+        selectionToDOM(this);
+      },
       hasFocus() {
+        // Work around IE not handling focus correctly if resize handles are shown.
+        // If the cursor is inside an element with resize handles, activeElement
+        // will be that element instead of this.dom.
+        if (browser.ie) {
+          // If activeElement is within this.dom, and there are no other elements
+          // setting `contenteditable` to false in between, treat it as focused.
+          let node = this.root.activeElement;
+          if (node == this.dom) return true;
+          if (!node || !this.dom.contains(node)) return false;
+          while (node && this.dom != node && this.dom.contains(node)) {
+            if ((node as HTMLElement).contentEditable == "false") return false;
+            node = node.parentElement;
+          }
+          return true;
+        }
         return this.root.activeElement == this.dom;
       },
       get root(): Document | ShadowRoot {
@@ -243,6 +269,27 @@ export function EditorView(props: Props) {
         state: stateProp ?? defaultState,
         dispatchTransaction: dispatchProp,
       },
+      scrollToSelection() {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const startDOM = this.domSelectionRange().focusNode!;
+        if (this.someProp("handleScrollToSelection", (f) => f(this))) {
+          // Handled
+        } else if (this.state.selection instanceof NodeSelection) {
+          const target = this.docView.domAfterPos(this.state.selection.from);
+          if (target.nodeType == 1)
+            scrollRectIntoView(
+              this,
+              (target as HTMLElement).getBoundingClientRect(),
+              startDOM
+            );
+        } else {
+          scrollRectIntoView(
+            this,
+            this.coordsAtPos(this.state.selection.head, 1),
+            startDOM
+          );
+        }
+      },
       nodeDOM(pos) {
         const desc = this.docView.descAt(pos);
         return desc ? (desc as NodeViewDesc).nodeDOM : null;
@@ -268,6 +315,24 @@ export function EditorView(props: Props) {
       ): boolean {
         return endOfTextblock(this, state || this.state, dir);
       },
+      // pasteHTML(html: string, event?: ClipboardEvent) {
+      //   return doPaste(
+      //     this,
+      //     "",
+      //     html,
+      //     false,
+      //     event || new ClipboardEvent("paste")
+      //   );
+      // },
+      // pasteText(text: string, event?: ClipboardEvent) {
+      //   return doPaste(
+      //     this,
+      //     text,
+      //     null,
+      //     true,
+      //     event || new ClipboardEvent("paste")
+      //   );
+      // },
     };
     api.dispatch = api.dispatch.bind(api);
     return api;

@@ -48,7 +48,7 @@ describe("EditorView", () => {
 
   // TODO: This one doesn't work yet!
   // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("calls handleScrollToSelection when appropriate", () => {
+  it("calls handleScrollToSelection when appropriate", () => {
     const editorState = EditorState.create({ schema });
     let scrolled = 0;
 

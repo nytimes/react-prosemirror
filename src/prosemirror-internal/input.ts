@@ -737,9 +737,9 @@ handlers.focus = view => {
     // $$FORK: We don't use a dom observer
     // view.domObserver.start()
     view.focused = true
+    // TODO: This might be an issue??
     setTimeout(() => {
       if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
-      if (view.docView && view.hasFocus())
         selectionToDOM(view)
     }, 20)
   }

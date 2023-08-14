@@ -16,5 +16,6 @@ export interface EditorViewInternal extends EditorViewT {
   domSelectionRange: () => DOMSelectionRange;
   domObserver: DOMObserver;
   cursorWrapper: {dom: DOMNode, deco: DecorationInternal} | null;
-  lastSelectedViewDesc: ViewDesc | undefined
+  lastSelectedViewDesc: ViewDesc | undefined;
+  scrollToSelection(): void;
 };
