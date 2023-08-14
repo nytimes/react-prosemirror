@@ -230,9 +230,10 @@ function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
 
 export function useChildNodeViews(
   pos: number,
-  node: Node,
+  node: Node | undefined,
   innerDecorations: DecorationSource
 ) {
+  if (!node) return null;
   const children: ReactNode[] = [];
   const innerPos = pos + 1;
 

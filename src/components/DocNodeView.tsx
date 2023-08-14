@@ -12,7 +12,8 @@ import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { DecorationSource } from "../prosemirror-view/decoration.js";
 
 type Props = {
-  node: Node;
+  className?: string;
+  node: Node | undefined;
   contentEditable: boolean;
   decorations: DecorationSource;
 };

@@ -7,6 +7,7 @@ import React, {
   useContext,
 } from "react";
 
+import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
 import {
@@ -35,7 +36,9 @@ export function NodeView({
   nodeDomRef,
   ...props
 }: Props) {
-  const { nodeViews, state } = useContext(NodeViewContext);
+  const view = useContext(EditorViewContext);
+  const state = view?.state;
+  const { nodeViews } = useContext(NodeViewContext);
 
   const children = useChildNodeViews(pos, node, innerDecorations);
 
@@ -57,7 +60,7 @@ export function NodeView({
         decorations={decorations}
         innerDecorations={innerDecorations}
         isSelected={
-          state.selection instanceof NodeSelection &&
+          state?.selection instanceof NodeSelection &&
           state.selection.node === node
         }
       >

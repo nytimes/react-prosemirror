@@ -162,7 +162,8 @@ export class EditorView {
     this.updateStateInner(state, this._props)
   }
 
-  private updateStateInner(state: EditorState, prevProps: DirectEditorProps) {
+  // $$FORK: Allow this to be overridden by suclasses
+  protected updateStateInner(state: EditorState, prevProps: DirectEditorProps) {
     let prev = this.state, redraw = false, updateSel = false
     // When stored marks are added, stop composition, so that they can
     // be displayed.

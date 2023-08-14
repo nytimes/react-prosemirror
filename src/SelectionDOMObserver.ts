@@ -9,6 +9,7 @@ export class SelectionDOMObserver extends DOMObserver {
     });
     this.observer = null;
   }
+
   stop() {
     this.disconnectSelection();
   }

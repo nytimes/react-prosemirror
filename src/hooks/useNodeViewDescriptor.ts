@@ -9,7 +9,7 @@ import {
 import { NodeViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
 export function useNodeViewDescriptor(
-  node: Node,
+  node: Node | undefined,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSource,
@@ -19,7 +19,7 @@ export function useNodeViewDescriptor(
   const childDescriptors: ViewDesc[] = [];
 
   useLayoutEffect(() => {
-    if (!nodeDomRef.current) return;
+    if (!node || !nodeDomRef.current) return;
 
     const firstChildDesc = childDescriptors[0];
 

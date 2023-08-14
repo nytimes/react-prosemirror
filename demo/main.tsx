@@ -183,7 +183,9 @@ function DemoEditor() {
       <EditorView
         className="ProseMirror"
         state={state}
-        dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
+        dispatchTransaction={(tr) => {
+          setState((prev) => prev.apply(tr));
+        }}
         decorations={DecorationSet.create(state.doc, decorations)}
         plugins={plugins}
         // @ts-expect-error TODO: Gotta fix these types
