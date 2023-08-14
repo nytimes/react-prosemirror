@@ -1,12 +1,12 @@
 import { Plugin, PluginView } from "prosemirror-state";
 import { useLayoutEffect, useRef } from "react";
 
-import { EditorViewInternal } from "../prosemirror-view/EditorViewInternal.js";
+import { EditorView } from "../prosemirror-view/index.js";
 
 import { usePrevious } from "./usePrev.js";
 
 export function usePluginViews(
-  view: EditorViewInternal | null,
+  view: EditorView | null,
   plugins: readonly Plugin[]
 ) {
   const prevState = usePrevious(view?.state);
@@ -16,6 +16,7 @@ export function usePluginViews(
     if (!view || !prevState) return;
 
     for (const pluginView of pluginViews.current) {
+      // @ts-expect-error Side effect of the fork
       if (pluginView.update) pluginView.update(view, prevState);
     }
   }, [prevState, view]);
@@ -25,6 +26,7 @@ export function usePluginViews(
 
     pluginViews.current = [];
     for (const plugin of plugins) {
+      // @ts-expect-error Side effect of the fork
       const pluginView = plugin.spec.view?.(view);
       if (pluginView) pluginViews.current.push(pluginView);
     }

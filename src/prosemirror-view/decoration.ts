@@ -298,10 +298,13 @@ export class DecorationSet implements DecorationSource {
   private findInner(start: number, end: number, result: Decoration[], offset: number, predicate?: (spec: any) => boolean) {
     for (let i = 0; i < this.local.length; i++) {
       let span = this.local[i]
+      // @ts-expect-error
       if (span.from <= end && span.to >= start && (!predicate || predicate(span.spec)))
+        // @ts-expect-error
         result.push(span.copy(span.from + offset, span.to + offset))
     }
     for (let i = 0; i < this.children.length; i += 3) {
+      // @ts-expect-error
       if (this.children[i] < end && this.children[i + 1] > start) {
         let childOff = (this.children[i] as number) + 1
         ;(this.children[i + 2] as DecorationSet).findInner(start - childOff, end - childOff,
@@ -328,8 +331,10 @@ export class DecorationSet implements DecorationSource {
   }) {
     let newLocal: Decoration[] | undefined
     for (let i = 0; i < this.local.length; i++) {
+      // @ts-expect-error
       let mapped = this.local[i].map(mapping, offset, oldOffset)
       if (mapped && mapped.type.valid(node, mapped)) (newLocal || (newLocal = [])).push(mapped)
+      // @ts-expect-error
       else if (options.onRemove) options.onRemove(this.local[i].spec)
     }
 
@@ -355,6 +360,7 @@ export class DecorationSet implements DecorationSource {
       if (!(found = takeSpansForNode(decorations, childNode, baseOffset))) return
 
       if (!children) children = this.children.slice()
+      // @ts-expect-error
       while (childIndex < children.length && children[childIndex] < childOffset) childIndex += 3
       if (children[childIndex] == childOffset)
         children[childIndex + 2] = (children[childIndex + 2] as DecorationSet).addInner(childNode, found, baseOffset + 1)
@@ -364,6 +370,7 @@ export class DecorationSet implements DecorationSource {
     })
 
     let local = moveSpans(childIndex ? withoutNulls(decorations) : decorations, -offset)
+    // @ts-expect-error
     for (let i = 0; i < local.length; i++) if (!local[i].type.valid(doc, local[i])) local.splice(i--, 1)
 
     return new DecorationSet(local.length ? this.local.concat(local).sort(byPos) : this.local,
@@ -399,6 +406,7 @@ export class DecorationSet implements DecorationSource {
       }
     }
     if (local.length) for (let i = 0, span; i < decorations.length; i++) if (span = decorations[i]) {
+      // @ts-expect-error
       for (let j = 0; j < local.length; j++) if (local[j].eq(span, offset)) {
         if (local == this.local) local = this.local.slice()
         local.splice(j--, 1)
@@ -414,6 +422,7 @@ export class DecorationSet implements DecorationSource {
     if (node.isLeaf) return DecorationSet.empty
 
     let child, local: Decoration[] | undefined
+    // @ts-expect-error
     for (let i = 0; i < this.children.length; i += 3) if (this.children[i] >= offset) {
       if (this.children[i] == offset) child = this.children[i + 2] as DecorationSet
       break
@@ -421,8 +430,11 @@ export class DecorationSet implements DecorationSource {
     let start = offset + 1, end = start + node.content.size
     for (let i = 0; i < this.local.length; i++) {
       let dec = this.local[i]
+      // @ts-expect-error
       if (dec.from < end && dec.to > start && (dec.type instanceof InlineType)) {
+        // @ts-expect-error
         let from = Math.max(start, dec.from) - start, to = Math.min(end, dec.to) - start
+        // @ts-expect-error
         if (from < to) (local || (local = [])).push(dec.copy(from, to))
       }
     }
@@ -440,6 +452,7 @@ export class DecorationSet implements DecorationSource {
         this.local.length != other.local.length ||
         this.children.length != other.children.length) return false
     for (let i = 0; i < this.local.length; i++)
+      // @ts-expect-error
       if (!this.local[i].eq(other.local[i])) return false
     for (let i = 0; i < this.children.length; i += 3)
       if (this.children[i] != other.children[i] ||
@@ -460,9 +473,11 @@ export class DecorationSet implements DecorationSource {
     if (node.inlineContent || !this.local.some(InlineType.is)) return this.local
     let result = []
     for (let i = 0; i < this.local.length; i++) {
+      // @ts-expect-error
       if (!(this.local[i].type instanceof InlineType))
         result.push(this.local[i])
     }
+    // @ts-expect-error
     return result
   }
 
@@ -492,6 +507,7 @@ class DecorationGroup implements DecorationSource {
     if (child.isLeaf) return DecorationSet.empty
     let found: DecorationSet[] = []
     for (let i = 0; i < this.members.length; i++) {
+      // @ts-expect-error
       let result = this.members[i].forChild(offset, child)
       if (result == empty) continue
       if (result instanceof DecorationGroup) found = found.concat(result.members)
@@ -504,6 +520,7 @@ class DecorationGroup implements DecorationSource {
     if (!(other instanceof DecorationGroup) ||
         other.members.length != this.members.length) return false
     for (let i = 0; i < this.members.length; i++)
+      // @ts-expect-error
       if (!this.members[i].eq(other.members[i])) return false
     return true
   }
@@ -511,6 +528,7 @@ class DecorationGroup implements DecorationSource {
   locals(node: Node) {
     let result: Decoration[] | undefined, sorted = true
     for (let i = 0; i < this.members.length; i++) {
+      // @ts-expect-error
       let locals = this.members[i].localsInner(node)
       if (!locals.length) continue
       if (!result) {
@@ -520,6 +538,7 @@ class DecorationGroup implements DecorationSource {
           result = result.slice()
           sorted = false
         }
+        // @ts-expect-error
         for (let j = 0; j < locals.length; j++) result.push(locals[j])
       }
     }
@@ -531,6 +550,7 @@ class DecorationGroup implements DecorationSource {
   static from(members: readonly DecorationSource[]): DecorationSource {
     switch (members.length) {
       case 0: return empty
+      // @ts-expect-error
       case 1: return members[0]
       default: return new DecorationGroup(
         members.every(m => m instanceof DecorationSet) ? members as DecorationSet[] :
@@ -555,6 +575,7 @@ function mapChildren(
   // move those that are after the changes.
   for (let i = 0, baseOffset = oldOffset; i < mapping.maps.length; i++) {
     let moved = 0
+    // @ts-expect-error
     mapping.maps[i].forEach((oldStart: number, oldEnd: number, newStart: number, newEnd: number) => {
       let dSize = (newEnd - newStart) - (oldEnd - oldStart)
       for (let i = 0; i < children.length; i += 3) {
@@ -570,12 +591,14 @@ function mapChildren(
       }
       moved += dSize
     })
+    // @ts-expect-error
     baseOffset = mapping.maps[i].map(baseOffset, -1)
   }
 
   // Find the child nodes that still correspond to a single node,
   // recursively call mapInner on them and update their positions.
   let mustRebuild = false
+  // @ts-expect-error
   for (let i = 0; i < children.length; i += 3) if (children[i + 1] < 0) { // Touched nodes
     if (children[i + 1] == -2) {
       mustRebuild = true
@@ -613,13 +636,16 @@ function mapChildren(
                                                        offset, oldOffset, options)
     let built = buildTree(decorations, node, 0, options)
     newLocal = built.local as Decoration[]
+    // @ts-expect-error
     for (let i = 0; i < children.length; i += 3) if (children[i + 1] < 0) {
       children.splice(i, 3)
       i -= 3
     }
     for (let i = 0, j = 0; i < built.children.length; i += 3) {
       let from = built.children[i]
+      // @ts-expect-error
       while (j < children.length && children[j] < from) j += 3
+      // @ts-expect-error
       children.splice(j, 0, built.children[i], built.children[i + 1], built.children[i + 2])
     }
   }
@@ -632,6 +658,7 @@ function moveSpans(spans: Decoration[], offset: number) {
   let result = []
   for (let i = 0; i < spans.length; i++) {
     let span = spans[i]
+    // @ts-expect-error
     result.push(new Decoration(span.from + offset, span.to + offset, span.type))
   }
   return result
@@ -649,8 +676,10 @@ function mapAndGatherRemainingDecorations(
   // Gather all decorations from the remaining marked children
   function gather(set: DecorationSet, oldOffset: number) {
     for (let i = 0; i < set.local.length; i++) {
+      // @ts-expect-error
       let mapped = set.local[i].map(mapping, offset, oldOffset)
       if (mapped) decorations.push(mapped)
+      // @ts-expect-error
       else if (options.onRemove) options.onRemove(set.local[i].spec)
     }
     for (let i = 0; i < set.children.length; i += 3)
@@ -702,7 +731,9 @@ function buildTree(
     }
   })
   let locals = moveSpans(hasNulls ? withoutNulls(spans) : spans, -offset).sort(byPos)
+  // @ts-expect-error
   for (let i = 0; i < locals.length; i++) if (!locals[i].type.valid(node, locals[i])) {
+    // @ts-expect-error
     if (options.onRemove) options.onRemove(locals[i].spec)
     locals.splice(i--, 1)
   }
@@ -724,23 +755,31 @@ function removeOverlap(spans: readonly Decoration[]): Decoration[] {
   let working: Decoration[] = spans as Decoration[]
   for (let i = 0; i < working.length - 1; i++) {
     let span = working[i]
+    // @ts-expect-error
     if (span.from != span.to) for (let j = i + 1; j < working.length; j++) {
       let next = working[j]
+      // @ts-expect-error
       if (next.from == span.from) {
+        // @ts-expect-error
         if (next.to != span.to) {
           if (working == spans) working = spans.slice()
           // Followed by a partially overlapping larger span. Split that
           // span.
+          // @ts-expect-error
           working[j] = next.copy(next.from, span.to)
+          // @ts-expect-error
           insertAhead(working, j + 1, next.copy(span.to, next.to))
         }
         continue
       } else {
+        // @ts-expect-error
         if (next.from < span.to) {
           if (working == spans) working = spans.slice()
           // The end of this one overlaps with a subsequent span. Split
           // this one.
+          // @ts-expect-error
           working[i] = span.copy(span.from, next.from)
+          // @ts-expect-error
           insertAhead(working, j, span.copy(next.from, span.to))
         }
         break
@@ -751,6 +790,7 @@ function removeOverlap(spans: readonly Decoration[]): Decoration[] {
 }
 
 function insertAhead(array: Decoration[], i: number, deco: Decoration) {
+  // @ts-expect-error
   while (i < array.length && byPos(deco, array[i]) > 0) i++
   array.splice(i, 0, deco)
 }

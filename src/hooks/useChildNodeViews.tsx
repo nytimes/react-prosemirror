@@ -13,23 +13,32 @@ import { TextNodeView } from "../components/TextNodeView.js";
 import { TrailingHackView } from "../components/TrailingHackView.js";
 import { WidgetView } from "../components/WidgetView.js";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { iterDeco, sameOuterDeco } from "../descriptors/ViewDesc.js";
 import {
-  DecorationInternal,
-  DecorationSourceInternal,
   NonWidgetType,
   ReactWidgetDecoration,
-} from "../prosemirror-view/DecorationInternal.js";
+} from "../decorations/ReactWidgetType.js";
+import { iterDeco } from "../descriptors/iterDeco.js";
+import {
+  Decoration,
+  DecorationSource,
+} from "../prosemirror-view/decoration.js";
 
 import { useNodeViewDescriptor } from "./useNodeViewDescriptor.js";
 
-function wrapInDeco(element: JSX.Element, deco: DecorationInternal) {
+function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
+  if (a.length != b.length) return false;
+  for (const [i, elA] of a.entries())
+    if (!b[i]?.type.eq(elA.type)) return false;
+  return true;
+}
+
+function wrapInDeco(element: JSX.Element, deco: Decoration) {
   const {
     nodeName,
     class: className,
     style: _,
     ...attrs
-  } = (deco.type as NonWidgetType).attrs;
+  } = (deco.type as unknown as NonWidgetType).attrs;
 
   if (nodeName || deco.inline) {
     return createElement(
@@ -50,13 +59,13 @@ function wrapInDeco(element: JSX.Element, deco: DecorationInternal) {
 type ChildNode = {
   node: Node;
   marks: readonly Mark[];
-  innerDeco: DecorationSourceInternal;
+  innerDeco: DecorationSource;
   offset: number;
 };
 
 type SharedMarksProps = {
   sharedMarks: readonly Mark[];
-  outerDeco: readonly DecorationInternal[];
+  outerDeco: readonly Decoration[];
   innerPos: number;
   nodes: ChildNode[];
   nodeDomRef?: MutableRefObject<HTMLElement | null>;
@@ -171,10 +180,10 @@ function SharedMarks({
 }
 
 type NodeDecoViewProps = {
-  outerDeco: readonly DecorationInternal[];
+  outerDeco: readonly Decoration[];
   pos: number;
   node: Node;
-  innerDeco: DecorationSourceInternal;
+  innerDeco: DecorationSource;
 };
 
 function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
@@ -222,12 +231,12 @@ function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
 export function useChildNodeViews(
   pos: number,
   node: Node,
-  innerDecorations: DecorationSourceInternal
+  innerDecorations: DecorationSource
 ) {
   const children: ReactNode[] = [];
   const innerPos = pos + 1;
 
-  let queuedOuterDeco: readonly DecorationInternal[] = [];
+  let queuedOuterDeco: readonly Decoration[] = [];
   let queuedChildNodes: ChildNode[] = [];
 
   iterDeco(
@@ -249,7 +258,7 @@ export function useChildNodeViews(
       children.push(
         <WidgetView
           key={`${innerPos + offset}-${index}`}
-          widget={widget as ReactWidgetDecoration}
+          widget={widget as unknown as ReactWidgetDecoration}
         />
       );
       queuedChildNodes = [];

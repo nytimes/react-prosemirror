@@ -1,15 +1,14 @@
 import { Node } from "prosemirror-model";
-import { DecorationSet } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
-import { DecorationInternal } from "../prosemirror-view/DecorationInternal.js";
+import { Decoration, DecorationSet } from "../prosemirror-view/decoration.js";
 import { TextViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
 type Props = {
   node: Node;
   siblingDescriptors: ViewDesc[];
-  decorations: readonly DecorationInternal[];
+  decorations: readonly Decoration[];
 };
 
 export class TextNodeView extends Component<Props> {

@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 
-import { EditorViewInternal } from "../prosemirror-view/EditorViewInternal.js";
+import { EditorView } from "../prosemirror-view/index.js";
 
-export function useContentEditable(view: EditorViewInternal | null) {
+export function useContentEditable(view: EditorView | null) {
   useEffect(() => {
     if (!view) return;
 

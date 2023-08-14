@@ -47,6 +47,7 @@ export function initInput(view: EditorView) {
     view.dom.addEventListener(event, view.input.eventHandlers[event] = (event: Event) => {
       if (eventBelongsToView(view, event) && !runCustomHandler(view, event) &&
           (view.editable || !(event.type in editHandlers)))
+        // @ts-expect-error
         handler(view, event)
     }, passiveHandlers[event] ? {passive: true} : undefined)
   }
@@ -66,6 +67,7 @@ function setSelectionOrigin(view: EditorView, origin: string) {
 export function destroyInput(view: EditorView) {
   view.domObserver.stop()
   for (let type in view.input.eventHandlers)
+    // @ts-expect-error
     view.dom.removeEventListener(type, view.input.eventHandlers[type])
   clearTimeout(view.input.composingTimeout)
   clearTimeout(view.input.lastIOSEnterFallbackTimeout)
@@ -98,6 +100,7 @@ function eventBelongsToView(view: EditorView, event: Event) {
 export function dispatchEvent(view: EditorView, event: Event) {
   if (!runCustomHandler(view, event) && handlers[event.type] &&
       (view.editable || !(event.type in editHandlers)))
+    // @ts-expect-error
     handlers[event.type](view, event)
 }
 
@@ -240,6 +243,7 @@ function handleTripleClick(view: EditorView, pos: number, inside: number, event:
     defaultTripleClick(view, inside, event)
 }
 
+// @ts-expect-error
 function defaultTripleClick(view: EditorView, inside: number, event: MouseEvent) {
   if (event.button != 0) return false
   let doc = view.state.doc
@@ -710,6 +714,7 @@ editHandlers.drop = (view, _event) => {
     tr.setSelection(new NodeSelection($pos))
   } else {
     let end = tr.mapping.map(insertPos)
+    // @ts-expect-error
     tr.mapping.maps[tr.mapping.maps.length - 1].forEach((_from, _to, _newFrom, newTo) => end = newTo)
     tr.setSelection(selectionBetween(view, $pos, tr.doc.resolve(end)))
   }
@@ -767,4 +772,5 @@ handlers.beforeinput = (view, _event: Event) => {
 }
 
 // Make sure all handlers get registered
+// @ts-expect-error
 for (let prop in editHandlers) handlers[prop] = editHandlers[prop]

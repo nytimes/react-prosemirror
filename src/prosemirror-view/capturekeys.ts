@@ -16,6 +16,7 @@ function apply(view: EditorView, sel: Selection) {
   return true
 }
 
+// @ts-expect-error
 function selectHorizontally(view: EditorView, dir: number, mods: string) {
   let sel = view.state.selection
   if (sel instanceof TextSelection) {
@@ -74,6 +75,7 @@ function skipIgnoredNodesBefore(view: EditorView) {
   // Gecko will do odd things when the selection is directly in front
   // of a non-editable node, so in that case, move it into the next
   // node if possible. Issue prosemirror/prosemirror#832.
+  // @ts-expect-error
   if (browser.gecko && node.nodeType == 1 && offset < nodeLen(node) && isIgnorable(node.childNodes[offset], -1)) force = true
   for (;;) {
     if (offset > 0) {
@@ -81,10 +83,13 @@ function skipIgnoredNodesBefore(view: EditorView) {
         break
       } else {
         let before = node.childNodes[offset - 1]
+        // @ts-expect-error
         if (isIgnorable(before, -1)) {
           moveNode = node
           moveOffset = --offset
+          // @ts-expect-error
         } else if (before.nodeType == 3) {
+          // @ts-expect-error
           node = before
           offset = node.nodeValue!.length
         } else break
@@ -124,6 +129,7 @@ function skipIgnoredNodesAfter(view: EditorView) {
     if (offset < len) {
       if (node.nodeType != 1) break
       let after = node.childNodes[offset]
+      // @ts-expect-error
       if (isIgnorable(after, 1)) {
         moveNode = node
         moveOffset = ++offset
@@ -157,6 +163,7 @@ function isBlockNode(dom: Node) {
   return desc && desc.node && desc.node.isBlock
 }
 
+// @ts-expect-error
 function textNodeAfter(node: Node | null, offset: number): Text | undefined {
   while (node && offset == node.childNodes.length && !hasBlockDesc(node)) {
     offset = domIndex(node) + 1
@@ -164,13 +171,17 @@ function textNodeAfter(node: Node | null, offset: number): Text | undefined {
   }
   while (node && offset < node.childNodes.length) {
     let next = node.childNodes[offset]
+    // @ts-expect-error
     if (next.nodeType == 3) return next as Text
+    // @ts-expect-error
     if (next.nodeType == 1 && (next as HTMLElement).contentEditable == "false") break
+    // @ts-expect-error
     node = next
     offset = 0
   }
 }
 
+// @ts-expect-error
 function textNodeBefore(node: Node | null, offset: number): Text | undefined {
   while (node && !offset && !hasBlockDesc(node)) {
     offset = domIndex(node)
@@ -178,9 +189,13 @@ function textNodeBefore(node: Node | null, offset: number): Text | undefined {
   }
   while (node && offset) {
     let next = node.childNodes[offset - 1]
+    // @ts-expect-error
     if (next.nodeType == 3) return next as Text
+    // @ts-expect-error
     if (next.nodeType == 1 && (next as HTMLElement).contentEditable == "false") break
+    // @ts-expect-error
     node = next
+    // @ts-expect-error
     offset = node.childNodes.length
   }
 }

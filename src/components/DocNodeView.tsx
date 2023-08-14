@@ -9,12 +9,12 @@ import React, {
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import { DecorationSourceInternal } from "../prosemirror-view/DecorationInternal.js";
+import { DecorationSource } from "../prosemirror-view/decoration.js";
 
 type Props = {
   node: Node;
   contentEditable: boolean;
-  decorations: DecorationSourceInternal;
+  decorations: DecorationSource;
 };
 
 export const DocNodeView = forwardRef(function DocNodeView(

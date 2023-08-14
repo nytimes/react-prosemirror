@@ -4,7 +4,7 @@ import {ResolvedPos} from "prosemirror-model"
 import * as browser from "./browser.js"
 import {isEquivalentPosition, domIndex, isOnEdge, selectionCollapsed} from "./dom.js"
 import {EditorView} from "./index.js"
-import {NodeViewDesc} from "../descriptors/ViewDesc.js"
+import { NodeViewDesc } from "./viewdesc.js"
 
 export function selectionFromDOM(view: EditorView, origin: string | null = null) {
   let domSel = view.domSelectionRange(), doc = view.state.doc

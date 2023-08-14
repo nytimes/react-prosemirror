@@ -1,4 +1,5 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
+import { DecorationSet } from "prosemirror-view";
 import React, {
   DetailedHTMLProps,
   ForwardRefExoticComponent,
@@ -9,21 +10,42 @@ import React, {
   useState,
 } from "react";
 
+import { SelectionDOMObserver } from "../SelectionDOMObserver.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
-import { DecorationSourceInternal } from "../prosemirror-view/DecorationInternal.js";
 import {
-  DecorationSet,
+  DecorationSet as DecorationSetInternal,
   DirectEditorProps,
   EditorView as EditorViewClass,
 } from "../prosemirror-view/index.js";
+import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
+
+class ReactEditorView extends EditorViewClass {
+  init() {
+    this.domObserver.start();
+    this.initInput();
+  }
+
+  updateState(state: EditorState) {
+    this.state = state;
+  }
+
+  // @ts-expect-error We need this to be an accessor
+  set docView(_) {
+    // disallowed
+  }
+
+  get docView() {
+    return this.dom.pmViewDesc as NodeViewDesc;
+  }
+}
 
 type EditorStateProps =
   | {
@@ -90,7 +112,10 @@ export function EditorView(props: Props) {
 
   const editable = editableProp ? editableProp(state) : true;
 
-  const getDecorations = useCallback(() => decorations, [decorations]);
+  const getDecorations = useCallback(
+    () => decorations as unknown as DecorationSetInternal,
+    [decorations]
+  );
 
   // This is only safe to use in effects/layout effects or
   // event handlers!
@@ -126,9 +151,10 @@ export function EditorView(props: Props) {
                   return;
                 }
                 if (el && !reactEditorView) {
-                  const newReactEditorView = new EditorViewClass(
+                  const newReactEditorView = new ReactEditorView(
                     { mount: el },
                     {
+                      DOMObserver: SelectionDOMObserver,
                       decorations: getDecorations,
                       handleDOMEvents,
                       handleClick,
@@ -145,7 +171,7 @@ export function EditorView(props: Props) {
                       handleTripleClickOn,
                       editable: () => editable,
                       state: EditorState.create({ schema: state.schema }),
-                      dispatchTransaction(this: EditorViewClass, tr) {
+                      dispatchTransaction(this: ReactEditorView, tr) {
                         if (dispatchProp) {
                           dispatchProp.call(this, tr);
                         } else {
@@ -165,7 +191,7 @@ export function EditorView(props: Props) {
               }}
               node={state.doc}
               contentEditable={editable}
-              decorations={decorations as unknown as DecorationSourceInternal}
+              decorations={decorations as unknown as DecorationSetInternal}
             />
             {children}
           </>

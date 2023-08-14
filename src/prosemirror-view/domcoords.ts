@@ -225,7 +225,6 @@ function posFromElement(view: EditorView, elt: HTMLElement, coords: {top: number
     let rect = (node as HTMLElement).getBoundingClientRect()
     bias = rect.left != rect.right && coords.left > (rect.left + rect.right) / 2 ? 1 : -1
   }
-  // @ts-expect-error
   return view.docView.posFromDOM(node, offset, bias)
 }
 
@@ -239,7 +238,6 @@ function posFromCaret(view: EditorView, node: Node, offset: number, coords: {top
   let outsideBlock = -1
   for (let cur = node, sawBlock = false;;) {
     if (cur == view.dom) break
-    // @ts-expect-error
     let desc = view.docView.nearestDesc(cur, true)
     if (!desc) return null
     if (desc.dom.nodeType == 1 && (desc.node.isBlock && desc.parent && !sawBlock || !desc.contentDOM)) {
@@ -258,7 +256,6 @@ function posFromCaret(view: EditorView, node: Node, offset: number, coords: {top
     }
     cur = desc.dom.parentNode!
   }
-  // @ts-expect-error
   return outsideBlock > -1 ? outsideBlock : view.docView.posFromDOM(node, offset, -1)
 }
 
@@ -332,7 +329,6 @@ export function posAtCoords(view: EditorView, coords: {top: number, left: number
   }
   if (pos == null) pos = posFromElement(view, elt, coords)
 
-  // @ts-expect-error
   let desc = view.docView.nearestDesc(elt, true)
   return {pos, inside: desc ? desc.posAtStart - desc.border : -1}
 }
@@ -356,7 +352,6 @@ const BIDI = /[\u0590-\u05f4\u0600-\u06ff\u0700-\u08ac]/
 // Given a position in the document model, get a bounding box of the
 // character at that position, relative to the window.
 export function coordsAtPos(view: EditorView, pos: number, side: number): Rect {
-  // @ts-expect-error
   let {node, offset, atom} = view.docView.domFromPos(pos, side < 0 ? -1 : 1)
 
   let supportEmptyRange = browser.webkit || browser.gecko
@@ -368,6 +363,7 @@ export function coordsAtPos(view: EditorView, pos: number, side: number): Rect {
       // Firefox returns bad results (the position before the space)
       // when querying a position directly after line-broken
       // whitespace. Detect this situation and and kludge around it
+      // @ts-expect-error
       if (browser.gecko && offset && /\s/.test(node.nodeValue![offset - 1]) && offset < node.nodeValue!.length) {
         let rectBefore = singleRect(textRange(node as Text, offset - 1, offset - 1), -1)
         if (rectBefore.top == rect.top) {
@@ -392,10 +388,12 @@ export function coordsAtPos(view: EditorView, pos: number, side: number): Rect {
   if (!$dom.parent.inlineContent) {
     if (atom == null && offset && (side < 0 || offset == nodeSize(node))) {
       let before = node.childNodes[offset - 1]
+      // @ts-expect-error
       if (before.nodeType == 1) return flattenH((before as HTMLElement).getBoundingClientRect(), false)
     }
     if (atom == null && offset < nodeSize(node)) {
       let after = node.childNodes[offset]
+      // @ts-expect-error
       if (after.nodeType == 1) return flattenH((after as HTMLElement).getBoundingClientRect(), true)
     }
     return flattenH((node as HTMLElement).getBoundingClientRect(), side >= 0)
@@ -404,14 +402,17 @@ export function coordsAtPos(view: EditorView, pos: number, side: number): Rect {
   // Inline, not in text node (this is not Bidi-safe)
   if (atom == null && offset && (side < 0 || offset == nodeSize(node))) {
     let before = node.childNodes[offset - 1]
+    // @ts-expect-error
     let target = before.nodeType == 3 ? textRange(before as Text, nodeSize(before) - (supportEmptyRange ? 0 : 1))
         // BR nodes tend to only return the rectangle before them.
         // Only use them if they are the last element in their parent
+        // @ts-expect-error
         : before.nodeType == 1 && (before.nodeName != "BR" || !before.nextSibling) ? before : null
     if (target) return flattenV(singleRect(target as Range | HTMLElement, 1), false)
   }
   if (atom == null && offset < nodeSize(node)) {
     let after = node.childNodes[offset]
+    // @ts-expect-error
     while (after.pmViewDesc && after.pmViewDesc.ignoreForCoords) after = after.nextSibling!
     let target = !after ? null : after.nodeType == 3 ? textRange(after as Text, 0, (supportEmptyRange ? 0 : 1))
         : after.nodeType == 1 ? after : null
@@ -451,10 +452,8 @@ function endOfTextblockVertical(view: EditorView, state: EditorState, dir: "up" 
   let sel = state.selection
   let $pos = dir == "up" ? sel.$from : sel.$to
   return withFlushedState(view, state, () => {
-    // @ts-expect-error
     let {node: dom} = view.docView.domFromPos($pos.pos, dir == "up" ? -1 : 1)
     for (;;) {
-      // @ts-expect-error
       let nearest = view.docView.nearestDesc(dom, true)
       if (!nearest) break
       if (nearest.node.isBlock) { dom = nearest.contentDOM || nearest.dom; break }
@@ -487,7 +486,6 @@ function endOfTextblockHorizontal(view: EditorView, state: EditorState, dir: "le
   let {$head} = state.selection
   if (!$head.parent.isTextblock) return false
   let offset = $head.parentOffset, atStart = !offset, atEnd = offset == $head.parent.content.size
-  // @ts-expect-error
   let sel = view.domSelection()
   // If the textblock is all LTR, or the browser doesn't support
   // Selection.modify (Edge), fall back to a primitive approach
@@ -500,13 +498,10 @@ function endOfTextblockHorizontal(view: EditorView, state: EditorState, dir: "le
     // one character, and see if that moves the cursor out of the
     // textblock (or doesn't move it at all, when at the start/end of
     // the document).
-    // @ts-expect-error
     let {focusNode: oldNode, focusOffset: oldOff, anchorNode, anchorOffset} = view.domSelectionRange()
     let oldBidiLevel = (sel as any).caretBidiLevel // Only for Firefox
     ;(sel as any).modify("move", dir, "character")
-    // @ts-expect-error
     let parentDOM = $head.depth ? view.docView.domAfterPos($head.before()) : view.dom
-    // @ts-expect-error
     let {focusNode: newNode, focusOffset: newOff} = view.domSelectionRange()
     let result = newNode && !parentDOM.contains(newNode.nodeType == 1 ? newNode : newNode.parentNode) ||
         (oldNode == newNode && oldOff == newOff)

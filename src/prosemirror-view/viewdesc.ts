@@ -5,7 +5,7 @@ import {domIndex, isEquivalentPosition, nodeSize, DOMNode} from "./dom.js"
 import * as browser from "./browser.js"
 import {Decoration, DecorationSource, WidgetType, NodeType} from "./decoration.js"
 import {EditorView} from "./index.js"
-import { ReactWidgetDecoration } from "./DecorationInternal.js"
+import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js"
 
 // declare global {
 //   interface Node { pmViewDesc?: ViewDesc }
@@ -112,14 +112,19 @@ export class ViewDesc {
   ) {
     // An expando property on the DOM node provides a link back to its
     // description.
+    // @ts-expect-error
     dom.pmViewDesc = this
   }
 
   // Used to check whether a given description corresponds to a
   // widget/mark/node.
+  // @ts-expect-error
   matchesWidget(widget: Decoration) { return false }
+  // @ts-expect-error
   matchesMark(mark: Mark) { return false }
+  // @ts-expect-error
   matchesNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource) { return false }
+  // @ts-expect-error
   matchesHack(nodeName: string) { return false }
 
   // When parsing in-editor content (in domchange.js), we allow
@@ -129,11 +134,13 @@ export class ViewDesc {
 
   // Used by the editor's event handler to ignore events that come
   // from certain descs.
+  // @ts-expect-error
   stopEvent(event: Event) { return false }
 
   // The size of the content represented by this desc.
   get size() {
     let size = 0
+    // @ts-expect-error
     for (let i = 0; i < this.children.length; i++) size += this.children[i].size
     return size
   }
@@ -146,6 +153,7 @@ export class ViewDesc {
     this.parent = undefined
     if (this.dom.pmViewDesc == this) this.dom.pmViewDesc = undefined
     for (let i = 0; i < this.children.length; i++)
+      // @ts-expect-error
       this.children[i].destroy()
   }
 
@@ -153,6 +161,7 @@ export class ViewDesc {
     for (let i = 0, pos = this.posAtStart;; i++) {
       let cur = this.children[i]
       if (cur == child) return pos
+      // @ts-expect-error
       pos += cur.size
     }
   }
@@ -185,6 +194,7 @@ export class ViewDesc {
           while (dom.parentNode != this.contentDOM) dom = dom.parentNode!
           domBefore = dom.previousSibling
         }
+        // @ts-expect-error
         while (domBefore && !((desc = domBefore.pmViewDesc) && desc.parent == this)) domBefore = domBefore.previousSibling
         return domBefore ? this.posBeforeChild(desc!) + desc!.size : this.posAtStart
       } else {
@@ -195,6 +205,7 @@ export class ViewDesc {
           while (dom.parentNode != this.contentDOM) dom = dom.parentNode!
           domAfter = dom.nextSibling
         }
+        // @ts-expect-error
         while (domAfter && !((desc = domAfter.pmViewDesc) && desc.parent == this)) domAfter = domAfter.nextSibling
         return domAfter ? this.posBeforeChild(desc!) : this.posAtEnd
       }
@@ -222,8 +233,10 @@ export class ViewDesc {
 
   // Scan up the dom finding the first desc that is a descendant of
   // this one.
+  // @ts-expect-error
   nearestDesc(dom: DOMNode): ViewDesc | undefined
   nearestDesc(dom: DOMNode, onlyNodes: true): NodeViewDesc | undefined
+  // @ts-expect-error
   nearestDesc(dom: DOMNode, onlyNodes: boolean = false) {
     for (let first = true, cur: DOMNode | null = dom; cur; cur = cur.parentNode) {
       let desc = this.getDesc(cur), nodeDOM
@@ -238,8 +251,10 @@ export class ViewDesc {
     }
   }
 
+  // @ts-expect-error
   getDesc(dom: DOMNode) {
     let desc = dom.pmViewDesc
+    // @ts-expect-error
     for (let cur: ViewDesc | undefined = desc; cur; cur = cur.parent) if (cur == this) return desc
   }
 
@@ -253,13 +268,17 @@ export class ViewDesc {
 
   // Find the desc for the node after the given pos, if any. (When a
   // parent node overrode rendering, there might not be one.)
+  // @ts-expect-error
   descAt(pos: number): ViewDesc | undefined {
     for (let i = 0, offset = 0; i < this.children.length; i++) {
+      // @ts-expect-error
       let child = this.children[i], end = offset + child.size
       if (offset == pos && end != offset) {
+        // @ts-expect-error
         while (!child.border && child.children.length) child = child.children[0]
         return child
       }
+      // @ts-expect-error
       if (pos < end) return child.descAt(pos - offset - child.border)
       offset = end
     }
@@ -270,13 +289,16 @@ export class ViewDesc {
     // First find the position in the child array
     let i = 0, offset = 0
     for (let curPos = 0; i < this.children.length; i++) {
+      // @ts-expect-error
       let child = this.children[i], end = curPos + child.size
       if (end > pos || child instanceof TrailingHackViewDesc) { offset = pos - curPos; break }
       curPos = end
     }
     // If this points into the middle of a child, call through
+    // @ts-expect-error
     if (offset) return this.children[i].domFromPos(offset - this.children[i].border, side)
     // Go back if there were any zero-length widgets with side >= 0 before this point
+    // @ts-expect-error
     for (let prev; i && !(prev = this.children[i - 1]).size && prev instanceof WidgetViewDesc && prev.side >= 0; i--) {}
     // Scan towards the first useable node
     if (side <= 0) {
@@ -308,21 +330,29 @@ export class ViewDesc {
 
     let fromOffset = -1, toOffset = -1
     for (let offset = base, i = 0;; i++) {
+      // @ts-expect-error
       let child = this.children[i], end = offset + child.size
       if (fromOffset == -1 && from <= end) {
+        // @ts-expect-error
         let childBase = offset + child.border
         // FIXME maybe descend mark views to parse a narrower range?
+        // @ts-expect-error
         if (from >= childBase && to <= end - child.border && child.node &&
+            // @ts-expect-error
             child.contentDOM && this.contentDOM!.contains(child.contentDOM))
+          // @ts-expect-error
           return child.parseRange(from, to, childBase)
 
         from = offset
         for (let j = i; j > 0; j--) {
           let prev = this.children[j - 1]
+          // @ts-expect-error
           if (prev.size && prev.dom.parentNode == this.contentDOM && !prev.emptyChildAt(1)) {
+            // @ts-expect-error
             fromOffset = domIndex(prev.dom) + 1
             break
           }
+          // @ts-expect-error
           from -= prev.size
         }
         if (fromOffset == -1) fromOffset = 0
@@ -331,10 +361,13 @@ export class ViewDesc {
         to = end
         for (let j = i + 1; j < this.children.length; j++) {
           let next = this.children[j]
+          // @ts-expect-error
           if (next.size && next.dom.parentNode == this.contentDOM && !next.emptyChildAt(-1)) {
+            // @ts-expect-error
             toOffset = domIndex(next.dom)
             break
           }
+          // @ts-expect-error
           to += next.size
         }
         if (toOffset == -1) toOffset = this.contentDOM!.childNodes.length
@@ -348,6 +381,7 @@ export class ViewDesc {
   emptyChildAt(side: number): boolean {
     if (this.border || !this.contentDOM || !this.children.length) return false
     let child = this.children[side < 0 ? 0 : this.children.length - 1]
+    // @ts-expect-error
     return child.size == 0 || child.emptyChildAt(side)
   }
 
@@ -355,6 +389,7 @@ export class ViewDesc {
     let {node, offset} = this.domFromPos(pos, 0)
     if (node.nodeType != 1 || offset == node.childNodes.length)
       throw new RangeError("No node after pos " + pos)
+    // @ts-expect-error
     return node.childNodes[offset]
   }
 
@@ -367,8 +402,10 @@ export class ViewDesc {
     // If the selection falls entirely in a child, give it to that child
     let from = Math.min(anchor, head), to = Math.max(anchor, head)
     for (let i = 0, offset = 0; i < this.children.length; i++) {
+      // @ts-expect-error
       let child = this.children[i], end = offset + child.size
       if (from > offset && to < end)
+        // @ts-expect-error
         return child.setSelection(anchor - offset - child.border, head - offset - child.border, root, force)
       offset = end
     }
@@ -400,6 +437,7 @@ export class ViewDesc {
         }
       } else {
         let prev = node.childNodes[offset - 1]
+        // @ts-expect-error
         brKludge = prev && (prev.nodeName == "BR" || (prev as HTMLElement).contentEditable == "false")
       }
     }
@@ -456,16 +494,21 @@ export class ViewDesc {
   // by a DOM change, so that the next update will redraw it.
   markDirty(from: number, to: number) {
     for (let offset = 0, i = 0; i < this.children.length; i++) {
+      // @ts-expect-error
       let child = this.children[i], end = offset + child.size
       if (offset == end ? from <= end && to >= offset : from < end && to > offset) {
+        // @ts-expect-error
         let startInside = offset + child.border, endInside = end - child.border
         if (from >= startInside && to <= endInside) {
           this.dirty = from == offset || to == end ? CONTENT_DIRTY : CHILD_DIRTY
           if (from == startInside && to == endInside &&
+              // @ts-expect-error
               (child.contentLost || child.dom.parentNode != this.contentDOM)) child.dirty = NODE_DIRTY
+          // @ts-expect-error
           else child.markDirty(from - startInside, to - startInside)
           return
         } else {
+          // @ts-expect-error
           child.dirty = child.dom == child.contentDOM && child.dom.parentNode == this.contentDOM && !child.children.length
             ? CONTENT_DIRTY : NODE_DIRTY
         }
@@ -516,6 +559,7 @@ export class WidgetViewDesc extends ViewDesc {
   }
 
   destroy() {
+    // @ts-expect-error
     this.widget.type.destroy(this.dom)
     super.destroy()
   }
@@ -561,7 +605,7 @@ export class MarkViewDesc extends ViewDesc {
     let spec: {dom: HTMLElement, contentDOM?: HTMLElement} = custom && (custom as any)(mark, view, inline)
     if (!spec || !spec.dom)
       spec = DOMSerializer.renderSpec(document, mark.type.spec.toDOM!(mark, inline)) as any
-    return new MarkViewDesc(parent, mark, spec.dom, spec.contentDOM || spec.dom as HTMLElement)
+    return new MarkViewDesc(parent, [], mark, spec.dom, spec.contentDOM || spec.dom as HTMLElement)
   }
 
   parseRule(): ParseRule | null {
@@ -585,8 +629,11 @@ export class MarkViewDesc extends ViewDesc {
   slice(from: number, to: number, view: EditorView) {
     let copy = MarkViewDesc.create(this.parent!, this.mark, true, view)
     let nodes = this.children, size = this.size
+    // @ts-expect-error
     if (to < size) nodes = replaceNodes(nodes, to, size, view)
+    // @ts-expect-error
     if (from > 0) nodes = replaceNodes(nodes, 0, from, view)
+    // @ts-expect-error
     for (let i = 0; i < nodes.length; i++) nodes[i].parent = copy
     copy.children = nodes
     return copy
@@ -622,6 +669,7 @@ export class NodeViewDesc extends ViewDesc {
   static create(parent: ViewDesc | undefined, node: Node, outerDeco: readonly Decoration[],
                 innerDeco: DecorationSource, view: EditorView, pos: number) {
     let custom = view.nodeViews[node.type.name], descObj: ViewDesc
+    // @ts-expect-error
     let spec: NodeView | undefined = custom && (custom as any)(node, view, () => {
       // (This is a function that allows the custom view to find its
       // own position)
@@ -648,9 +696,9 @@ export class NodeViewDesc extends ViewDesc {
       return descObj = new CustomNodeViewDesc(parent, node, outerDeco, innerDeco, dom, contentDOM || null, nodeDOM,
                                               spec, view, pos + 1)
     else if (node.isText)
-      return new TextViewDesc(parent, node, outerDeco, innerDeco, dom, nodeDOM, view)
+      return new TextViewDesc(parent, [], node, outerDeco, innerDeco, dom, nodeDOM)
     else
-      return new NodeViewDesc(parent, node, outerDeco, innerDeco, dom, contentDOM || null, nodeDOM, view, pos + 1)
+      return new NodeViewDesc(parent, [], node, outerDeco, innerDeco, dom, contentDOM || null, nodeDOM)
   }
 
   parseRule(): ParseRule | null {
@@ -672,7 +720,9 @@ export class NodeViewDesc extends ViewDesc {
       // new parent.
       for (let i = this.children.length - 1; i >= 0; i--) {
         let child = this.children[i]
+        // @ts-expect-error
         if (this.dom.contains(child.dom.parentNode)) {
+          // @ts-expect-error
           rule.contentElement = child.dom.parentNode as HTMLElement
           break
         }
@@ -780,6 +830,7 @@ export class NodeViewDesc extends ViewDesc {
     view.input.compositionNodes.push(desc)
 
     // Patch up this.children to contain the composition view
+    // @ts-expect-error
     this.children = replaceNodes(this.children, pos, pos + text.length, view, desc)
   }
 
@@ -805,10 +856,12 @@ export class NodeViewDesc extends ViewDesc {
     let needsWrap = this.nodeDOM.nodeType != 1
     let oldDOM = this.dom
     this.dom = patchOuterDeco(this.dom, this.nodeDOM,
+                              // @ts-expect-error
                               computeOuterDeco(this.outerDeco, this.node, needsWrap),
                               computeOuterDeco(outerDeco, this.node, needsWrap))
     if (this.dom != oldDOM) {
       oldDOM.pmViewDesc = undefined
+      // @ts-expect-error
       this.dom.pmViewDesc = this
     }
     this.outerDeco = outerDeco
@@ -834,7 +887,7 @@ export class NodeViewDesc extends ViewDesc {
 export function docViewDesc(doc: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource,
                             dom: HTMLElement, view: EditorView): NodeViewDesc {
   applyOuterDeco(dom, outerDeco, doc)
-  let docView = new NodeViewDesc(undefined, doc, outerDeco, innerDeco, dom, dom, dom, view, 0)
+  let docView = new NodeViewDesc(undefined, [], doc, outerDeco, innerDeco, dom, dom, dom)
   if (docView.contentDOM) docView.updateChildren(view, 0)
   return docView
 }
@@ -851,6 +904,7 @@ export class TextViewDesc extends NodeViewDesc {
     return {skip: (skip || true) as any}
   }
 
+  // @ts-expect-error
   update(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, view: EditorView) {
     if (this.dirty == NODE_DIRTY || (this.dirty != NOT_DIRTY && !this.inParent()) ||
         !node.sameMarkup(this.node)) return false
@@ -885,6 +939,7 @@ export class TextViewDesc extends NodeViewDesc {
 
   slice(from: number, to: number, view: EditorView) {
     let node = this.node.cut(from, to), dom = document.createTextNode(node.text!)
+    // @ts-expect-error
     return new TextViewDesc(this.parent, node, this.outerDeco, this.innerDeco, dom, dom, view)
   }
 
@@ -912,8 +967,9 @@ export class TrailingHackViewDesc extends ViewDesc {
 class CustomNodeViewDesc extends NodeViewDesc {
   constructor(parent: ViewDesc | undefined, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource,
               dom: DOMNode, contentDOM: HTMLElement | null, nodeDOM: DOMNode, readonly spec: NodeView,
+              // @ts-expect-error
               view: EditorView, pos: number) {
-    super(parent, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, view, pos)
+    super(parent, [], node, outerDeco, innerDeco, dom, contentDOM, nodeDOM)
   }
 
   // A custom `update` method gets to decide whether the update goes
@@ -965,6 +1021,7 @@ class CustomNodeViewDesc extends NodeViewDesc {
 function renderDescs(parentDOM: HTMLElement, descs: readonly ViewDesc[], view: EditorView) {
   let dom = parentDOM.firstChild, written = false
   for (let i = 0; i < descs.length; i++) {
+    // @ts-expect-error
     let desc = descs[i], childDOM = desc.dom
     if (childDOM.parentNode == parentDOM) {
       while (childDOM != dom) { dom = rm(dom!); written = true }
@@ -998,6 +1055,7 @@ function computeOuterDeco(outerDeco: readonly Decoration[], node: Node, needsWra
   let top = needsWrap ? noDeco[0] : new OuterDecoLevel, result = [top]
 
   for (let i = 0; i < outerDeco.length; i++) {
+    // @ts-expect-error
     let attrs = (outerDeco[i].type as NodeType).attrs
     if (!attrs) continue
     if (attrs.nodeName)
@@ -1008,8 +1066,11 @@ function computeOuterDeco(outerDeco: readonly Decoration[], node: Node, needsWra
       if (val == null) continue
       if (needsWrap && result.length == 1)
         result.push(top = new OuterDecoLevel(node.isInline ? "span" : "div"))
+      // @ts-expect-error
       if (name == "class") top.class = (top.class ? top.class + " " : "") + val
+      // @ts-expect-error
       else if (name == "style") top.style = (top.style ? top.style + ";" : "") + val
+      // @ts-expect-error
       else if (name != "nodeName") top[name] = val
     }
   }
@@ -1027,10 +1088,13 @@ function patchOuterDeco(outerDOM: DOMNode, nodeDOM: DOMNode,
     let deco = curComputed[i], prev = prevComputed[i]
     if (i) {
       let parent: DOMNode | null
+      // @ts-expect-error
       if (prev && prev.nodeName == deco.nodeName && curDOM != outerDOM &&
+          // @ts-expect-error
           (parent = curDOM.parentNode) && parent.nodeName!.toLowerCase() == deco.nodeName) {
         curDOM = parent
       } else {
+        // @ts-expect-error
         parent = document.createElement(deco.nodeName)
         ;(parent as any).pmIsDeco = true
         parent.appendChild(curDOM)
@@ -1038,6 +1102,7 @@ function patchOuterDeco(outerDOM: DOMNode, nodeDOM: DOMNode,
         curDOM = parent
       }
     }
+    // @ts-expect-error
     patchAttributes(curDOM as HTMLElement, prev || noDeco[0], deco)
   }
   return curDOM
@@ -1049,13 +1114,18 @@ function patchAttributes(dom: HTMLElement, prev: {[name: string]: string}, cur: 
       dom.removeAttribute(name)
   for (let name in cur)
     if (name != "class" && name != "style" && name != "nodeName" && cur[name] != prev[name])
+      // @ts-expect-error
       dom.setAttribute(name, cur[name])
   if (prev.class != cur.class) {
     let prevList = prev.class ? prev.class.split(" ").filter(Boolean) : []
     let curList = cur.class ? cur.class.split(" ").filter(Boolean) : []
+    // @ts-expect-error
     for (let i = 0; i < prevList.length; i++) if (curList.indexOf(prevList[i]) == -1)
+      // @ts-expect-error
       dom.classList.remove(prevList[i])
+    // @ts-expect-error
     for (let i = 0; i < curList.length; i++) if (prevList.indexOf(curList[i]) == -1)
+      // @ts-expect-error
       dom.classList.add(curList[i])
     if (dom.classList.length == 0)
       dom.removeAttribute("class")
@@ -1064,6 +1134,7 @@ function patchAttributes(dom: HTMLElement, prev: {[name: string]: string}, cur: 
     if (prev.style) {
       let prop = /\s*([\w\-\xa1-\uffff]+)\s*:(?:"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|\(.*?\)|[^;])*/g, m
       while (m = prop.exec(prev.style))
+        // @ts-expect-error
         dom.style.removeProperty(m[1])
     }
     if (cur.style)
@@ -1072,11 +1143,13 @@ function patchAttributes(dom: HTMLElement, prev: {[name: string]: string}, cur: 
 }
 
 function applyOuterDeco(dom: DOMNode, deco: readonly Decoration[], node: Node) {
+  // @ts-expect-error
   return patchOuterDeco(dom, dom, noDeco, computeOuterDeco(deco, node, dom.nodeType != 1))
 }
 
 function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
   if (a.length != b.length) return false
+  // @ts-expect-error
   for (let i = 0; i < a.length; i++) if (!a[i].type.eq(b[i].type)) return false
   return true
 }
@@ -1111,6 +1184,7 @@ class ViewTreeUpdater {
   // `this.top`.
   destroyBetween(start: number, end: number) {
     if (start == end) return
+    // @ts-expect-error
     for (let i = start; i < end; i++) this.top.children[i].destroy()
     this.top.children.splice(start, end - start)
     this.changed = true
@@ -1128,6 +1202,7 @@ class ViewTreeUpdater {
     let maxKeep = Math.min(depth, marks.length)
     while (keep < maxKeep &&
            (keep == depth - 1 ? this.top : this.stack[(keep + 1) << 1] as ViewDesc)
+             // @ts-expect-error
              .matchesMark(marks[keep]) && marks[keep].type.spec.spanning !== false)
       keep++
 
@@ -1143,6 +1218,7 @@ class ViewTreeUpdater {
       let found = -1
       for (let i = this.index; i < Math.min(this.index + 3, this.top.children.length); i++) {
         let next = this.top.children[i]
+        // @ts-expect-error
         if (next.matchesMark(marks[depth]) && !this.isLocked(next.dom)) { found = i; break }
       }
       if (found > -1) {
@@ -1150,8 +1226,10 @@ class ViewTreeUpdater {
           this.changed = true
           this.destroyBetween(this.index, found)
         }
+        // @ts-expect-error
         this.top = this.top.children[this.index]
       } else {
+        // @ts-expect-error
         let markDesc = MarkViewDesc.create(this.top, marks[depth], inline, view)
         this.top.children.splice(this.index, 0, markDesc)
         this.top = markDesc
@@ -1167,12 +1245,16 @@ class ViewTreeUpdater {
   findNodeMatch(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, index: number): boolean {
     let found = -1, targetDesc
     if (index >= this.preMatch.index &&
+        // @ts-expect-error
         (targetDesc = this.preMatch.matches[index - this.preMatch.index]).parent == this.top &&
+        // @ts-expect-error
         targetDesc.matchesNode(node, outerDeco, innerDeco)) {
+      // @ts-expect-error
       found = this.top.children.indexOf(targetDesc, this.index)
     } else {
       for (let i = this.index, e = Math.min(this.top.children.length, i + 5); i < e; i++) {
         let child = this.top.children[i]
+        // @ts-expect-error
         if (child.matchesNode(node, outerDeco, innerDeco) && !this.preMatch.matched.has(child)) {
           found = i
           break
@@ -1272,13 +1354,15 @@ class ViewTreeUpdater {
     this.changed = true
   }
 
+  // @ts-expect-error
   placeWidget(widget: Decoration, view: EditorView, pos: number) {
     let next = this.index < this.top.children.length ? this.top.children[this.index] : null
     if (next && next.matchesWidget(widget) &&
         (widget == (next as WidgetViewDesc).widget || !(next as any).widget.type.toDOM.parentNode)) {
       this.index++
     } else {
-      let desc = new WidgetViewDesc(this.top, widget, view, pos)
+      // @ts-expect-error
+      let desc = new WidgetViewDesc(this.top, widget, view)
       this.top.children.splice(this.index++, 0, desc)
       this.changed = true
     }
@@ -1305,6 +1389,7 @@ class ViewTreeUpdater {
   }
 
   addHackNode(nodeName: string, parent: ViewDesc) {
+    // @ts-expect-error
     if (parent == this.top && this.index < parent.children.length && parent.children[this.index].matchesHack(nodeName)) {
       this.index++
     } else {
@@ -1357,6 +1442,7 @@ function preMatch(
         curDesc = curDesc.parent!
       }
     }
+    // @ts-expect-error
     let node = desc.node
     if (!node) continue
     if (node != frag.child(fI - 1)) break
@@ -1364,6 +1450,7 @@ function preMatch(
     matched.set(desc, fI)
     matches.push(desc)
   }
+  // @ts-expect-error
   return {index: fI, matched, matches: matches.reverse()}
 }
 
@@ -1394,14 +1481,19 @@ function iterDeco(
 
   let decoIndex = 0, active = [], restNode = null
   for (let parentIndex = 0;;) {
+    // @ts-expect-error
     if (decoIndex < locals.length && locals[decoIndex].to == offset) {
       let widget = locals[decoIndex++], widgets
+      // @ts-expect-error
       while (decoIndex < locals.length && locals[decoIndex].to == offset)
         (widgets || (widgets = [widget])).push(locals[decoIndex++])
       if (widgets) {
+        // @ts-expect-error
         widgets.sort(compareSide)
+        // @ts-expect-error
         for (let i = 0; i < widgets.length; i++) onWidget(widgets[i], parentIndex, !!restNode)
       } else {
+        // @ts-expect-error
         onWidget(widget, parentIndex, !!restNode)
       }
     }
@@ -1418,14 +1510,18 @@ function iterDeco(
       break
     }
 
+    // @ts-expect-error
     for (let i = 0; i < active.length; i++) if (active[i].to <= offset) active.splice(i--, 1)
+    // @ts-expect-error
     while (decoIndex < locals.length && locals[decoIndex].from <= offset && locals[decoIndex].to > offset)
       active.push(locals[decoIndex++])
 
     let end = offset + child.nodeSize
     if (child.isText) {
       let cutAt = end
+      // @ts-expect-error
       if (decoIndex < locals.length && locals[decoIndex].from < cutAt) cutAt = locals[decoIndex].from
+      // @ts-expect-error
       for (let i = 0; i < active.length; i++) if (active[i].to < cutAt) cutAt = active[i].to
       if (cutAt < end) {
         restNode = child.cut(cutAt - offset)
@@ -1435,7 +1531,9 @@ function iterDeco(
       }
     }
 
+    // @ts-expect-error
     let outerDeco = child.isInline && !child.isLeaf ? active.filter(d => !d.inline) : active.slice()
+    // @ts-expect-error
     onNode(child, outerDeco, deco.forChild(offset, child), index)
     offset = end
   }
@@ -1456,11 +1554,14 @@ function nearbyTextNode(node: DOMNode, offset: number): Text | null {
   for (;;) {
     if (node.nodeType == 3) return node as Text
     if (node.nodeType == 1 && offset > 0) {
+      // @ts-expect-error
       if (node.childNodes.length > offset && node.childNodes[offset].nodeType == 3)
         return node.childNodes[offset] as Text
+      // @ts-expect-error
       node = node.childNodes[offset - 1]
       offset = nodeSize(node)
     } else if (node.nodeType == 1 && offset < node.childNodes.length) {
+      // @ts-expect-error
       node = node.childNodes[offset]
       offset = 0
     } else {
@@ -1502,6 +1603,7 @@ function findTextInFragment(frag: Fragment, text: string, from: number, to: numb
 function replaceNodes(nodes: readonly ViewDesc[], from: number, to: number, view: EditorView, replacement?: ViewDesc) {
   let result = []
   for (let i = 0, off = 0; i < nodes.length; i++) {
+    // @ts-expect-error
     let child = nodes[i], start = off, end = off += child.size
     if (start >= to || end <= from) {
       result.push(child)
@@ -1511,6 +1613,7 @@ function replaceNodes(nodes: readonly ViewDesc[], from: number, to: number, view
         result.push(replacement)
         replacement = undefined
       }
+      // @ts-expect-error
       if (end > to) result.push((child as MarkViewDesc | TextViewDesc).slice(to - start, child.size, view))
     }
   }

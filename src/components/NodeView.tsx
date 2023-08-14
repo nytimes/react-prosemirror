@@ -10,9 +10,9 @@ import React, {
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
 import {
-  DecorationInternal,
-  DecorationSourceInternal,
-} from "../prosemirror-view/DecorationInternal.js";
+  Decoration,
+  DecorationSource,
+} from "../prosemirror-view/decoration.js";
 
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
@@ -20,8 +20,8 @@ import { OutputSpec } from "./OutputSpec.js";
 type Props = {
   node: Node;
   pos: number;
-  decorations: readonly DecorationInternal[];
-  innerDecorations: DecorationSourceInternal;
+  decorations: readonly Decoration[];
+  innerDecorations: DecorationSource;
   nodeDomRef: MutableRefObject<HTMLElement | null>;
   domRef?: MutableRefObject<HTMLElement | null>;
 };

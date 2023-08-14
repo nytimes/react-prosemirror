@@ -8,6 +8,7 @@ import {initInput, destroyInput, dispatchEvent, ensureListeners, clearCompositio
 import {selectionToDOM, anchorInRightPlace, syncNodeSelection} from "./selection.js"
 import {Decoration, viewDecorations, DecorationSource} from "./decoration.js"
 import {DOMObserver, safariShadowSelectionRange} from "./domobserver.js"
+import {readDOMChange} from "./domchange.js"
 import {DOMSelection, DOMNode, DOMSelectionRange, deepActiveElement} from "./dom.js"
 import * as browser from "./browser.js"
 
@@ -42,7 +43,11 @@ export class EditorView {
   /// @internal
   cursorWrapper: {dom: DOMNode, deco: Decoration} | null = null
   /// @internal
+  nodeViews: NodeViewSet
+  /// @internal
   lastSelectedViewDesc: ViewDesc | undefined = undefined
+  /// @internal
+  docView: NodeViewDesc
   /// @internal
   input = new InputState
   private prevDirectPlugins: readonly Plugin[] = []
@@ -78,18 +83,25 @@ export class EditorView {
     }
 
     this.editable = getEditable(this)
-    updateCursorWrapper(this)
-    // $$FORK: NodeViews are built with react, as are ViewDescs
-    // this.nodeViews = buildNodeViews(this)
-    // this.docView = docViewDesc(this.state.doc, computeDocDeco(this), viewDecorations(this), this.dom, this)
+    this.nodeViews = buildNodeViews(this)
+    this.docView = null as unknown as NodeViewDesc
 
-    // $$FORK: We override DOMObserver so that it only manages selection syncing
-    // this.domObserver = new DOMObserver(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
-    this.domObserver = new DOMObserver(this)
-    this.domObserver.start()
+    this.domObserver = new (props.DOMObserver ?? DOMObserver)(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
+    this.init();
+  }
+
+  protected initInput() {
     initInput(this)
-    // $$FORK: Plugin views are managed with a React hook
-    // this.updatePluginViews()
+  }
+
+  // $$FORK: Pull DOM mutations and other side effects into
+  // override-able instance method
+  protected init() {
+    updateCursorWrapper(this)
+    this.docView = docViewDesc(this.state.doc, computeDocDeco(this), viewDecorations(this), this.dom, this)
+    this.domObserver.start()
+    this.initInput()
+    this.updatePluginViews()
   }
 
   /// An editable DOM node containing the document. (You probably
@@ -103,11 +115,6 @@ export class EditorView {
   /// information about the dragged slice and whether it is being
   /// copied or moved. At any other time, it is null.
   dragging: null | {slice: Slice, move: boolean} = null
-
-  /// @internal
-  get docView() {
-    return this.dom.pmViewDesc
-  }
 
   /// Holds `true` when a
   /// [composition](https://w3c.github.io/uievents/#events-compositionevents)
@@ -146,15 +153,13 @@ export class EditorView {
     for (let name in this._props) (updated as any)[name] = (this._props as any)[name]
     updated.state = this.state
     for (let name in props) (updated as any)[name] = (props as any)[name]
-    // $$FORK: Never trigger dom updates from the EditorView class
-    // this.update(updated)
+    this.update(updated)
   }
 
   /// Update the editor's `state` prop, without touching any of the
   /// other props.
   updateState(state: EditorState) {
-    // $$FORK: Never trigger dom updates from the EditorView class
-    this.state = state;
+    this.updateStateInner(state, this._props)
   }
 
   private updateStateInner(state: EditorState, prevProps: DirectEditorProps) {
@@ -260,15 +265,18 @@ export class EditorView {
       this.destroyPluginViews()
       for (let i = 0; i < this.directPlugins.length; i++) {
         let plugin = this.directPlugins[i]
+        // @ts-expect-error
         if (plugin.spec.view) this.pluginViews.push(plugin.spec.view(this))
       }
       for (let i = 0; i < this.state.plugins.length; i++) {
         let plugin = this.state.plugins[i]
+        // @ts-expect-error
         if (plugin.spec.view) this.pluginViews.push(plugin.spec.view(this))
       }
     } else {
       for (let i = 0; i < this.pluginViews.length; i++) {
         let pluginView = this.pluginViews[i]
+        // @ts-expect-error
         if (pluginView.update) pluginView.update(this, prevState)
       }
     }
@@ -288,15 +296,18 @@ export class EditorView {
   someProp<PropName extends keyof EditorProps, Result>(
     propName: PropName,
     f?: (value: NonNullable<EditorProps[PropName]>) => Result
+    // @ts-expect-error
   ): Result | undefined {
     let prop = this._props && this._props[propName], value
     if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     for (let i = 0; i < this.directPlugins.length; i++) {
+      // @ts-expect-error
       let prop = this.directPlugins[i].props[propName]
       if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     }
     let plugins = this.state.plugins
     if (plugins) for (let i = 0; i < plugins.length; i++) {
+      // @ts-expect-error
       let prop = plugins[i].props[propName]
       if (prop != null && (value = f ? f(prop as any) : prop)) return value as any
     }
@@ -528,6 +539,7 @@ function buildNodeViews(view: EditorView) {
   let result: NodeViewSet = Object.create(null)
   function add(obj: NodeViewSet) {
     for (let prop in obj) if (!Object.prototype.hasOwnProperty.call(result, prop))
+      // @ts-expect-error
       result[prop] = obj[prop]
   }
   view.someProp("nodeViews", add)
@@ -784,4 +796,6 @@ export interface DirectEditorProps extends EditorProps {
   /// [applied](#state.EditorState.apply). The callback will be bound to have
   /// the view instance as its `this` binding.
   dispatchTransaction?: (tr: Transaction) => void
+
+  DOMObserver?: typeof DOMObserver
 }

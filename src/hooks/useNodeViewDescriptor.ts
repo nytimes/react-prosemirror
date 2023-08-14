@@ -3,17 +3,17 @@ import { MutableRefObject, useContext, useLayoutEffect } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import {
-  DecorationInternal,
-  DecorationSourceInternal,
-} from "../prosemirror-view/DecorationInternal.js";
+  Decoration,
+  DecorationSource,
+} from "../prosemirror-view/decoration.js";
 import { NodeViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
-  innerDecorations: DecorationSourceInternal,
-  outerDecorations: readonly DecorationInternal[]
+  innerDecorations: DecorationSource,
+  outerDecorations: readonly Decoration[]
 ) {
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];

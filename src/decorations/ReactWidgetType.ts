@@ -1,9 +1,8 @@
 import { Mark } from "prosemirror-model";
 import { Mappable } from "prosemirror-transform";
-import { Decoration } from "prosemirror-view";
-import { ComponentType, ForwardRefExoticComponent, RefAttributes } from "react";
+import { ForwardRefExoticComponent, RefAttributes } from "react";
 
-import { DecorationType } from "./DecorationType.js";
+import { Decoration, DecorationType } from "../prosemirror-view/decoration.js";
 
 function compareObjs(
   a: { [prop: string]: unknown },
@@ -50,10 +49,7 @@ export class ReactWidgetType implements DecorationType {
       span.from + oldOffset,
       this.side < 0 ? -1 : 1
     );
-    return deleted
-      ? null
-      : // @ts-expect-error Decoration constructor args are internal
-        new Decoration(pos - offset, pos - offset, this);
+    return deleted ? null : new Decoration(pos - offset, pos - offset, this);
   }
 
   valid(): boolean {
@@ -76,9 +72,24 @@ export class ReactWidgetType implements DecorationType {
 
 export function widget(
   pos: number,
-  component: ComponentType,
+  component: ForwardRefExoticComponent<
+    RefAttributes<HTMLElement> & { contentEditable: boolean }
+  >,
   spec: ReactWidgetSpec
 ) {
-  // @ts-expect-error Decoration constructor args are internal
   return new Decoration(pos, pos, new ReactWidgetType(component, spec));
+}
+
+export interface NonWidgetType extends DecorationType {
+  attrs: {
+    nodeName?: string;
+    class?: string;
+    style?: string;
+    [attr: string]: string | undefined;
+  };
+}
+
+export interface ReactWidgetDecoration extends Decoration {
+  type: ReactWidgetType;
+  inline: false;
 }
