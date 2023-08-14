@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 
-import { EditorViewInternal } from "../prosemirror-view/EditorViewInternal.js";
+import { EditorView } from "../prosemirror-view/index.js";
 import { selectionToDOM } from "../prosemirror-view/selection.js";
 
-export function useSyncSelection(view: EditorViewInternal | null) {
+export function useSyncSelection(view: EditorView | null) {
   useEffect(() => {
     if (!view) return;
 

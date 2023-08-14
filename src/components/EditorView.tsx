@@ -119,6 +119,9 @@ export function EditorView(props: Props) {
             <DocNodeView
               {...mountProps}
               ref={(el) => {
+                // TODO: This should probably be happening in a hook.
+                // In fact, this looks almost identical to useEditorView;
+                // we can almost certainly use exactly that hook here.
                 if (reactEditorView?.dom == el) {
                   return;
                 }
