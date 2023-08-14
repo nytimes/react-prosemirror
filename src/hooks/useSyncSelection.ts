@@ -1,19 +1,22 @@
-import { MutableRefObject, useEffect } from "react";
+import { useEffect } from "react";
 
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
 import { selectionToDOM } from "../prosemirror-internal/selection.js";
 
-export function useSyncSelection(view: MutableRefObject<EditorViewInternal>) {
+export function useSyncSelection(view: EditorViewInternal | null) {
   useEffect(() => {
-    const { domObserver } = view.current;
+    if (!view) return;
+
+    const { domObserver } = view;
     domObserver.connectSelection();
 
     return () => domObserver.disconnectSelection();
   }, [view]);
 
   useEffect(() => {
-    selectionToDOM(view.current);
-    // This is safe; we only update view.current when we re-render
+    if (!view?.state) return;
+
+    selectionToDOM(view);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view.current]);
+  }, [view?.state]);
 }

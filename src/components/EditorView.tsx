@@ -1,9 +1,4 @@
-import {
-  Command,
-  EditorState,
-  NodeSelection,
-  Transaction,
-} from "prosemirror-state";
+import { Command, EditorState, Transaction } from "prosemirror-state";
 import {
   DecorationSet,
   DirectEditorProps,
@@ -13,42 +8,52 @@ import React, {
   DetailedHTMLProps,
   ForwardRefExoticComponent,
   HTMLAttributes,
-  MutableRefObject,
   RefAttributes,
+  useCallback,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from "react";
 
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { NodeViewDesc } from "../descriptors/ViewDesc.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
 import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
-import * as browser from "../prosemirror-internal/browser.js";
-import {
-  DOMNode,
-  deepActiveElement,
-  safariShadowSelectionRange,
-} from "../prosemirror-internal/dom.js";
-import {
-  coordsAtPos,
-  endOfTextblock,
-  focusPreventScroll,
-  posAtCoords,
-  scrollRectIntoView,
-} from "../prosemirror-internal/domcoords.js";
 import { DOMObserver } from "../prosemirror-internal/domobserver.js";
-import { InputState } from "../prosemirror-internal/input.js";
-import { selectionToDOM } from "../prosemirror-internal/selection.js";
+import { initInput } from "../prosemirror-internal/input.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
+
+class ReactEditorView extends EditorViewT {
+  constructor(place: { mount: HTMLElement }, props: DirectEditorProps) {
+    super(null, props);
+    this.dom = place.mount;
+    this.domObserver.stop();
+    this.domObserver = new DOMObserver(this as unknown as EditorViewInternal);
+    this.domObserver.start();
+    initInput(this);
+  }
+  set docView(_docView) {
+    // We handle this ourselves
+  }
+  get docView() {
+    return this.dom.pmViewDesc;
+  }
+  updateState(state: EditorState) {
+    // eslint-disable-next-line react/no-direct-mutation-state
+    this.state = state;
+  }
+  update(_props: DirectEditorProps) {
+    // React takes care of this
+  }
+  destroy() {
+    // React takes care of this
+  }
+}
 
 type EditorStateProps =
   | {
@@ -113,270 +118,29 @@ export function EditorView(props: Props) {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const state = stateProp ?? internalState!;
 
-  const mountRef = useRef<HTMLDivElement | null>(null);
-
   const editable = editableProp ? editableProp(state) : true;
 
-  const editorViewRefInternal = useRef<EditorViewInternal | null>(null);
+  const getDecorations = useCallback(() => decorations, [decorations]);
 
   // This is only safe to use in effects/layout effects or
   // event handlers!
-  const editorViewAPI: EditorViewInternal = useMemo<EditorViewInternal>(() => {
-    // @ts-expect-error - EditorView API not fully implemented yet
-    const api: EditorViewInternal = {
-      /* Start TODO */
-      // I do not know what this is or what it's for yet
-      cursorWrapper: editorViewRefInternal.current?.cursorWrapper ?? null,
-      /* End TODO */
-      _props: {
-        handleDOMEvents,
-        handleClick,
-        handleClickOn,
-        handleDoubleClick,
-        handleDoubleClickOn,
-        handleDrop,
-        handleKeyDown,
-        handleKeyPress,
-        handlePaste,
-        handleScrollToSelection,
-        handleTextInput,
-        handleTripleClick,
-        handleTripleClickOn,
-      },
-      dragging: null,
-      get composing() {
-        return this.input.composing;
-      },
-      focused: editorViewRefInternal.current?.focused ?? false,
-      markCursor: editorViewRefInternal.current?.markCursor ?? null,
-      input: editorViewRefInternal.current?.input ?? new InputState(),
-      domObserver:
-        editorViewRefInternal.current?.domObserver ??
-        new DOMObserver(editorViewRefInternal),
-      lastSelectedViewDesc: editorViewRefInternal.current?.lastSelectedViewDesc,
-      get dom() {
-        if (!mountRef.current) {
-          throw new Error(
-            "The EditorView should only be accessed in an effect or event handler."
-          );
-        }
-        return mountRef.current;
-      },
-      get docView() {
-        if (!mountRef.current || !mountRef.current.pmViewDesc) {
-          throw new Error(
-            "The EditorView should only be accessed in an effect or event handler."
-          );
-        }
-        // @ts-expect-error Can't override global declaration from prosemirror-view
-        return mountRef.current.pmViewDesc as NodeViewDesc;
-      },
-      editable,
-      state,
-      updateState(state) {
-        setInternalState(state);
-      },
-      dispatch(tr) {
-        if (dispatchProp) {
-          dispatchProp.call(this, tr);
-        } else {
-          this.updateState(this.state.apply(tr));
-        }
-      },
-      someProp<PropName extends keyof EditorProps, Result>(
-        propName: PropName,
-        f?: (value: NonNullable<EditorProps[PropName]>) => Result
-      ): Result | undefined {
-        const prop = this["_props"][propName];
-        if (prop != null) {
-          return f ? f(prop) : prop;
-        }
-        for (const plugin of plugins) {
-          const prop = plugin.props[propName as keyof typeof plugin.props];
-          if (prop != null) {
-            return f
-              ? f(prop as NonNullable<EditorProps[PropName]>)
-              : (prop as Result);
-          }
-        }
-        for (const plugin of this.state.plugins) {
-          const prop = plugin.props[propName as keyof typeof plugin.props];
-          if (prop != null) {
-            return f
-              ? f(prop as NonNullable<EditorProps[PropName]>)
-              : (prop as Result);
-          }
-        }
-        return;
-      },
-      focus() {
-        if (this.editable) focusPreventScroll(this.dom);
-        selectionToDOM(this);
-      },
-      hasFocus() {
-        // Work around IE not handling focus correctly if resize handles are shown.
-        // If the cursor is inside an element with resize handles, activeElement
-        // will be that element instead of this.dom.
-        if (browser.ie) {
-          // If activeElement is within this.dom, and there are no other elements
-          // setting `contenteditable` to false in between, treat it as focused.
-          let node = this.root.activeElement;
-          if (node == this.dom) return true;
-          if (!node || !this.dom.contains(node)) return false;
-          while (node && this.dom != node && this.dom.contains(node)) {
-            if ((node as HTMLElement).contentEditable == "false") return false;
-            node = node.parentElement;
-          }
-          return true;
-        }
-        return this.root.activeElement == this.dom;
-      },
-      get root(): Document | ShadowRoot {
-        const cached = this["_root"];
-        if (cached == null)
-          for (
-            let search = this.dom.parentNode;
-            search;
-            search = search.parentNode
-          ) {
-            if (
-              search.nodeType == 9 ||
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (search.nodeType == 11 && (search as any).host)
-            ) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              if (!(search as any).getSelection)
-                Object.getPrototypeOf(search).getSelection = () =>
-                  (search as DOMNode).ownerDocument?.getSelection();
-              return (this["_root"] = search as Document | ShadowRoot);
-            }
-          }
-        return cached || document;
-      },
-      domSelection() {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return (this.root as Document).getSelection()!;
-      },
-      domSelectionRange() {
-        return browser.safari &&
-          this.root.nodeType === 11 &&
-          deepActiveElement(this.dom.ownerDocument) == this.dom
-          ? safariShadowSelectionRange(this)
-          : this.domSelection();
-      },
-      props: {
-        editable: editableProp,
-        state: stateProp ?? defaultState,
-        dispatchTransaction: dispatchProp,
-      },
-      scrollToSelection() {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const startDOM = this.domSelectionRange().focusNode!;
-        if (this.someProp("handleScrollToSelection", (f) => f(this))) {
-          // Handled
-        } else if (this.state.selection instanceof NodeSelection) {
-          const target = this.docView.domAfterPos(this.state.selection.from);
-          if (target.nodeType == 1)
-            scrollRectIntoView(
-              this,
-              (target as HTMLElement).getBoundingClientRect(),
-              startDOM
-            );
-        } else {
-          scrollRectIntoView(
-            this,
-            this.coordsAtPos(this.state.selection.head, 1),
-            startDOM
-          );
-        }
-      },
-      nodeDOM(pos) {
-        const desc = this.docView.descAt(pos);
-        return desc ? (desc as NodeViewDesc).nodeDOM : null;
-      },
-      domAtPos(pos, side = 0) {
-        return this.docView.domFromPos(pos, side);
-      },
-      coordsAtPos(pos, side = 1) {
-        return coordsAtPos(this, pos, side);
-      },
-      posAtCoords(coords) {
-        return posAtCoords(this, coords);
-      },
-      posAtDOM(node: DOMNode, offset: number, bias = -1): number {
-        const pos = this.docView.posFromDOM(node, offset, bias);
-        if (pos == null)
-          throw new RangeError("DOM position not inside the editor");
-        return pos;
-      },
-      endOfTextblock(
-        dir: "up" | "down" | "left" | "right" | "forward" | "backward",
-        state?: EditorState
-      ): boolean {
-        return endOfTextblock(this, state || this.state, dir);
-      },
-      // pasteHTML(html: string, event?: ClipboardEvent) {
-      //   return doPaste(
-      //     this,
-      //     "",
-      //     html,
-      //     false,
-      //     event || new ClipboardEvent("paste")
-      //   );
-      // },
-      // pasteText(text: string, event?: ClipboardEvent) {
-      //   return doPaste(
-      //     this,
-      //     text,
-      //     null,
-      //     true,
-      //     event || new ClipboardEvent("paste")
-      //   );
-      // },
-    };
-    api.dispatch = api.dispatch.bind(api);
-    return api;
-  }, [
-    handleDOMEvents,
-    handleClick,
-    handleClickOn,
-    handleDoubleClick,
-    handleDoubleClickOn,
-    handleDrop,
-    handleKeyDown,
-    handleKeyPress,
-    handlePaste,
-    handleScrollToSelection,
-    handleTextInput,
-    handleTripleClick,
-    handleTripleClickOn,
-    editable,
-    state,
-    editableProp,
-    stateProp,
-    defaultState,
-    dispatchProp,
-    plugins,
-  ]);
-
-  editorViewRefInternal.current = editorViewAPI;
-
-  const editorViewRef =
-    editorViewRefInternal as MutableRefObject<EditorViewInternal>;
+  const [reactEditorView, setReactEditorView] =
+    useState<EditorViewInternal | null>(null);
+  reactEditorView?.updateState(state);
 
   useEffect(() => {
-    editorViewRef.current.domObserver.connectSelection();
-  }, [editorViewRef]);
-  useSyncSelection(editorViewRef);
-  useContentEditable(editorViewRef);
-  usePluginViews(editorViewRef, plugins);
+    reactEditorView?.domObserver.connectSelection();
+    return () => reactEditorView?.domObserver.disconnectSelection();
+  }, [reactEditorView?.domObserver]);
+  useSyncSelection(reactEditorView);
+  useContentEditable(reactEditorView);
+  usePluginViews(reactEditorView, plugins);
 
   return (
     <LayoutGroup>
-      <EditorViewContext.Provider value={editorViewAPI}>
+      <EditorViewContext.Provider value={reactEditorView}>
         <NodeViewContext.Provider
           value={{
-            mount: mountRef.current,
             nodeViews,
             state,
           }}
@@ -384,7 +148,48 @@ export function EditorView(props: Props) {
           <>
             <DocNodeView
               {...mountProps}
-              ref={mountRef}
+              ref={(el) => {
+                if (reactEditorView?.dom == el) {
+                  return;
+                }
+                if (el && !reactEditorView) {
+                  const newReactEditorView = new ReactEditorView(
+                    { mount: el },
+                    {
+                      decorations: getDecorations,
+                      handleDOMEvents,
+                      handleClick,
+                      handleClickOn,
+                      handleDoubleClick,
+                      handleDoubleClickOn,
+                      handleDrop,
+                      handleKeyDown,
+                      handleKeyPress,
+                      handlePaste,
+                      handleScrollToSelection,
+                      handleTextInput,
+                      handleTripleClick,
+                      handleTripleClickOn,
+                      editable: () => editable,
+                      state: EditorState.create({ schema: state.schema }),
+                      dispatchTransaction(this: EditorViewT, tr) {
+                        if (dispatchProp) {
+                          dispatchProp.call(this, tr);
+                        } else {
+                          setInternalState(this.state.apply(tr));
+                        }
+                      },
+                      plugins,
+                    }
+                  ) as unknown as EditorViewInternal;
+
+                  newReactEditorView.updateState(state);
+
+                  setReactEditorView(newReactEditorView);
+                  // } else {
+                  //   setReactEditorView(null);
+                }
+              }}
               node={state.doc}
               contentEditable={editable}
               decorations={decorations as unknown as DecorationSourceInternal}

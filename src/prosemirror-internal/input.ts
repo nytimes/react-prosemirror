@@ -43,23 +43,22 @@ export class InputState {
   hideSelectionGuard: (() => void) | null = null
 }
 
-// $$FORK: modify to work with view ref
-export function initInput(view: MutableRefObject<EditorView>) {
+export function initInput(view: EditorView) {
   for (let event in handlers) {
     let handler = handlers[event]
-    view.current.dom.addEventListener(event, view.current.input.eventHandlers[event] = (event: Event) => {
-      if (eventBelongsToView(view.current, event) && !runCustomHandler(view.current, event) &&
-          (view.current.editable || !(event.type in editHandlers)))
+    view.dom.addEventListener(event, view.input.eventHandlers[event] = (event: Event) => {
+      if (eventBelongsToView(view, event) && !runCustomHandler(view, event) &&
+          (view.editable || !(event.type in editHandlers)))
         // @ts-expect-error
-        handler(view.current, event)
+        handler(view, event)
     }, passiveHandlers[event] ? {passive: true} : undefined)
   }
   // On Safari, for reasons beyond my understanding, adding an input
   // event handler makes an issue where the composition vanishes when
   // you press enter go away.
-  if (browser.safari) view.current.dom.addEventListener("input", () => null)
+  if (browser.safari) view.dom.addEventListener("input", () => null)
 
-  ensureListeners(view.current)
+  ensureListeners(view)
 }
 
 function setSelectionOrigin(view: EditorView, origin: string) {

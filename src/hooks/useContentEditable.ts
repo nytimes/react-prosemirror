@@ -1,24 +1,23 @@
-import { MutableRefObject, useEffect } from "react";
+import { useEffect } from "react";
 
 import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
-import { initInput } from "../prosemirror-internal/input.js";
 
-export function useContentEditable(
-  viewRef: MutableRefObject<EditorViewInternal>
-) {
+export function useContentEditable(view: EditorViewInternal | null) {
   useEffect(() => {
-    initInput(viewRef);
+    if (!view) return;
 
     function onBeforeInput(event: InputEvent) {
+      if (!view) return;
+
       switch (event.inputType) {
         case "insertText": {
           if (event.data === null) return;
 
           if (
-            viewRef.current.someProp("handleTextInput")?.(
-              viewRef.current,
-              viewRef.current.state.selection.from,
-              viewRef.current.state.selection.to,
+            view.someProp("handleTextInput")?.(
+              view,
+              view.state.selection.from,
+              view.state.selection.to,
               event.data
             )
           ) {
@@ -26,21 +25,21 @@ export function useContentEditable(
             break;
           }
 
-          const { tr } = viewRef.current.state;
+          const { tr } = view.state;
           tr.insertText(event.data);
-          viewRef.current.dispatch(tr);
+          view.dispatch(tr);
           event.preventDefault();
           break;
         }
         case "deleteContentBackward": {
-          const { tr } = viewRef.current.state;
+          const { tr } = view.state;
           tr.delete(
-            viewRef.current.state.selection.empty
-              ? viewRef.current.state.selection.from - 1
-              : viewRef.current.state.selection.from,
-            viewRef.current.state.selection.from
+            view.state.selection.empty
+              ? view.state.selection.from - 1
+              : view.state.selection.from,
+            view.state.selection.from
           );
-          viewRef.current.dispatch(tr);
+          view.dispatch(tr);
           event.preventDefault();
           break;
         }
@@ -51,6 +50,7 @@ export function useContentEditable(
       }
     }
 
-    viewRef.current.dom.addEventListener("beforeinput", onBeforeInput);
-  }, [viewRef]);
+    view.dom.addEventListener("beforeinput", onBeforeInput);
+    return () => view.dom.removeEventListener("beforeinput", onBeforeInput);
+  }, [view]);
 }

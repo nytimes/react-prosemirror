@@ -43,14 +43,7 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
   return (
     <div
-      ref={(element) => {
-        innerRef.current = element;
-        if (typeof ref === "function") {
-          ref(element);
-        } else if (ref) {
-          ref.current = element;
-        }
-      }}
+      ref={innerRef}
       contentEditable={contentEditable}
       suppressContentEditableWarning={true}
       {...props}
