@@ -6,7 +6,7 @@ type Props = {
   children: ReactNode;
 };
 
-export const OutputSpec = forwardRef(function OutputSpec(
+const ForwardedOutputSpec = forwardRef(function OutputSpec(
   { outputSpec, children, ...initialProps }: Props,
   ref
 ) {
@@ -19,6 +19,7 @@ export const OutputSpec = forwardRef(function OutputSpec(
       "@nytimes/react-prosemirror only supports strings and arrays in toDOM"
     );
   }
+
   const tagSpec = outputSpec[0] as string;
   const tagName = tagSpec.replace(" ", ":");
   const attrs = outputSpec[1];
@@ -49,7 +50,13 @@ export const OutputSpec = forwardRef(function OutputSpec(
       }
       return createElement(tagName, props, children);
     }
-    content.push(<OutputSpec outputSpec={child}>{children}</OutputSpec>);
+    content.push(
+      <ForwardedOutputSpec ref={undefined} outputSpec={child}>
+        {children}
+      </ForwardedOutputSpec>
+    );
   }
   return createElement(tagName, props, ...content);
 });
+
+export { ForwardedOutputSpec as OutputSpec };

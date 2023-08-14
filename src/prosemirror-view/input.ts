@@ -123,6 +123,7 @@ editHandlers.keydown = (view: EditorView, _event: Event) => {
   if (browser.ios && event.keyCode == 13 && !event.ctrlKey && !event.altKey && !event.metaKey) {
     let now = Date.now()
     view.input.lastIOSEnter = now
+    // @ts-expect-error
     view.input.lastIOSEnterFallbackTimeout = setTimeout(() => {
       if (view.input.lastIOSEnter == now) {
         view.someProp("handleKeyDown", f => f(view, keyEvent(13, "Enter")))
@@ -502,6 +503,7 @@ editHandlers.compositionend = (view, event) => {
 
 function scheduleComposeEnd(view: EditorView, delay: number) {
   clearTimeout(view.input.composingTimeout)
+  // @ts-expect-error
   if (delay > -1) view.input.composingTimeout = setTimeout(() => endComposition(view), delay)
 }
 

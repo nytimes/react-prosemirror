@@ -3,10 +3,12 @@ import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
 import { SelectionDOMObserver } from "../SelectionDOMObserver.js";
+import {
+  resetScrollPos,
+  storeScrollPos,
+} from "../prosemirror-view/domcoords.js";
 import { DirectEditorProps, EditorView } from "../prosemirror-view/index.js";
 import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
-
-import { useForceUpdate } from "./useForceUpdate.js";
 
 class ReactEditorView extends EditorView {
   init() {
@@ -15,7 +17,32 @@ class ReactEditorView extends EditorView {
   }
 
   updateStateInner(state: EditorState, _prevProps: DirectEditorProps) {
+    const previousState = this.state;
     this.state = state;
+
+    const scroll =
+      previousState.plugins != state.plugins && !previousState.doc.eq(state.doc)
+        ? "reset"
+        : (state as any).scrollToSelection >
+          (previousState as any).scrollToSelection
+        ? "to selection"
+        : "preserve";
+
+    const updateSel = !state.selection.eq(previousState.selection);
+
+    const oldScrollPos =
+      scroll == "preserve" &&
+      updateSel &&
+      this.dom.style.overflowAnchor == null &&
+      storeScrollPos(this);
+
+    if (scroll == "reset") {
+      this.dom.scrollTop = 0;
+    } else if (scroll == "to selection") {
+      this.scrollToSelection();
+    } else if (oldScrollPos) {
+      resetScrollPos(oldScrollPos);
+    }
   }
 
   // @ts-expect-error We need this to be an accessor
@@ -36,10 +63,6 @@ function withBatchedUpdates<This, T extends unknown[]>(
       fn.call(this, ...args);
     });
   };
-}
-
-function defaultDispatchTransaction(this: EditorView, tr: Transaction) {
-  this.updateState(this.state.apply(tr));
 }
 
 type EditorStateProps =
@@ -66,7 +89,7 @@ export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
  */
 function withBatchedDispatch(
   props: EditorProps,
-  forceUpdate: () => void
+  updateState: (state: EditorState) => void
 ): EditorProps & {
   dispatchTransaction: EditorView["dispatch"];
 } {
@@ -78,10 +101,12 @@ function withBatchedDispatch(
         tr: Transaction
       ) {
         const batchedDispatchTransaction = withBatchedUpdates(
-          props.dispatchTransaction ?? defaultDispatchTransaction
+          props.dispatchTransaction ??
+            function (this: EditorView, tr: Transaction) {
+              updateState(this.state.apply(tr));
+            }
         );
         batchedDispatchTransaction.call(this, tr);
-        forceUpdate();
       },
     },
   };
@@ -100,18 +125,15 @@ export function useReactEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
   props: EditorProps
 ): EditorView | null {
+  const [innerState, setInnerState] = useState<EditorState | null>(
+    "defaultState" in props ? props.defaultState : null
+  );
   const [view, setView] = useState<EditorView | null>(null);
 
-  const forceUpdate = useForceUpdate();
+  const editorProps = withBatchedDispatch(props, setInnerState);
 
-  const editorProps = withBatchedDispatch(props, forceUpdate);
-
-  const stateProp = "state" in editorProps ? editorProps.state : undefined;
-
-  const state =
-    "defaultState" in editorProps
-      ? editorProps.defaultState
-      : editorProps.state;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const state = "defaultState" in editorProps ? innerState! : editorProps.state;
 
   useLayoutEffect(() => {
     return () => {
@@ -145,7 +167,7 @@ export function useReactEditorView<T extends HTMLElement = HTMLElement>(
     }
   }, [editorProps, mount, state, view]);
 
-  view?.setProps({ ...editorProps, ...(stateProp && { state: stateProp }) });
+  view?.setProps({ ...editorProps, state });
 
   return view;
 }

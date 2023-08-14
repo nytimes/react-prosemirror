@@ -1,7 +1,8 @@
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
-import { EditorState, Plugin } from "prosemirror-state";
+import { EditorState, Plugin, TextSelection } from "prosemirror-state";
+import { a, doc, p, strong } from "prosemirror-test-builder";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, {
@@ -84,6 +85,13 @@ const editorState = EditorState.create({
   plugins: [keymap(baseKeymap)],
 });
 
+// const startDoc = doc(p(strong(a("foo<a>"), "bar")));
+
+// const editorState = EditorState.create({
+//   doc: startDoc,
+//   selection: TextSelection.create(startDoc, startDoc.tag.a),
+// });
+
 const Paragraph = forwardRef(function Paragraph(
   {
     children,
@@ -97,6 +105,7 @@ const Paragraph = forwardRef(function Paragraph(
   ref: Ref<HTMLParagraphElement>
 ) {
   useView((view) => {
+    view.focus();
     // eslint-disable-next-line no-console
     // console.log(pos, view.coordsAtPos(pos));
   });
