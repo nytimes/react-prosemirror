@@ -1,7 +1,5 @@
 import { createContext } from "react";
 
-import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
+import { EditorView } from "../prosemirror-view/index.js";
 
-export const EditorViewContext = createContext(
-  null as unknown as EditorViewInternal
-);
+export const EditorViewContext = createContext<EditorView | null>(null);

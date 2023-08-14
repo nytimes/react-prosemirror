@@ -1,7 +1,7 @@
 import { Mappable } from "prosemirror-transform";
 import { Decoration } from "prosemirror-view";
 
-import { DOMNode } from "../prosemirror-internal/dom.js";
+import { DOMNode } from "../prosemirror-view/dom.js";
 
 export interface DecorationType {
   spec: unknown;

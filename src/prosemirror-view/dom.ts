@@ -3,8 +3,6 @@
  * Copied directly from
  * https://github.com/ProseMirror/prosemirror-view/blob/f6d96de9f2714bcf97d6ca9b0906d8750a142d1b/src/dom.ts
  */
-import { EditorViewInternal as EditorView } from "./EditorViewInternal.js"
-
 export type DOMNode = InstanceType<typeof window.Node>
 export type DOMSelection = InstanceType<typeof window.Selection>
 export type DOMSelectionRange = {
@@ -122,34 +120,4 @@ export function caretFromPoint(doc: Document, x: number, y: number): {node: Node
     let range = doc.caretRangeFromPoint(x, y)
     if (range) return {node: range.startContainer, offset: range.startOffset}
   }
-}
-
-// $$FORK: originally from domobserver.ts
-export function safariShadowSelectionRange(view: EditorView): DOMSelectionRange {
-  let found: StaticRange | undefined
-  function read(event: InputEvent) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-    found = event.getTargetRanges()[0]
-  }
-
-  // Because Safari (at least in 2018-2022) doesn't provide regular
-  // access to the selection inside a shadowRoot, we have to perform a
-  // ridiculous hack to get at it—using `execCommand` to trigger a
-  // `beforeInput` event so that we can read the target range from the
-  // event.
-  view.dom.addEventListener("beforeinput", read, true)
-  document.execCommand("indent")
-  view.dom.removeEventListener("beforeinput", read, true)
-
-  let anchorNode = found!.startContainer, anchorOffset = found!.startOffset
-  let focusNode = found!.endContainer, focusOffset = found!.endOffset
-
-  let currentAnchor = view.domAtPos(view.state.selection.anchor)
-  // Since such a range doesn't distinguish between anchor and head,
-  // use a heuristic that flips it around if its end matches the
-  // current anchor.
-  if (isEquivalentPosition(currentAnchor.node, currentAnchor.offset, focusNode, focusOffset))
-    [anchorNode, anchorOffset, focusNode, focusOffset] = [focusNode, focusOffset, anchorNode, anchorOffset]
-  return {anchorNode, anchorOffset, focusNode, focusOffset}
 }

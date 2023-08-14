@@ -1,9 +1,4 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
-import {
-  DecorationSet,
-  DirectEditorProps,
-  EditorView as EditorViewT,
-} from "prosemirror-view";
 import React, {
   DetailedHTMLProps,
   ForwardRefExoticComponent,
@@ -20,40 +15,15 @@ import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
-import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
-import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
-import { DOMObserver } from "../prosemirror-internal/domobserver.js";
-import { initInput } from "../prosemirror-internal/input.js";
+import { DecorationSourceInternal } from "../prosemirror-view/DecorationInternal.js";
+import {
+  DecorationSet,
+  DirectEditorProps,
+  EditorView as EditorViewClass,
+} from "../prosemirror-view/index.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
-
-class ReactEditorView extends EditorViewT {
-  constructor(place: { mount: HTMLElement }, props: DirectEditorProps) {
-    super(null, props);
-    this.dom = place.mount;
-    this.domObserver.stop();
-    this.domObserver = new DOMObserver(this as unknown as EditorViewInternal);
-    this.domObserver.start();
-    initInput(this);
-  }
-  set docView(_docView) {
-    // We handle this ourselves
-  }
-  get docView() {
-    return this.dom.pmViewDesc;
-  }
-  updateState(state: EditorState) {
-    // eslint-disable-next-line react/no-direct-mutation-state
-    this.state = state;
-  }
-  update(_props: DirectEditorProps) {
-    // React takes care of this
-  }
-  destroy() {
-    // React takes care of this
-  }
-}
 
 type EditorStateProps =
   | {
@@ -77,7 +47,7 @@ export type EditorProps = Omit<
       >;
     };
     decorations?: DecorationSet;
-    dispatchTransaction?: (this: EditorViewT, tr: Transaction) => void;
+    dispatchTransaction?: (this: EditorViewClass, tr: Transaction) => void;
   };
 
 export type Props = EditorProps &
@@ -125,7 +95,7 @@ export function EditorView(props: Props) {
   // This is only safe to use in effects/layout effects or
   // event handlers!
   const [reactEditorView, setReactEditorView] =
-    useState<EditorViewInternal | null>(null);
+    useState<EditorViewClass | null>(null);
   reactEditorView?.updateState(state);
 
   useEffect(() => {
@@ -153,7 +123,7 @@ export function EditorView(props: Props) {
                   return;
                 }
                 if (el && !reactEditorView) {
-                  const newReactEditorView = new ReactEditorView(
+                  const newReactEditorView = new EditorViewClass(
                     { mount: el },
                     {
                       decorations: getDecorations,
@@ -172,7 +142,7 @@ export function EditorView(props: Props) {
                       handleTripleClickOn,
                       editable: () => editable,
                       state: EditorState.create({ schema: state.schema }),
-                      dispatchTransaction(this: EditorViewT, tr) {
+                      dispatchTransaction(this: EditorViewClass, tr) {
                         if (dispatchProp) {
                           dispatchProp.call(this, tr);
                         } else {
@@ -181,7 +151,7 @@ export function EditorView(props: Props) {
                       },
                       plugins,
                     }
-                  ) as unknown as EditorViewInternal;
+                  );
 
                   newReactEditorView.updateState(state);
 

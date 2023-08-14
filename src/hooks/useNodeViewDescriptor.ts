@@ -2,11 +2,11 @@ import { Node } from "prosemirror-model";
 import { MutableRefObject, useContext, useLayoutEffect } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { NodeViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
 import {
   DecorationInternal,
   DecorationSourceInternal,
-} from "../prosemirror-internal/DecorationInternal.js";
+} from "../prosemirror-view/DecorationInternal.js";
+import { NodeViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node,

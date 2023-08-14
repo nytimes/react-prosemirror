@@ -3,5 +3,5 @@
 .yarnrc.yml
 .pnp.*
 
-src/prosemirror-internal/*
-!src/prosemirror-internal/README.md
+src/prosemirror-view/*
+!src/prosemirror-view/README.md

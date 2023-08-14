@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
-import { selectionToDOM } from "../prosemirror-internal/selection.js";
+import { EditorViewInternal } from "../prosemirror-view/EditorViewInternal.js";
+import { selectionToDOM } from "../prosemirror-view/selection.js";
 
 export function useSyncSelection(view: EditorViewInternal | null) {
   useEffect(() => {

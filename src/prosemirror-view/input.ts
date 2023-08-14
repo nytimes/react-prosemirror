@@ -3,14 +3,12 @@ import {dropPoint} from "prosemirror-transform"
 import {Slice, Node} from "prosemirror-model"
 
 import * as browser from "./browser.js"
-// $$FORK: trying to drop this for now
-// import {captureKeyDown} from "./capturekeys.js"
+import {captureKeyDown} from "./capturekeys.js"
 import {parseFromClipboard, serializeForClipboard} from "./clipboard.js"
 import {selectionBetween, selectionToDOM, selectionFromDOM} from "./selection.js"
-import {keyEvent, DOMNode} from "./dom.js"
-import { EditorViewInternal as EditorView } from "./EditorViewInternal.js"
-import {ViewDesc} from "../descriptors/ViewDesc.js"
-import { MutableRefObject } from "react"
+import {keyEvent, DOMNode} from "./dom"
+import {EditorView} from "./index.js"
+import {ViewDesc} from "./viewdesc.js"
 
 // A collection of DOM events that occur within the editor, and callback functions
 // to invoke when the event fires.
@@ -49,7 +47,6 @@ export function initInput(view: EditorView) {
     view.dom.addEventListener(event, view.input.eventHandlers[event] = (event: Event) => {
       if (eventBelongsToView(view, event) && !runCustomHandler(view, event) &&
           (view.editable || !(event.type in editHandlers)))
-        // @ts-expect-error
         handler(view, event)
     }, passiveHandlers[event] ? {passive: true} : undefined)
   }
@@ -64,6 +61,14 @@ export function initInput(view: EditorView) {
 function setSelectionOrigin(view: EditorView, origin: string) {
   view.input.lastSelectionOrigin = origin
   view.input.lastSelectionTime = Date.now()
+}
+
+export function destroyInput(view: EditorView) {
+  view.domObserver.stop()
+  for (let type in view.input.eventHandlers)
+    view.dom.removeEventListener(type, view.input.eventHandlers[type])
+  clearTimeout(view.input.composingTimeout)
+  clearTimeout(view.input.lastIOSEnterFallbackTimeout)
 }
 
 export function ensureListeners(view: EditorView) {
@@ -93,7 +98,6 @@ function eventBelongsToView(view: EditorView, event: Event) {
 export function dispatchEvent(view: EditorView, event: Event) {
   if (!runCustomHandler(view, event) && handlers[event.type] &&
       (view.editable || !(event.type in editHandlers)))
-    // @ts-expect-error
     handlers[event.type](view, event)
 }
 
@@ -107,9 +111,7 @@ editHandlers.keydown = (view: EditorView, _event: Event) => {
   // to be part of a confused sequence of composition events fired,
   // and handling them eagerly tends to corrupt the input.
   if (browser.android && browser.chrome && event.keyCode == 13) return
-  // $$FORK: We don't use a dom observer
-  // TODO: I have no idea if it's safe to skip this
-  // if (event.keyCode != 229) view.domObserver.forceFlush()
+  if (event.keyCode != 229) view.domObserver.forceFlush()
 
   // On iOS, if we preventDefault enter key presses, the virtual
   // keyboard gets confused. So the hack here is to set a flag that
@@ -124,10 +126,7 @@ editHandlers.keydown = (view: EditorView, _event: Event) => {
         view.input.lastIOSEnter = 0
       }
     }, 200)
-  // $$FORK: drop capturekeydown? As far as I can tell, everything it's attempting to
-  // do just works natively.
-  // } else if (view.someProp("handleKeyDown", f => f(view, event)) || captureKeyDown(view, event)) {
-  } else if (view.someProp("handleKeyDown", f => f(view, event))) {
+  } else if (view.someProp("handleKeyDown", f => f(view, event)) || captureKeyDown(view, event)) {
     event.preventDefault()
   } else {
     setSelectionOrigin(view, "key")
@@ -148,14 +147,13 @@ editHandlers.keypress = (view, _event) => {
     return
   }
 
-  // $$FORK: We handle this in our useContentEditable hook
-  // let sel = view.state.selection
-  // if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
-  //   let text = String.fromCharCode(event.charCode)
-  //   if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
-  //     view.dispatch(view.state.tr.insertText(text).scrollIntoView())
-  //   event.preventDefault()
-  // }
+  let sel = view.state.selection
+  if (!(sel instanceof TextSelection) || !sel.$from.sameParent(sel.$to)) {
+    let text = String.fromCharCode(event.charCode)
+    if (!/[\r\n]/.test(text) && !view.someProp("handleTextInput", f => f(view, sel.$from.pos, sel.$to.pos, text)))
+      view.dispatch(view.state.tr.insertText(text).scrollIntoView())
+    event.preventDefault()
+  }
 }
 
 function eventCoords(event: MouseEvent) { return {left: event.clientX, top: event.clientY} }
@@ -242,7 +240,6 @@ function handleTripleClick(view: EditorView, pos: number, inside: number, event:
     defaultTripleClick(view, inside, event)
 }
 
-// @ts-expect-error
 function defaultTripleClick(view: EditorView, inside: number, event: MouseEvent) {
   if (event.button != 0) return false
   let doc = view.state.doc
@@ -342,14 +339,13 @@ class MouseDown {
       }
 
     if (this.target && this.mightDrag && (this.mightDrag.addAttr || this.mightDrag.setUneditable)) {
-      // $$FORK: We don't use a dom observer
-      // this.view.domObserver.stop()
+      this.view.domObserver.stop()
       if (this.mightDrag.addAttr) this.target.draggable = true
       if (this.mightDrag.setUneditable)
         setTimeout(() => {
           if (this.view.input.mouseDown == this) this.target!.setAttribute("contentEditable", "false")
         }, 20)
-      // this.view.domObserver.start()
+      this.view.domObserver.start()
     }
 
     view.root.addEventListener("mouseup", this.up = this.up.bind(this) as any)
@@ -361,11 +357,10 @@ class MouseDown {
     this.view.root.removeEventListener("mouseup", this.up as any)
     this.view.root.removeEventListener("mousemove", this.move as any)
     if (this.mightDrag && this.target) {
-      // $$FORK: We don't use a dom observer
-      // this.view.domObserver.stop()
+      this.view.domObserver.stop()
       if (this.mightDrag.addAttr) this.target.removeAttribute("draggable")
       if (this.mightDrag.setUneditable) this.target.removeAttribute("contentEditable")
-      // this.view.domObserver.start()
+      this.view.domObserver.start()
     }
     if (this.delayedSelectionSync) setTimeout(() => selectionToDOM(this.view))
     this.view.input.mouseDown = null
@@ -456,9 +451,7 @@ const timeoutComposition = browser.android ? 5000 : -1
 
 editHandlers.compositionstart = editHandlers.compositionupdate = view => {
   if (!view.composing) {
-    // $$FORK: We don't use a dom observer
-    // TODO: I have no idea if it's safe to skip this
-    // view.domObserver.flush()
+    view.domObserver.flush()
     let {state} = view, $pos = state.selection.$from
     if (state.selection.empty &&
         (state.storedMarks ||
@@ -496,9 +489,8 @@ editHandlers.compositionend = (view, event) => {
   if (view.composing) {
     view.input.composing = false
     view.input.compositionEndedAt = event.timeStamp
-    // $$FORK: We don't use a dom observer
-    // view.input.compositionPendingChanges = view.domObserver.pendingRecords().length ? view.input.compositionID : 0
-    // if (view.input.compositionPendingChanges) Promise.resolve().then(() => view.domObserver.flush())
+    view.input.compositionPendingChanges = view.domObserver.pendingRecords().length ? view.input.compositionID : 0
+    if (view.input.compositionPendingChanges) Promise.resolve().then(() => view.domObserver.flush())
     view.input.compositionID++
     scheduleComposeEnd(view, 20)
   }
@@ -525,9 +517,8 @@ function timestampFromCustomEvent() {
 
 /// @internal
 export function endComposition(view: EditorView, forceUpdate = false) {
-  // $$FORK: We don't use a dom observer
-  // if (browser.android && view.domObserver.flushingSoon >= 0) return
-  // view.domObserver.forceFlush()
+  if (browser.android && view.domObserver.flushingSoon >= 0) return
+  view.domObserver.forceFlush()
   clearComposition(view)
   if (forceUpdate || view.docView && view.docView.dirty) {
     let sel = selectionFromDOM(view)
@@ -719,7 +710,6 @@ editHandlers.drop = (view, _event) => {
     tr.setSelection(new NodeSelection($pos))
   } else {
     let end = tr.mapping.map(insertPos)
-    // @ts-expect-error
     tr.mapping.maps[tr.mapping.maps.length - 1].forEach((_from, _to, _newFrom, newTo) => end = newTo)
     tr.setSelection(selectionBetween(view, $pos, tr.doc.resolve(end)))
   }
@@ -730,13 +720,10 @@ editHandlers.drop = (view, _event) => {
 handlers.focus = view => {
   view.input.lastFocus = Date.now()
   if (!view.focused) {
-    // $$FORK: We don't use a dom observer
-    // view.domObserver.stop()
+    view.domObserver.stop()
     view.dom.classList.add("ProseMirror-focused")
-    // $$FORK: We don't use a dom observer
-    // view.domObserver.start()
+    view.domObserver.start()
     view.focused = true
-    // TODO: This might be an issue??
     setTimeout(() => {
       if (view.docView && view.hasFocus() && !view.domObserver.currentSelection.eq(view.domSelectionRange()))
         selectionToDOM(view)
@@ -747,10 +734,9 @@ handlers.focus = view => {
 handlers.blur = (view, _event) => {
   let event = _event as FocusEvent
   if (view.focused) {
-    // $$FORK: We don't use a dom observer
-    // view.domObserver.stop()
+    view.domObserver.stop()
     view.dom.classList.remove("ProseMirror-focused")
-    // view.domObserver.start()
+    view.domObserver.start()
     if (event.relatedTarget && view.dom.contains(event.relatedTarget as HTMLElement))
       view.domObserver.currentSelection.clear()
     view.focused = false
@@ -765,8 +751,7 @@ handlers.beforeinput = (view, _event: Event) => {
   // Very specific hack to deal with backspace sometimes failing on
   // Chrome Android when after an uneditable node.
   if (browser.chrome && browser.android && event.inputType == "deleteContentBackward") {
-    // $$FORK: We don't use a dom observer
-    // view.domObserver.flushSoon()
+    view.domObserver.flushSoon()
     let {domChangeCount} = view.input
     setTimeout(() => {
       if (view.input.domChangeCount != domChangeCount) return // Event already had some effect
@@ -782,5 +767,4 @@ handlers.beforeinput = (view, _event: Event) => {
 }
 
 // Make sure all handlers get registered
-// @ts-expect-error
 for (let prop in editHandlers) handlers[prop] = editHandlers[prop]

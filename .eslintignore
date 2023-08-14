@@ -3,4 +3,4 @@
 .yarnrc.yml
 .pnp.*
 
-src/prosemirror-internal/
+src/prosemirror-view/

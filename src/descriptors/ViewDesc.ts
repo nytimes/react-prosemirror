@@ -7,13 +7,13 @@ import {
   DecorationInternal,
   DecorationSourceInternal,
   ReactWidgetDecoration,
-} from "../prosemirror-internal/DecorationInternal.js";
-import * as browser from "../prosemirror-internal/browser.js";
+} from "../prosemirror-view/DecorationInternal.js";
+import * as browser from "../prosemirror-view/browser.js";
 import {
   DOMNode,
   domIndex,
   isEquivalentPosition,
-} from "../prosemirror-internal/dom.js";
+} from "../prosemirror-view/dom.js";
 
 export function sameOuterDeco(
   a: readonly DecorationInternal[],

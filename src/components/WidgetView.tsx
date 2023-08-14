@@ -1,8 +1,8 @@
 import React, { useContext, useLayoutEffect, useRef } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { WidgetViewDesc } from "../descriptors/ViewDesc.js";
-import { ReactWidgetDecoration } from "../prosemirror-internal/DecorationInternal.js";
+import { ReactWidgetDecoration } from "../prosemirror-view/DecorationInternal.js";
+import { WidgetViewDesc } from "../prosemirror-view/viewdesc.js";
 
 type Props = {
   widget: ReactWidgetDecoration;

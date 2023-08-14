@@ -1,7 +1,7 @@
 import React, { useContext, useLayoutEffect, useRef } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { TrailingHackViewDesc } from "../descriptors/ViewDesc.js";
+import { TrailingHackViewDesc } from "../prosemirror-view/viewdesc.js";
 
 export function TrailingHackView() {
   const siblingDescriptors = useContext(ChildDescriptorsContext);

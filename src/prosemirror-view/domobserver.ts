@@ -1,7 +1,7 @@
 import * as browser from "./browser.js"
 import {isEquivalentPosition, DOMSelectionRange} from "./dom.js"
 import {hasFocusAndSelection, selectionFromDOM} from "./selection.js"
-import {EditorViewInternal as EditorView} from "./EditorViewInternal.js"
+import {EditorView} from "./index.js"
 
 class SelectionState {
   anchorNode: Node | null = null
@@ -95,4 +95,36 @@ export class DOMObserver {
     let sel = view.domSelectionRange()
     this.currentSelection.set(sel)
   }
+}
+
+
+// Used to work around a Safari Selection/shadow DOM bug
+// Based on https://github.com/codemirror/dev/issues/414 fix
+export function safariShadowSelectionRange(view: EditorView): DOMSelectionRange {
+  let found: StaticRange | undefined
+  function read(event: InputEvent) {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    found = event.getTargetRanges()[0]
+  }
+
+  // Because Safari (at least in 2018-2022) doesn't provide regular
+  // access to the selection inside a shadowRoot, we have to perform a
+  // ridiculous hack to get at it—using `execCommand` to trigger a
+  // `beforeInput` event so that we can read the target range from the
+  // event.
+  view.dom.addEventListener("beforeinput", read, true)
+  document.execCommand("indent")
+  view.dom.removeEventListener("beforeinput", read, true)
+
+  let anchorNode = found!.startContainer, anchorOffset = found!.startOffset
+  let focusNode = found!.endContainer, focusOffset = found!.endOffset
+
+  let currentAnchor = view.domAtPos(view.state.selection.anchor)
+  // Since such a range doesn't distinguish between anchor and head,
+  // use a heuristic that flips it around if its end matches the
+  // current anchor.
+  if (isEquivalentPosition(currentAnchor.node, currentAnchor.offset, focusNode, focusOffset))
+    [anchorNode, anchorOffset, focusNode, focusOffset] = [focusNode, focusOffset, anchorNode, anchorOffset]
+  return {anchorNode, anchorOffset, focusNode, focusOffset}
 }

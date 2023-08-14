@@ -5,8 +5,9 @@ import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
 
 export function useView(effect: (view: EditorViewT) => void) {
-  const viewApi = useContext(EditorViewContext);
+  const view = useContext(EditorViewContext);
   useLayoutGroupEffect(() => {
-    return effect(viewApi);
+    if (!view) return;
+    return effect(view);
   });
 }

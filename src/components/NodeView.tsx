@@ -12,7 +12,7 @@ import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
 import {
   DecorationInternal,
   DecorationSourceInternal,
-} from "../prosemirror-internal/DecorationInternal.js";
+} from "../prosemirror-view/DecorationInternal.js";
 
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";

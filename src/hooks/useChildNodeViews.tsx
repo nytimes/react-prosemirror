@@ -19,7 +19,7 @@ import {
   DecorationSourceInternal,
   NonWidgetType,
   ReactWidgetDecoration,
-} from "../prosemirror-internal/DecorationInternal.js";
+} from "../prosemirror-view/DecorationInternal.js";
 
 import { useNodeViewDescriptor } from "./useNodeViewDescriptor.js";
 

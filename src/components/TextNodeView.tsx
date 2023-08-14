@@ -3,8 +3,8 @@ import { DecorationSet } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
-import { TextViewDesc, ViewDesc } from "../descriptors/ViewDesc.js";
-import { DecorationInternal } from "../prosemirror-internal/DecorationInternal.js";
+import { DecorationInternal } from "../prosemirror-view/DecorationInternal.js";
+import { TextViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
 type Props = {
   node: Node;
@@ -26,6 +26,7 @@ export class TextNodeView extends Component<Props> {
 
     const desc = new TextViewDesc(
       undefined,
+      [],
       this.props.node,
       [],
       DecorationSet.empty,
@@ -48,6 +49,7 @@ export class TextNodeView extends Component<Props> {
 
     const desc = new TextViewDesc(
       undefined,
+      [],
       this.props.node,
       [],
       DecorationSet.empty,

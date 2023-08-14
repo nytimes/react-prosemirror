@@ -9,7 +9,7 @@ import React, {
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import { DecorationSourceInternal } from "../prosemirror-internal/DecorationInternal.js";
+import { DecorationSourceInternal } from "../prosemirror-view/DecorationInternal.js";
 
 type Props = {
   node: Node;

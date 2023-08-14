@@ -1,6 +1,6 @@
 import {Slice, Fragment, DOMParser, DOMSerializer, ResolvedPos, NodeType, Node} from "prosemirror-model"
 import * as browser from "./browser.js"
-import { EditorViewInternal as EditorView } from "./EditorViewInternal.js"
+import { EditorView } from "./index.js"
 
 export function serializeForClipboard(view: EditorView, slice: Slice) {
   view.someProp("transformCopied", f => { slice = f(slice!, view) })

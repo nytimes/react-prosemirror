@@ -7,7 +7,7 @@
 import {EditorState} from "prosemirror-state"
 import {nodeSize, textRange, parentNode, caretFromPoint} from "./dom.js"
 import * as browser from "./browser.js"
-import {EditorView} from "prosemirror-view"
+import {EditorView} from "./index.js"
 
 export type Rect = {left: number, right: number, top: number, bottom: number}
 

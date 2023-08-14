@@ -3,7 +3,7 @@ import {ResolvedPos} from "prosemirror-model"
 
 import * as browser from "./browser.js"
 import {isEquivalentPosition, domIndex, isOnEdge, selectionCollapsed} from "./dom.js"
-import {EditorViewInternal as EditorView} from "./EditorViewInternal.js"
+import {EditorView} from "./index.js"
 import {NodeViewDesc} from "../descriptors/ViewDesc.js"
 
 export function selectionFromDOM(view: EditorView, origin: string | null = null) {

@@ -1,7 +1,7 @@
 import { Plugin, PluginView } from "prosemirror-state";
 import { useLayoutEffect, useRef } from "react";
 
-import { EditorViewInternal } from "../prosemirror-internal/EditorViewInternal.js";
+import { EditorViewInternal } from "../prosemirror-view/EditorViewInternal.js";
 
 import { usePrevious } from "./usePrev.js";
 
