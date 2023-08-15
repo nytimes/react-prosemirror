@@ -6,9 +6,10 @@ import { WidgetViewDesc } from "../prosemirror-view/viewdesc.js";
 
 type Props = {
   widget: ReactWidgetDecoration;
+  pos: number;
 };
 
-export function WidgetView({ widget }: Props) {
+export function WidgetView({ widget, pos }: Props) {
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const domRef = useRef<HTMLElement | null>(null);
 
@@ -21,5 +22,14 @@ export function WidgetView({ widget }: Props) {
 
   const { Component } = widget.type;
 
-  return Component && <Component ref={domRef} contentEditable={false} />;
+  return (
+    Component && (
+      <Component
+        ref={domRef}
+        widget={widget}
+        pos={pos}
+        contentEditable={false}
+      />
+    )
+  );
 }

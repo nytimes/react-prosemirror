@@ -494,9 +494,7 @@ const empty = DecorationSet.empty
 // treat multiple DecorationSet objects as if it were a single object
 // with (a subset of) the same interface.
 class DecorationGroup implements DecorationSource {
-  constructor(readonly members: readonly DecorationSet[]) {
-    console.log(members)
-  }
+  constructor(readonly members: readonly DecorationSet[]) {}
 
   map(mapping: Mapping, doc: Node) {
     const mappedDecos = this.members.map(

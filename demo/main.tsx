@@ -171,21 +171,6 @@ const plugins = [
 function DemoEditor() {
   const [state, setState] = useState(editorState);
 
-  const decorations = [Decoration.inline(5, 15, { class: "inline-deco" })];
-  state.doc.forEach((node, offset, index) => {
-    if (index === 1 || index === 2) {
-      decorations.push(
-        Decoration.node(offset, offset + node.nodeSize, {
-          nodeName: "div",
-          class: "node-deco",
-        })
-      );
-    }
-    if (index === 3) {
-      decorations.push(widget(offset + 10, TestWidget, { side: 0 }));
-    }
-  });
-
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
@@ -195,7 +180,26 @@ function DemoEditor() {
         dispatchTransaction={(tr) => {
           setState((prev) => prev.apply(tr));
         }}
-        decorations={DecorationSet.create(state.doc, decorations)}
+        // @ts-expect-error Types don't match because of internalizing EditorView
+        decorations={(state) => {
+          const decorations = [
+            Decoration.inline(5, 15, { class: "inline-deco" }),
+          ];
+          state.doc.forEach((node, offset, index) => {
+            if (index === 1 || index === 2) {
+              decorations.push(
+                Decoration.node(offset, offset + node.nodeSize, {
+                  nodeName: "div",
+                  class: "node-deco",
+                })
+              );
+            }
+            if (index === 3) {
+              decorations.push(widget(offset + 10, TestWidget, { side: 0 }));
+            }
+          });
+          return DecorationSet.create(state.doc, decorations);
+        }}
         plugins={plugins}
         // @ts-expect-error TODO: Gotta fix these types
         nodeViews={{ paragraph: Paragraph }}

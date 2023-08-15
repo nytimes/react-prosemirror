@@ -1294,6 +1294,7 @@ __metadata:
     "@typescript-eslint/parser": ^5.51.0
     "@vitejs/plugin-react": ^3.1.0
     "@yarnpkg/sdks": ^3.0.0-rc.38
+    classnames: ^2.3.2
     concurrently: ^7.6.0
     eslint: ^8.33.0
     eslint-config-prettier: ^8.6.0
@@ -2738,6 +2739,13 @@ __metadata:
   version: 1.2.2
   resolution: "cjs-module-lexer@npm:1.2.2"
   checksum: 977f3f042bd4f08e368c890d91eecfbc4f91da0bc009a3c557bc4dfbf32022ad1141244ac1178d44de70fc9f3dea7add7cd9a658a34b9fae98a55d8f92331ce5
+  languageName: node
+  linkType: hard
+
+"classnames@npm:^2.3.2":
+  version: 2.3.2
+  resolution: "classnames@npm:2.3.2"
+  checksum: 2c62199789618d95545c872787137262e741f9db13328e216b093eea91c85ef2bfb152c1f9e63027204e2559a006a92eb74147d46c800a9f96297ae1d9f96f4e
   languageName: node
   linkType: hard
 

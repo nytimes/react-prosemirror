@@ -2,6 +2,7 @@ import { Mark } from "prosemirror-model";
 import { Mappable } from "prosemirror-transform";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
+import { WidgetComponentProps } from "../components/WidgetComponentProps.js";
 import { Decoration, DecorationType } from "../prosemirror-view/decoration.js";
 
 function compareObjs(
@@ -15,7 +16,7 @@ function compareObjs(
 }
 
 type ReactWidgetSpec = {
-  side: number;
+  side?: number;
   marks?: readonly Mark[];
   stopEvent?: (event: Event) => boolean;
   ignoreSelection?: boolean;
@@ -31,7 +32,7 @@ export class ReactWidgetType implements DecorationType {
 
   constructor(
     public Component: ForwardRefExoticComponent<
-      RefAttributes<HTMLElement> & { contentEditable: boolean }
+      RefAttributes<HTMLElement> & WidgetComponentProps
     >,
     spec?: ReactWidgetSpec
   ) {
@@ -73,7 +74,7 @@ export class ReactWidgetType implements DecorationType {
 export function widget(
   pos: number,
   component: ForwardRefExoticComponent<
-    RefAttributes<HTMLElement> & { contentEditable: boolean }
+    RefAttributes<HTMLElement> & WidgetComponentProps
   >,
   spec?: ReactWidgetSpec
 ) {

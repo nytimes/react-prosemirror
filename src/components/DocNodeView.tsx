@@ -54,10 +54,12 @@ export const DocNodeView = forwardRef(function DocNodeView(
     </div>
   );
 
+  if (!node) return element;
+
   const nodeDecorations = outerDeco.filter((deco) => !deco.inline);
   if (!nodeDecorations.length) {
     return element;
   }
 
-  return nodeDecorations.reduce(wrapInDeco, element);
+  return nodeDecorations.reduce(wrapInDeco(node), element);
 });

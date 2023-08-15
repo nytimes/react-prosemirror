@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "@jest/globals";
-import { act, render } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { MatcherFunction } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
@@ -52,9 +52,9 @@ export function tempEditor({
   const state = EditorState.create({
     doc: startDoc,
     selection:
-      selection ?? startDoc.tag.a
+      selection ?? startDoc.tag?.a
         ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          TextSelection.create(startDoc, startDoc.tag.a!, startDoc.tag.b)
+          TextSelection.create(startDoc, startDoc.tag.a!, startDoc.tag?.b)
         : undefined,
     plugins,
   });

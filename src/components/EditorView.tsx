@@ -4,7 +4,6 @@ import React, {
   ForwardRefExoticComponent,
   ReactNode,
   RefAttributes,
-  useCallback,
   useEffect,
   useState,
 } from "react";
@@ -39,7 +38,7 @@ type EditorStateProps =
 
 export type EditorProps = Omit<
   DirectEditorProps,
-  "state" | "nodeViews" | "decorations" | "dispatchTransaction"
+  "state" | "nodeViews" | "dispatchTransaction"
 > &
   EditorStateProps & {
     keymap?: { [key: string]: Command };
@@ -48,7 +47,6 @@ export type EditorProps = Omit<
         NodeViewComponentProps & RefAttributes<HTMLElement>
       >;
     };
-    decorations?: DecorationSet;
     dispatchTransaction?: (this: EditorViewClass, tr: Transaction) => void;
   };
 
@@ -58,23 +56,14 @@ export function EditorView({
   className,
   children,
   editable: editableProp,
-  decorations = DecorationSetInternal.empty as unknown as DecorationSet,
   nodeViews = {},
   ...props
 }: Props) {
-  const getDecorations = useCallback(
-    () => decorations as unknown as DecorationSetInternal,
-    [decorations]
-  );
-
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   // This is only safe to use in effects/layout effects or
   // event handlers!
-  const reactEditorView = useReactEditorView(mount, {
-    ...props,
-    decorations: getDecorations,
-  });
+  const reactEditorView = useReactEditorView(mount, props);
 
   useEffect(() => {
     reactEditorView?.domObserver.connectSelection();

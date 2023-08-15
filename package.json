@@ -92,6 +92,7 @@
     "node": ">=16.9"
   },
   "dependencies": {
+    "classnames": "^2.3.2",
     "w3c-keyname": "^2.2.8"
   }
 }

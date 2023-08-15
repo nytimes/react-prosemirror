@@ -76,4 +76,6 @@ export function teardownProseMirrorView() {
   Document.prototype.elementFromPoint = oldElementFromPoint;
   // @ts-expect-error jsdom actually doesn't implement these, so they might be undefined
   Range.prototype.getClientRects = oldGetClientRects;
+  // @ts-expect-error jsdom actually doesn't implement these, so they might be undefined
+  Range.prototype.getBoundingClientRect = oldGetBoundingClientRect;
 }
