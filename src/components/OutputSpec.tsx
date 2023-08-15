@@ -3,7 +3,7 @@ import React, { ReactNode, createElement, forwardRef } from "react";
 
 type Props = {
   outputSpec: DOMOutputSpec;
-  children: ReactNode;
+  children?: ReactNode;
 };
 
 const ForwardedOutputSpec = forwardRef(function OutputSpec(

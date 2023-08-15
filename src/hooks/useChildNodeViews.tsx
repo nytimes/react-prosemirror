@@ -32,26 +32,29 @@ function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
   return true;
 }
 
-function wrapInDeco(element: JSX.Element, deco: Decoration) {
+export function wrapInDeco(element: JSX.Element, deco: Decoration) {
   const {
     nodeName,
     class: className,
     style: _,
+    contenteditable: contentEditable,
     ...attrs
   } = (deco.type as unknown as NonWidgetType).attrs;
 
-  if (nodeName || deco.inline) {
+  if (nodeName || (deco.inline && element.type !== "span")) {
     return createElement(
       nodeName ?? "span",
       {
         className,
+        contentEditable,
         ...attrs,
       },
       element
     );
   }
   return cloneElement(element, {
-    className,
+    className: [element.props.className ?? "", className].join(" "),
+    contentEditable,
     ...attrs,
   });
 }
@@ -223,7 +226,17 @@ function NodeDecoView({ outerDeco, pos, node, innerDeco }: NodeDecoViewProps) {
 
   return (
     <ChildDescriptorsContext.Provider value={childDescriptors}>
-      {cloneElement(decoratedElement, { ref: domRef })}
+      {cloneElement(
+        decoratedElement,
+        nodeDecorations.every(
+          (d) => (d.type as unknown as NonWidgetType).attrs.nodeName
+        )
+          ? { ref: domRef }
+          : // If all of the node decorations were attr-only, then
+            // we've already passed the domRef to the NodeView component
+            // as a prop
+            undefined
+      )}
     </ChildDescriptorsContext.Provider>
   );
 }

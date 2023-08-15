@@ -22,7 +22,7 @@ type ReactWidgetSpec = {
   key?: string;
 };
 
-const noSpec = {};
+const noSpec = { side: 0 };
 
 export class ReactWidgetType implements DecorationType {
   // TODO: implement side affinity?
@@ -33,7 +33,7 @@ export class ReactWidgetType implements DecorationType {
     public Component: ForwardRefExoticComponent<
       RefAttributes<HTMLElement> & { contentEditable: boolean }
     >,
-    spec: ReactWidgetSpec
+    spec?: ReactWidgetSpec
   ) {
     this.spec = spec ?? noSpec;
     this.side = this.spec.side ?? 0;
@@ -75,7 +75,7 @@ export function widget(
   component: ForwardRefExoticComponent<
     RefAttributes<HTMLElement> & { contentEditable: boolean }
   >,
-  spec: ReactWidgetSpec
+  spec?: ReactWidgetSpec
 ) {
   return new Decoration(pos, pos, new ReactWidgetType(component, spec));
 }

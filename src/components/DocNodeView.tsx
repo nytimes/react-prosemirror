@@ -7,19 +7,23 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
+import { useChildNodeViews, wrapInDeco } from "../hooks/useChildNodeViews.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import { DecorationSource } from "../prosemirror-view/decoration.js";
+import {
+  Decoration,
+  DecorationSource,
+} from "../prosemirror-view/decoration.js";
 
 type Props = {
   className?: string;
   node: Node | undefined;
   contentEditable: boolean;
-  decorations: DecorationSource;
+  innerDeco: DecorationSource;
+  outerDeco: Decoration[];
 };
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { node, contentEditable, decorations, ...props }: Props,
+  { node, contentEditable, innerDeco, outerDeco, ...props }: Props,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -36,22 +40,24 @@ export const DocNodeView = forwardRef(function DocNodeView(
     node,
     innerRef,
     innerRef,
-    decorations,
-    []
+    innerDeco,
+    outerDeco
   );
 
-  const children = useChildNodeViews(-1, node, decorations);
+  const children = useChildNodeViews(-1, node, innerDeco);
 
-  return (
-    <div
-      ref={innerRef}
-      contentEditable={contentEditable}
-      suppressContentEditableWarning={true}
-      {...props}
-    >
+  const element = (
+    <div ref={innerRef} suppressContentEditableWarning={true} {...props}>
       <ChildDescriptorsContext.Provider value={childDescriptors}>
         {children}
       </ChildDescriptorsContext.Provider>
     </div>
   );
+
+  const nodeDecorations = outerDeco.filter((deco) => !deco.inline);
+  if (!nodeDecorations.length) {
+    return element;
+  }
+
+  return nodeDecorations.reduce(wrapInDeco, element);
 });

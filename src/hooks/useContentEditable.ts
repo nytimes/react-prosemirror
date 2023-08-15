@@ -37,8 +37,27 @@ export function useContentEditable(view: EditorView | null) {
             view.state.selection.empty
               ? view.state.selection.from - 1
               : view.state.selection.from,
-            view.state.selection.from
+            view.state.selection.to
           );
+          view.dispatch(tr);
+          event.preventDefault();
+          break;
+        }
+        case "deleteContentForward": {
+          const { tr } = view.state;
+          tr.delete(
+            view.state.selection.from,
+            view.state.selection.empty
+              ? view.state.selection.to + 1
+              : view.state.selection.to
+          );
+          view.dispatch(tr);
+          event.preventDefault();
+          break;
+        }
+        case "deleteContent": {
+          const { tr } = view.state;
+          tr.delete(view.state.selection.from, view.state.selection.to);
           view.dispatch(tr);
           event.preventDefault();
           break;

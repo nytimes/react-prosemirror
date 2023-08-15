@@ -16,10 +16,12 @@ import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useReactEditorView } from "../hooks/useReactEditorView.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
+import { viewDecorations } from "../prosemirror-view/decoration.js";
 import {
   DecorationSet as DecorationSetInternal,
   DirectEditorProps,
   EditorView as EditorViewClass,
+  computeDocDeco,
 } from "../prosemirror-view/index.js";
 
 import { DocNodeView } from "./DocNodeView.js";
@@ -56,7 +58,7 @@ export function EditorView({
   className,
   children,
   editable: editableProp,
-  decorations = DecorationSet.empty,
+  decorations = DecorationSetInternal.empty as unknown as DecorationSet,
   nodeViews = {},
   ...props
 }: Props) {
@@ -82,7 +84,11 @@ export function EditorView({
   useContentEditable(reactEditorView);
   usePluginViews(reactEditorView, props.plugins ?? []);
 
-  // if (!reactEditorView) return null;
+  const innerDecos = reactEditorView
+    ? viewDecorations(reactEditorView)
+    : (DecorationSetInternal.empty as unknown as DecorationSet);
+
+  const outerDecos = reactEditorView ? computeDocDeco(reactEditorView) : [];
 
   return (
     <LayoutGroup>
@@ -100,7 +106,8 @@ export function EditorView({
               contentEditable={
                 reactEditorView?.props.editable?.(reactEditorView.state) ?? true
               }
-              decorations={decorations as unknown as DecorationSetInternal}
+              innerDeco={innerDecos as unknown as DecorationSetInternal}
+              outerDeco={outerDecos}
             />
             {children}
           </>

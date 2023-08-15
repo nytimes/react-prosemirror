@@ -10,6 +10,8 @@ import {
 import { DirectEditorProps, EditorView } from "../prosemirror-view/index.js";
 import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
+import { useForceUpdate } from "./useForceUpdate.js";
+
 class ReactEditorView extends EditorView {
   init() {
     this.domObserver.start();
@@ -23,8 +25,10 @@ class ReactEditorView extends EditorView {
     const scroll =
       previousState.plugins != state.plugins && !previousState.doc.eq(state.doc)
         ? "reset"
-        : (state as any).scrollToSelection >
-          (previousState as any).scrollToSelection
+        : // @ts-expect-error scrollToSelection is internal
+        state.scrollToSelection >
+          // @ts-expect-error scrollToSelection is internal
+          previousState.scrollToSelection
         ? "to selection"
         : "preserve";
 
@@ -65,6 +69,10 @@ function withBatchedUpdates<This, T extends unknown[]>(
   };
 }
 
+function defaultDispatchTransaction(this: EditorView, tr: Transaction) {
+  this.updateState(this.state.apply(tr));
+}
+
 type EditorStateProps =
   | {
       state: EditorState;
@@ -89,7 +97,7 @@ export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
  */
 function withBatchedDispatch(
   props: EditorProps,
-  updateState: (state: EditorState) => void
+  forceUpdate: () => void
 ): EditorProps & {
   dispatchTransaction: EditorView["dispatch"];
 } {
@@ -101,12 +109,10 @@ function withBatchedDispatch(
         tr: Transaction
       ) {
         const batchedDispatchTransaction = withBatchedUpdates(
-          props.dispatchTransaction ??
-            function (this: EditorView, tr: Transaction) {
-              updateState(this.state.apply(tr));
-            }
+          props.dispatchTransaction ?? defaultDispatchTransaction
         );
         batchedDispatchTransaction.call(this, tr);
+        forceUpdate();
       },
     },
   };
@@ -125,23 +131,16 @@ export function useReactEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
   props: EditorProps
 ): EditorView | null {
-  const [innerState, setInnerState] = useState<EditorState | null>(
-    "defaultState" in props ? props.defaultState : null
-  );
   const [view, setView] = useState<EditorView | null>(null);
 
-  const editorProps = withBatchedDispatch(props, setInnerState);
+  const forceUpdate = useForceUpdate();
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const state = "defaultState" in editorProps ? innerState! : editorProps.state;
+  const editorProps = withBatchedDispatch(props, forceUpdate);
 
-  useLayoutEffect(() => {
-    return () => {
-      if (view) {
-        view.destroy();
-      }
-    };
-  }, [view]);
+  const state =
+    "defaultState" in editorProps
+      ? editorProps.defaultState
+      : editorProps.state;
 
   useLayoutEffect(() => {
     if (view && view.dom !== mount) {
@@ -167,7 +166,10 @@ export function useReactEditorView<T extends HTMLElement = HTMLElement>(
     }
   }, [editorProps, mount, state, view]);
 
-  view?.setProps({ ...editorProps, state });
+  view?.setProps({
+    ...editorProps,
+    ...("state" in editorProps && { state: editorProps.state }),
+  });
 
   return view;
 }

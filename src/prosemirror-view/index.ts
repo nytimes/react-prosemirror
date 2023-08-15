@@ -493,7 +493,7 @@ export class EditorView {
   }
 }
 
-function computeDocDeco(view: EditorView) {
+export function computeDocDeco(view: EditorView) {
   let attrs = Object.create(null)
   attrs.class = "ProseMirror"
   attrs.contenteditable = String(view.editable)
