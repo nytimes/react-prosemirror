@@ -48,7 +48,10 @@ export function tempEditor({
 }: { doc: ReturnType<typeof doc>; selection?: Selection } & Omit<
   EditorProps,
   "state"
->): EditorViewT {
+>): {
+  view: EditorViewT;
+  rerender: (props: Omit<EditorProps, "state" | "plugins">) => void;
+} {
   const state = EditorState.create({
     doc: startDoc,
     selection:
@@ -69,14 +72,21 @@ export function tempEditor({
     return null;
   }
 
-  function TestEditor() {
-    return (
-      <EditorView defaultState={state} {...props}>
+  const { rerender } = render(
+    <EditorView defaultState={state} {...props}>
+      <Test></Test>
+    </EditorView>
+  );
+
+  function rerenderEditor({
+    ...newProps
+  }: Omit<EditorProps, "state" | "plugins">) {
+    rerender(
+      <EditorView defaultState={state} {...{ ...props, ...newProps }}>
         <Test></Test>
       </EditorView>
     );
   }
-  render(<TestEditor />);
 
-  return view;
+  return { rerender: rerenderEditor, view };
 }

@@ -87,7 +87,7 @@ function updateDeco(
 
 describe("Decoration drawing", () => {
   it("draws inline decorations", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["2-5-foo"])],
     });
@@ -97,7 +97,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws wrapping decorations", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin([Decoration.inline(1, 5, { nodeName: "i" })])],
     });
@@ -106,7 +106,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws node decorations", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), p("bar")),
       plugins: [decoPlugin([Decoration.node(5, 10, { class: "cls" })])],
     });
@@ -118,7 +118,7 @@ describe("Decoration drawing", () => {
 
   it("can update multi-level wrapping decorations", () => {
     const d2 = Decoration.inline(1, 5, { nodeName: "i", class: "b" });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("hello")),
       plugins: [
         decoPlugin([
@@ -146,7 +146,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws overlapping inline decorations", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abcdef")),
       plugins: [decoPlugin(["3-5-foo", "4-6-bar", "1-7-baz"])],
     });
@@ -164,7 +164,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws multiple widgets", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["1-widget", "4-widget", "7-widget"])],
     });
@@ -176,7 +176,7 @@ describe("Decoration drawing", () => {
   });
 
   it("orders widgets by their side option", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [
         decoPlugin([
@@ -219,7 +219,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws a widget in an empty node", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p()),
       plugins: [decoPlugin(["1-widget"])],
     });
@@ -227,7 +227,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws widgets on node boundaries", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin(["4-widget"])],
     });
@@ -235,7 +235,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws decorations from multiple plugins", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin(["2-widget"]), decoPlugin(["6-widget"])],
     });
@@ -254,7 +254,7 @@ describe("Decoration drawing", () => {
         );
       }
     );
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abc")),
       plugins: [decoPlugin([widget(2, DestroyableWidget)])],
     });
@@ -265,7 +265,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws inline decorations spanning multiple parents", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("long first ", em("p"), "aragraph"), p("two")),
       plugins: [decoPlugin(["7-25-foo"])],
     });
@@ -278,7 +278,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws inline decorations across empty paragraphs", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("first"), p(), p("second")),
       plugins: [decoPlugin(["3-12-foo"])],
     });
@@ -289,7 +289,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can handle inline decorations ending at the start or end of a node", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p(), p()),
       plugins: [decoPlugin(["1-3-foo"])],
     });
@@ -297,7 +297,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can draw decorations with multiple classes", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin(["1-4-foo bar"])],
     });
@@ -306,7 +306,7 @@ describe("Decoration drawing", () => {
   });
 
   it("supports overlapping inline decorations", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["1-3-foo", "2-5-bar"])],
     });
@@ -321,7 +321,7 @@ describe("Decoration drawing", () => {
   });
 
   it("doesn't redraw when irrelevant decorations change", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), p("baz")),
       plugins: [decoPlugin(["7-8-foo"])],
     });
@@ -337,7 +337,7 @@ describe("Decoration drawing", () => {
   // Since we're using the position as the key, we redraw when the
   // position changes (which isn't actually necessary)
   it.skip("doesn't redraw when irrelevant content changes", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), p("baz")),
       plugins: [decoPlugin(["7-8-foo"])],
     });
@@ -350,7 +350,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can add a widget on a node boundary", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin([])],
     });
@@ -362,7 +362,7 @@ describe("Decoration drawing", () => {
 
   it("can remove a widget on a node boundary", () => {
     const dec = make("4-widget");
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin([dec])],
     });
@@ -374,7 +374,7 @@ describe("Decoration drawing", () => {
 
   it("can remove the class from a text node", () => {
     const dec = make("1-4-foo");
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abc")),
       plugins: [decoPlugin([dec])],
     });
@@ -387,7 +387,7 @@ describe("Decoration drawing", () => {
 
   it("can remove the class from part of a text node", () => {
     const dec = make("2-4-foo");
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abcd")),
       plugins: [decoPlugin([dec])],
     });
@@ -401,7 +401,7 @@ describe("Decoration drawing", () => {
 
   it("can change the class for part of a text node", () => {
     const dec = make("2-4-foo");
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abcd")),
       plugins: [decoPlugin([dec])],
     });
@@ -414,7 +414,10 @@ describe("Decoration drawing", () => {
   });
 
   it("draws a widget added in the middle of a text node", () => {
-    const view = tempEditor({ doc: doc(p("foo")), plugins: [decoPlugin([])] });
+    const { view } = tempEditor({
+      doc: doc(p("foo")),
+      plugins: [decoPlugin([])],
+    });
     act(() => {
       updateDeco(view, [make("3-widget")]);
     });
@@ -422,7 +425,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can update a text node around a widget", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("bar")),
       plugins: [decoPlugin(["3-widget"])],
     });
@@ -434,7 +437,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can update a text node with an inline decoration", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("bar")),
       plugins: [decoPlugin(["1-3-foo"])],
     });
@@ -448,7 +451,7 @@ describe("Decoration drawing", () => {
   });
 
   it("correctly redraws a partially decorated node when a widget is added", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("one", em("two"))),
       plugins: [decoPlugin(["1-6-foo"])],
     });
@@ -462,7 +465,7 @@ describe("Decoration drawing", () => {
   });
 
   it("correctly redraws when skipping split text node", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin(["3-widget", "3-4-foo"])],
     });
@@ -474,7 +477,7 @@ describe("Decoration drawing", () => {
 
   it("drops removed node decorations from the view", () => {
     const deco = Decoration.node(1, 6, { class: "cls" });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(blockquote(p("foo"), p("bar"))),
       plugins: [decoPlugin([deco])],
     });
@@ -486,7 +489,7 @@ describe("Decoration drawing", () => {
 
   it("can update a node's attributes without replacing the node", () => {
     const deco = Decoration.node(0, 5, { title: "title", class: "foo" });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin([deco])],
     });
@@ -501,7 +504,7 @@ describe("Decoration drawing", () => {
 
   it("can add and remove CSS custom properties from a node", () => {
     const deco = Decoration.node(0, 5, { style: "--my-custom-property:36px" });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin([deco])],
     });
@@ -521,7 +524,7 @@ describe("Decoration drawing", () => {
   });
 
   it("updates decorated nodes even if a widget is added before them", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("a"), p("b")),
       plugins: [decoPlugin([])],
     });
@@ -537,7 +540,7 @@ describe("Decoration drawing", () => {
 
   it("doesn't redraw nodes when a widget before them is replaced", () => {
     const w0 = make("3-widget");
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(h1("a"), p("b")),
       plugins: [decoPlugin([w0])],
     });
@@ -559,7 +562,7 @@ describe("Decoration drawing", () => {
     const deco = Decoration.inline(1, 6, {
       style: "color: rgba(0,10,200,.4); text-decoration: underline",
     });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("al", img(), "lo")),
       plugins: [decoPlugin([deco])],
     });
@@ -577,7 +580,7 @@ describe("Decoration drawing", () => {
 
   it("passes decorations to a node view", () => {
     let current = "";
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), hr()),
       plugins: [decoPlugin([])],
       nodeViews: {
@@ -609,7 +612,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws the specified marks around a widget", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [
         decoPlugin([
@@ -631,7 +634,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws widgets inside the marks for their side", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p(em("foo"), strong("bar"))),
       plugins: [
         decoPlugin([
@@ -672,7 +675,7 @@ describe("Decoration drawing", () => {
   });
 
   it("draws decorations inside node views", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
@@ -709,7 +712,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can delay widget drawing to render time", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
@@ -757,7 +760,7 @@ describe("Decoration drawing", () => {
   });
 
   it("doesn't redraw widgets with matching keys", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
@@ -773,7 +776,7 @@ describe("Decoration drawing", () => {
   });
 
   it("doesn't redraw widgets with identical specs", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
@@ -789,7 +792,7 @@ describe("Decoration drawing", () => {
   });
 
   it("doesn't get confused by split text nodes", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("abab")),
       decorations(state) {
         return state.selection.from <= 1
@@ -821,7 +824,7 @@ describe("Decoration drawing", () => {
         },
       },
     });
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: s.node("doc", null, [
         s.text("abc"),
         s.node("thing", null, [s.text("def")]),
@@ -841,7 +844,7 @@ describe("Decoration drawing", () => {
   });
 
   it("can handle nodeName decoration overlapping with classes", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("one two three")),
       plugins: [
         decoPlugin([
@@ -857,7 +860,7 @@ describe("Decoration drawing", () => {
 
   it("can handle combining decorations from parent editors in child editors", () => {
     let decosFromFirstEditor: DecorationSource | undefined;
-    let view = tempEditor({
+    let { view } = tempEditor({
       doc: doc(p("one two three")),
       plugins: [
         decoPlugin([Decoration.inline(2, 13, { class: "foo" })]),
@@ -885,11 +888,11 @@ describe("Decoration drawing", () => {
       },
     });
 
-    view = tempEditor({
+    ({ view } = tempEditor({
       doc: doc(p("one two three")),
       plugins: [decoPlugin([Decoration.inline(1, 12, { class: "baz" })])],
       decorations: () => decosFromFirstEditor,
-    });
+    }));
 
     expect(view.dom.querySelectorAll(".foo")).toHaveLength(1);
     expect(view.dom.querySelectorAll(".bar")).toHaveLength(1);

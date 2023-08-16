@@ -13,7 +13,7 @@ describe("EditorView", () => {
   });
 
   it("reflects the current state in .props", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p()),
     });
 
@@ -23,7 +23,7 @@ describe("EditorView", () => {
   it("calls handleScrollToSelection when appropriate", () => {
     let scrolled = 0;
 
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p()),
       handleScrollToSelection: () => {
         scrolled++;
@@ -39,7 +39,7 @@ describe("EditorView", () => {
   });
 
   it("can be queried for the DOM position at a doc position", () => {
-    const view = tempEditor({ doc: doc(ul(li(p(strong("foo"))))) });
+    const { view } = tempEditor({ doc: doc(ul(li(p(strong("foo"))))) });
 
     const inText = view.domAtPos(4);
     expect(inText.offset).toBe(1);
@@ -53,7 +53,7 @@ describe("EditorView", () => {
   });
 
   it("can bias DOM position queries to enter nodes", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p(em(strong("a"), "b"), "c")),
     });
 
@@ -81,7 +81,7 @@ describe("EditorView", () => {
   });
 
   it("can be queried for a node's DOM representation", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), hr()),
     });
 
@@ -91,7 +91,7 @@ describe("EditorView", () => {
   });
 
   it("can map DOM positions to doc positions", () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), hr()),
     });
 
@@ -105,7 +105,7 @@ describe("EditorView", () => {
   it("binds this to itself in dispatchTransaction prop", () => {
     let thisBinding: any;
 
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo"), hr()),
       dispatchTransaction() {
         // eslint-disable-next-line @typescript-eslint/no-this-alias

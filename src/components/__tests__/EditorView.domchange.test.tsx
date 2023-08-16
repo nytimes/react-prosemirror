@@ -24,7 +24,7 @@ describe("DOM change", () => {
   });
 
   it("notices when text is added", async () => {
-    const view = tempEditor({ doc: doc(p("he<a>llo")) });
+    const { view } = tempEditor({ doc: doc(p("he<a>llo")) });
     const user = userEvent.setup();
 
     await act(async () => {
@@ -35,7 +35,7 @@ describe("DOM change", () => {
   });
 
   it("notices when text is removed", async () => {
-    const view = tempEditor({ doc: doc(p("hell<a>o")) });
+    const { view } = tempEditor({ doc: doc(p("hell<a>o")) });
     const user = userEvent.setup();
 
     await act(async () => {
@@ -46,7 +46,7 @@ describe("DOM change", () => {
   });
 
   it("respects stored marks", async () => {
-    const view = tempEditor({ doc: doc(p("hello<a>")) });
+    const { view } = tempEditor({ doc: doc(p("hello<a>")) });
     const user = userEvent.setup();
     await act(async () => {
       view.dispatch(
@@ -59,7 +59,7 @@ describe("DOM change", () => {
   });
 
   it("support inserting repeated text", async () => {
-    const view = tempEditor({ doc: doc(p("hello")) });
+    const { view } = tempEditor({ doc: doc(p("hello")) });
     const user = userEvent.setup();
     await act(async () => {
       await user.type(view.dom, "hel");
@@ -70,7 +70,7 @@ describe("DOM change", () => {
 
   it("detects an enter press", async () => {
     let enterPressed = false;
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(blockquote(p("foo"), p("<a>"))),
       handleKeyDown: (_, event) => {
         if (event.key === "Enter") return (enterPressed = true);
@@ -89,7 +89,7 @@ describe("DOM change", () => {
   it("detects a simple backspace press", async () => {
     let backspacePressed = false;
 
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(blockquote(p("foo"), p("<a>"))),
       handleKeyDown: (_, event) => {
         if (event.key === "Backspace") return (backspacePressed = true);
@@ -107,7 +107,7 @@ describe("DOM change", () => {
 
   it("correctly adjusts the selection", async () => {
     const user = userEvent.setup();
-    const view = tempEditor({ doc: doc(p("abc<a>")) });
+    const { view } = tempEditor({ doc: doc(p("abc<a>")) });
     await act(async () => {
       await user.type(view.dom, "d");
     });
@@ -130,7 +130,7 @@ describe("DOM change", () => {
   // This test instead ensures that we only modify the character data,
   // rather than replacing entire nodes.
   it("does not replace a text node when it's typed into", async () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("fo<a>o")),
     });
 
@@ -154,7 +154,7 @@ describe("DOM change", () => {
 
   it("understands text typed into an empty paragraph", async () => {
     const user = userEvent.setup();
-    const view = tempEditor({ doc: doc(p("<a>")) });
+    const { view } = tempEditor({ doc: doc(p("<a>")) });
     await act(async () => {
       await user.type(view.dom, "i");
     });
@@ -163,7 +163,7 @@ describe("DOM change", () => {
   });
 
   it("fixes text changes when input is ignored", async () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo<a>")),
       dispatchTransaction: () => undefined,
     });
@@ -175,7 +175,7 @@ describe("DOM change", () => {
   });
 
   it("aborts when an incompatible state is set", async () => {
-    const view = tempEditor({ doc: doc(p("<a>abcde")) });
+    const { view } = tempEditor({ doc: doc(p("<a>abcde")) });
 
     const user = userEvent.setup();
     await act(async () => {
@@ -189,7 +189,7 @@ describe("DOM change", () => {
 
   // TODO: Investigate why this fails!
   it.skip("preserves marks on deletion", async () => {
-    const view = tempEditor({ doc: doc(p("one", em("x<a>"))) });
+    const { view } = tempEditor({ doc: doc(p("one", em("x<a>"))) });
 
     const user = userEvent.setup();
 
@@ -203,7 +203,7 @@ describe("DOM change", () => {
   });
 
   it("works when a node's contentDOM is deleted", async () => {
-    const view = tempEditor({ doc: doc(p("one"), pre("two<a>")) });
+    const { view } = tempEditor({ doc: doc(p("one"), pre("two<a>")) });
     const user = userEvent.setup();
     await act(async () => {
       await user.type(view.dom, "[Backspace>3/]");
@@ -216,7 +216,7 @@ describe("DOM change", () => {
   // TODO: Do we want to fix this? This is happening because we
   // use the node position as the React key,
   it.skip("doesn't redraw content with marks when typing in front", async () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("f<a>oo", em("bar"), strong("baz"))),
     });
     const bar = await screen.findByText("bar");
@@ -235,7 +235,7 @@ describe("DOM change", () => {
   });
 
   it("doesn't redraw content with marks when typing inside mark", async () => {
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("foo", em("b<a>ar"), strong("baz"))),
     });
     const bar = await screen.findByText("bar");
@@ -254,7 +254,7 @@ describe("DOM change", () => {
   });
 
   it("maps input to coordsAtPos through pending changes", () => {
-    const view = tempEditor({ doc: doc(p("foo")) });
+    const { view } = tempEditor({ doc: doc(p("foo")) });
     act(() => {
       view.dispatchEvent({ type: "input" } as Event);
       view.dispatch(view.state.tr.insertText("more text"));
@@ -263,7 +263,7 @@ describe("DOM change", () => {
   });
 
   it("notices text added to a cursor wrapper at the start of a mark", async () => {
-    const view = tempEditor({ doc: doc(p(strong(a("foo<a>"), "bar"))) });
+    const { view } = tempEditor({ doc: doc(p(strong(a("foo<a>"), "bar"))) });
     const user = userEvent.setup();
     await act(async () => {
       await user.type(view.dom, "xy");
@@ -273,7 +273,7 @@ describe("DOM change", () => {
   });
 
   it("removes cursor wrapper text when the wrapper otherwise remains valid", async () => {
-    const view = tempEditor({ doc: doc(p(a(strong("foo<a>"), "bar"))) });
+    const { view } = tempEditor({ doc: doc(p(a(strong("foo<a>"), "bar"))) });
     const user = userEvent.setup();
     await act(async () => {
       await user.type(view.dom, "q");
@@ -285,7 +285,7 @@ describe("DOM change", () => {
 
   it("creates a correct step for an ambiguous selection-deletion", async () => {
     let steps: Step[];
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("la<a>la<b>la")),
       dispatchTransaction(tr) {
         steps = tr.steps;
@@ -307,7 +307,7 @@ describe("DOM change", () => {
 
   it("creates a step that covers the entire selection for partially-matching replacement", async () => {
     let steps: Step[];
-    const view = tempEditor({
+    const { view } = tempEditor({
       doc: doc(p("one <a>two<b> three")),
       dispatchTransaction(tr) {
         steps = tr.steps;
