@@ -152,16 +152,15 @@ export function useReactEditorView<T extends HTMLElement = HTMLElement>(
     }
 
     if (!view) {
-      setView(
-        new ReactEditorView(
-          { mount },
-          {
-            ...editorProps,
-            state,
-            DOMObserver: SelectionDOMObserver,
-          }
-        )
+      const newView = new ReactEditorView(
+        { mount },
+        {
+          ...editorProps,
+          state,
+          DOMObserver: SelectionDOMObserver,
+        }
       );
+      setView(newView);
       return;
     }
   }, [editorProps, mount, state, view]);

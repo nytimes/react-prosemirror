@@ -61,5 +61,5 @@ export const DocNodeView = forwardRef(function DocNodeView(
     return element;
   }
 
-  return nodeDecorations.reduce(wrapInDeco(node), element);
+  return nodeDecorations.reduce(wrapInDeco, element);
 });

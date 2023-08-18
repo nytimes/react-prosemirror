@@ -32,6 +32,18 @@ const schema = new Schema({
         return ["p", 0];
       },
     },
+    img: {
+      group: "inline",
+      inline: true,
+      toDOM() {
+        return [
+          "img",
+          {
+            src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
+          },
+        ];
+      },
+    },
     list: {
       group: "block",
       content: "list_item+",
@@ -70,6 +82,7 @@ const editorState = EditorState.create({
         schema.marks.em.create(),
         schema.marks.strong.create(),
       ]),
+      schema.nodes.img.create(),
       schema.text(" the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
@@ -239,8 +252,33 @@ root.render(<DemoEditor />);
 //     paragraph: {
 //       group: "block",
 //       content: "inline*",
-//       toDOM(node) {
+//       toDOM() {
 //         return ["p", 0];
+//       },
+//     },
+//     img: {
+//       group: "inline",
+//       inline: true,
+//       toDOM() {
+//         return [
+//           "img",
+//           {
+//             src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
+//           },
+//         ];
+//       },
+//     },
+//     list: {
+//       group: "block",
+//       content: "list_item+",
+//       toDOM() {
+//         return ["ul", 0];
+//       },
+//     },
+//     list_item: {
+//       content: "paragraph+",
+//       toDOM() {
+//         return ["li", 0];
 //       },
 //     },
 //     text: { group: "inline" },
@@ -268,13 +306,14 @@ root.render(<DemoEditor />);
 //         schema.marks.em.create(),
 //         schema.marks.strong.create(),
 //       ]),
+//       schema.nodes.img.create(),
 //       schema.text(" the first paragraph"),
 //     ]),
 //     schema.nodes.paragraph.create(
 //       {},
 //       schema.text("This is the second paragraph")
 //     ),
-//     // schema.nodes.paragraph.create(),
+//     schema.nodes.paragraph.create(),
 //     schema.nodes.paragraph.create(
 //       {},
 //       schema.text("This is the third paragraph")
@@ -308,34 +347,34 @@ root.render(<DemoEditor />);
 //         state={state}
 //         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
 //         // nodeViews={nodeViews}
-//         // decorations={(s) => {
-//         //   const decorations = [
-//         //     Decoration.inline(5, 15, { class: "inline-deco" }),
-//         //   ];
-//         //   state.doc.forEach((node, offset, index) => {
-//         //     if (index === 1 || index === 2) {
-//         //       decorations.push(
-//         //         Decoration.node(offset, offset + node.nodeSize, {
-//         //           nodeName: "div",
-//         //           class: "node-deco",
-//         //         })
-//         //       );
-//         //     }
-//         //     if (index === 3) {
-//         //       decorations.push(
-//         //         Decoration.widget(offset + 10, () => {
-//         //           const el = document.createElement("div");
-//         //           el.style.display = "inline-block";
-//         //           el.style.padding = "0.75rem 1rem";
-//         //           el.style.border = "solid thin black";
-//         //           el.innerText = "Widget";
-//         //           return el;
-//         //         })
-//         //       );
-//         //     }
-//         //   });
-//         //   return DecorationSet.create(s.doc, decorations);
-//         // }}
+//         decorations={(s) => {
+//           const decorations = [
+//             Decoration.inline(5, 15, { class: "inline-deco" }),
+//           ];
+//           state.doc.forEach((node, offset, index) => {
+//             if (index === 1 || index === 2) {
+//               decorations.push(
+//                 Decoration.node(offset, offset + node.nodeSize, {
+//                   nodeName: "div",
+//                   class: "node-deco",
+//                 })
+//               );
+//             }
+//             if (index === 3) {
+//               decorations.push(
+//                 Decoration.widget(offset + 10, () => {
+//                   const el = document.createElement("div");
+//                   el.style.display = "inline-block";
+//                   el.style.padding = "0.75rem 1rem";
+//                   el.style.border = "solid thin black";
+//                   el.innerText = "Widget";
+//                   return el;
+//                 })
+//               );
+//             }
+//           });
+//           return DecorationSet.create(s.doc, decorations);
+//         }}
 //       >
 //         <div ref={setMount} />
 //         {renderNodeViews()}

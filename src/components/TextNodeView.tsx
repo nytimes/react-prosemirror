@@ -2,6 +2,7 @@ import { Node } from "prosemirror-model";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
+import { wrapInDeco } from "../hooks/useChildNodeViews.js";
 import { Decoration, DecorationSet } from "../prosemirror-view/decoration.js";
 import { TextViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
@@ -15,22 +16,22 @@ export class TextNodeView extends Component<Props> {
   componentDidMount(): void {
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
-    const nodeDom = findDOMNode(this);
-    if (!nodeDom) return;
-    let textNode = nodeDom;
+    const dom = findDOMNode(this);
+    if (!dom) return;
 
-    while (!(textNode instanceof Text) && textNode.firstChild) {
-      textNode = textNode?.firstChild as Element | Text;
+    let textNode = dom;
+    while (textNode.firstChild) {
+      textNode = textNode.firstChild as Element | Text;
     }
 
     const desc = new TextViewDesc(
       undefined,
       [],
       this.props.node,
-      [],
+      this.props.decorations,
       DecorationSet.empty,
-      textNode,
-      nodeDom
+      dom,
+      textNode
     );
     this.props.siblingDescriptors.push(desc);
   }
@@ -38,27 +39,30 @@ export class TextNodeView extends Component<Props> {
   componentDidUpdate(): void {
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
-    const nodeDom = findDOMNode(this);
-    if (!nodeDom) return;
-    let textNode = nodeDom;
+    const dom = findDOMNode(this);
+    if (!dom) return;
 
-    while (!(textNode instanceof Text) && textNode.firstChild) {
-      textNode = textNode?.firstChild as Element | Text;
+    let textNode = dom;
+    while (textNode.firstChild) {
+      textNode = textNode.firstChild as Element | Text;
     }
 
     const desc = new TextViewDesc(
       undefined,
       [],
       this.props.node,
-      [],
+      this.props.decorations,
       DecorationSet.empty,
-      textNode,
-      nodeDom
+      dom,
+      textNode
     );
     this.props.siblingDescriptors.push(desc);
   }
 
   render() {
-    return this.props.node.text;
+    return this.props.decorations.reduce(
+      wrapInDeco,
+      this.props.node.text as unknown as JSX.Element
+    );
   }
 }

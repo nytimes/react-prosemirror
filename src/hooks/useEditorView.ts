@@ -103,15 +103,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
 
     if (!view) {
-      setView(
-        new EditorView(
-          { mount },
-          {
-            ...editorProps,
-            state,
-          }
-        )
+      const newView = new EditorView(
+        { mount },
+        {
+          ...editorProps,
+          state,
+        }
       );
+      setView(newView);
       return;
     }
   }, [editorProps, mount, state, view]);

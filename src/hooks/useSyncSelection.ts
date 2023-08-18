@@ -17,6 +17,5 @@ export function useSyncSelection(view: EditorView | null) {
     if (!view?.state) return;
 
     selectionToDOM(view);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view?.state]);
+  });
 }

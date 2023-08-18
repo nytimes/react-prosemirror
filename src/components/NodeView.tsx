@@ -2,45 +2,54 @@ import { DOMOutputSpec, Node } from "prosemirror-model";
 import { NodeSelection } from "prosemirror-state";
 import React, {
   ForwardRefExoticComponent,
-  MutableRefObject,
   RefAttributes,
+  cloneElement,
   useContext,
+  useRef,
 } from "react";
 
+import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { useChildNodeViews } from "../hooks/useChildNodeViews.js";
-import {
-  Decoration,
-  DecorationSource,
-} from "../prosemirror-view/decoration.js";
+import { NonWidgetType } from "../decorations/ReactWidgetType.js";
+import { useChildNodeViews, wrapInDeco } from "../hooks/useChildNodeViews.js";
+import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
+import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
 
+import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
 
-type Props = {
-  node: Node;
+type NodeViewProps = {
+  outerDeco: readonly Decoration[];
   pos: number;
-  decorations: readonly Decoration[];
-  innerDecorations: DecorationSource;
-  nodeDomRef: MutableRefObject<HTMLElement | null>;
-  domRef?: MutableRefObject<HTMLElement | null>;
+  node: Node;
+  innerDeco: DecorationSource;
 };
 
 export function NodeView({
-  node,
+  outerDeco,
   pos,
-  decorations,
-  innerDecorations,
-  domRef,
-  nodeDomRef,
+  node,
+  innerDeco,
   ...props
-}: Props) {
+}: NodeViewProps) {
+  const domRef = useRef<HTMLElement | null>(null);
+  const nodeDomRef = useRef<HTMLElement | null>(null);
+
+  const childDescriptors = useNodeViewDescriptor(
+    node,
+    domRef,
+    nodeDomRef,
+    innerDeco,
+    outerDeco
+  );
+
   const view = useContext(EditorViewContext);
   const state = view?.state;
   const { nodeViews } = useContext(NodeViewContext);
 
-  const children = useChildNodeViews(pos, node, innerDecorations);
+  const children = useChildNodeViews(pos, node, innerDeco);
 
   let element: JSX.Element | null = null;
 
@@ -57,8 +66,8 @@ export function NodeView({
         ref={nodeDomRef}
         node={node}
         pos={pos}
-        decorations={decorations}
-        innerDecorations={innerDecorations}
+        decorations={outerDeco}
+        innerDecorations={innerDeco}
         isSelected={
           state?.selection instanceof NodeSelection &&
           state.selection.node === node
@@ -83,5 +92,35 @@ export function NodeView({
     throw new Error(`Node spec for ${node.type.name} is missing toDOM`);
   }
 
-  return element;
+  const decoratedElement = cloneElement(
+    outerDeco.reduce(wrapInDeco, element),
+    outerDeco.some((d) => (d.type as unknown as NonWidgetType).attrs.nodeName)
+      ? { ref: domRef }
+      : // If all of the node decorations were attr-only, then
+        // we've already passed the domRef to the NodeView component
+        // as a prop
+        undefined
+  );
+
+  const markedElement = node.marks.reduce(
+    (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+    decoratedElement
+  );
+
+  return (
+    <ChildDescriptorsContext.Provider value={childDescriptors}>
+      {cloneElement(
+        markedElement,
+        node.marks.length ||
+          outerDeco.some(
+            (d) => (d.type as unknown as NonWidgetType).attrs.nodeName
+          )
+          ? { ref: domRef }
+          : // If all of the node decorations were attr-only, then
+            // we've already passed the domRef to the NodeView component
+            // as a prop
+            undefined
+      )}
+    </ChildDescriptorsContext.Provider>
+  );
 }
