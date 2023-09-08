@@ -187,8 +187,7 @@ describe("DOM change", () => {
     expect(view.state.doc).toEqualNode(doc(p("uvw")));
   });
 
-  // TODO: Investigate why this fails!
-  it.skip("preserves marks on deletion", async () => {
+  it("preserves marks on deletion", async () => {
     const { view } = tempEditor({ doc: doc(p("one", em("x<a>"))) });
 
     const user = userEvent.setup();
@@ -215,7 +214,7 @@ describe("DOM change", () => {
 
   // TODO: Do we want to fix this? This is happening because we
   // use the node position as the React key,
-  it.skip("doesn't redraw content with marks when typing in front", async () => {
+  it("doesn't redraw content with marks when typing in front", async () => {
     const { view } = tempEditor({
       doc: doc(p("f<a>oo", em("bar"), strong("baz"))),
     });

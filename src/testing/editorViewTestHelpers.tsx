@@ -9,6 +9,7 @@ import React from "react";
 
 import { EditorProps, EditorView } from "../components/EditorView.js";
 import { useView } from "../hooks/useView.js";
+import { reactKeys } from "../plugins/reactKeys.js";
 import { EditorView as EditorViewT } from "../prosemirror-view/index.js";
 
 const toEqualNode: MatcherFunction<[actual: unknown, expect: unknown]> =
@@ -59,7 +60,7 @@ export function tempEditor({
         ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           TextSelection.create(startDoc, startDoc.tag.a!, startDoc.tag?.b)
         : undefined,
-    plugins,
+    plugins: [...(plugins ?? []), reactKeys()],
   });
 
   let view: any;

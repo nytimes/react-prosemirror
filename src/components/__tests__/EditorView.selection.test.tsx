@@ -78,9 +78,10 @@ function getSel() {
 }
 
 function setSel(view: EditorView, sel: number | Selection) {
-  if (typeof sel == "number") sel = Selection.near(view.state.doc.resolve(sel));
+  const selection =
+    typeof sel == "number" ? Selection.near(view.state.doc.resolve(sel)) : sel;
   act(() => {
-    view.dispatch(view.state.tr.setSelection(sel));
+    view.dispatch(view.state.tr.setSelection(selection));
   });
 }
 
@@ -218,7 +219,7 @@ describe("EditorView", () => {
   it.skip("doesn't return zero-height rectangles after leaves", () => {
     const { view } = tempEditor({ doc: doc(p(img)) });
     const coords = view.coordsAtPos(2, 1);
-    expect(coords.bottom - coords.top, 5, ">");
+    expect(coords.bottom - coords.top).toBeGreaterThan(5);
   });
 
   it.skip("produces horizontal rectangles for positions between blocks", () => {
@@ -226,23 +227,22 @@ describe("EditorView", () => {
       doc: doc(p("ha"), hr(), blockquote(p("ba"))),
     });
     const a = view.coordsAtPos(0);
-    expect(a.top, a.bottom);
-    expect(
-      a.top,
+    expect(a.top).toBe(a.bottom);
+    expect(a.top).toBe(
       (view.dom.firstChild as HTMLElement).getBoundingClientRect().top
     );
-    expect(a.left, a.right, "<");
+    expect(a.left).toBeLessThan(a.right);
     const b = view.coordsAtPos(4);
-    expect(b.top, b.bottom);
-    expect(b.top, a.top, ">");
-    expect(b.left, b.right, "<");
+    expect(b.top).toBe(b.bottom);
+    expect(b.top).toBeGreaterThan(a.top);
+    expect(b.left).toBeLessThan(b.right);
     const c = view.coordsAtPos(5);
-    expect(c.top, c.bottom);
-    expect(c.top, b.top, ">");
+    expect(c.top).toBe(c.bottom);
+    expect(c.top).toBeGreaterThan(b.top);
     const d = view.coordsAtPos(6);
-    expect(d.top, d.bottom);
-    expect(d.left, d.right, "<");
-    expect(d.top, view.dom.getBoundingClientRect().bottom, "<");
+    expect(d.top).toBe(d.bottom);
+    expect(d.left).toBeLessThan(d.right);
+    expect(d.top).toBeLessThan(view.dom.getBoundingClientRect().bottom);
   });
 
   it.skip("produces sensible screen coordinates around line breaks", () => {
@@ -262,24 +262,26 @@ describe("EditorView", () => {
     allPositions(view.state.doc).forEach((pos) => {
       const coords = view.coordsAtPos(pos, 1);
       if (prevAfter)
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(
           prevAfter.top < coords.top ||
             (prevAfter.top == coords.top && prevAfter.left < coords.left)
-        );
+        ).toBeTruthy();
       prevAfter = coords;
       const found = view.posAtCoords({
         top: coords.top + 1,
         left: coords.left,
       })!.pos;
-      expect(found, pos);
+      expect(found).toBe(pos);
       const coordsBefore = view.coordsAtPos(pos, -1);
       if (prevBefore)
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(
           prevBefore.top < coordsBefore.top ||
             (prevBefore.top == coordsBefore.top &&
               (prevBefore.left < coordsBefore.left ||
                 (afterSpace(pos) && prevBefore.left == coordsBefore.left)))
-        );
+        ).toBeTruthy();
       prevBefore = coordsBefore;
     });
   });
@@ -292,10 +294,11 @@ describe("EditorView", () => {
     allPositions(view.state.doc).forEach((pos) => {
       const coords = view.coordsAtPos(pos, 1);
       if (prev)
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(
           prev.top < coords.top ||
             (Math.abs(prev.top - coords.top) < 4 && prev.left < coords.left)
-        );
+        ).toBeTruthy();
       prev = coords;
     });
   });
@@ -307,10 +310,11 @@ describe("EditorView", () => {
     allPositions(view.state.doc).forEach((pos) => {
       const coords = view.coordsAtPos(pos, 1);
       if (prev)
+        // eslint-disable-next-line jest/no-conditional-expect
         expect(
           prev.top < coords.top ||
             (Math.abs(prev.top - coords.top) < 4 && prev.left > coords.left)
-        );
+        ).toBeTruthy();
       prev = coords;
     });
   });
@@ -325,14 +329,15 @@ describe("EditorView", () => {
         top: coords.top + 1,
         left: coords.left,
       })!.pos;
-      expect(found, pos);
+      expect(found).toBe(pos);
     });
   });
 
   it.skip("returns correct screen coordinates for wrapped lines", () => {
+    // @ts-expect-error TODO
     const { view } = tempEditor({});
-    let top = view.coordsAtPos(1),
-      pos = 1,
+    const top = view.coordsAtPos(1);
+    let pos = 1,
       end:
         | { left: number; top: number; right: number; bottom: number }
         | undefined;
@@ -343,13 +348,10 @@ describe("EditorView", () => {
       if (end.bottom > top.bottom + 4) break;
     }
     expect(
-      view.posAtCoords({ left: end!.left + 50, top: end!.top + 5 })!.pos,
-      pos
-    );
+      view.posAtCoords({ left: end!.left + 50, top: end!.top + 5 })!.pos
+    ).toBe(pos);
   });
 
-  // TODO: For some reason, this is resulting in an attempt to call removeAttribute on
-  // a text node? NodeViewDesc::deselectNode
   it("makes arrow motion go through selectable inline nodes", () => {
     const { view } = tempEditor({ doc: doc(p("foo<a>", img, "bar")) });
     act(() => {
@@ -482,7 +484,7 @@ describe("EditorView", () => {
     expect(range.toString()).toBe("foobar");
   });
 
-  it.skip("sets selection even if Selection.extend throws DOMException", () => {
+  it("sets selection even if Selection.extend throws DOMException", () => {
     const originalExtend = window.Selection.prototype.extend;
     window.Selection.prototype.extend = () => {
       // declare global: DOMException
@@ -493,17 +495,18 @@ describe("EditorView", () => {
         doc: doc(p("foo", img), hr(), p(img, "bar")),
       });
       setSel(view, NodeSelection.create(view.state.doc, 4));
-      view.dispatchEvent(event(DOWN));
-      expect(view.state.selection.from, 6);
+      act(() => {
+        view.dispatchEvent(event(DOWN));
+      });
+      expect(view.state.selection.from).toBe(6);
     } finally {
       window.Selection.prototype.extend = originalExtend;
     }
   });
 
-  it.skip("doesn't put the cursor after BR hack nodes", () => {
-    if (!document.hasFocus()) return;
+  it("doesn't put the cursor after BR hack nodes", () => {
     const { view } = tempEditor({ doc: doc(p()) });
     view.focus();
-    expect(getSelection()!.focusOffset, 0);
+    expect(getSelection()!.focusOffset).toBe(0);
   });
 });

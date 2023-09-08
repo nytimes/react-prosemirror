@@ -19,6 +19,7 @@ import { EditorView } from "../src/components/EditorView.js";
 import { NodeViewComponentProps } from "../src/components/NodeViewComponentProps.js";
 import { widget } from "../src/decorations/ReactWidgetType.js";
 import { useView } from "../src/hooks/useView.js";
+import { reactKeys } from "../src/plugins/reactKeys.js";
 
 import "./main.css";
 
@@ -95,7 +96,7 @@ const editorState = EditorState.create({
       schema.text("This is the third paragraph")
     ),
   ]),
-  plugins: [keymap(baseKeymap)],
+  plugins: [reactKeys()],
 });
 
 // const startDoc = doc(p(strong(a("foo<a>"), "bar")));
@@ -208,7 +209,12 @@ function DemoEditor() {
               );
             }
             if (index === 3) {
-              decorations.push(widget(offset + 10, TestWidget, { side: 0 }));
+              decorations.push(
+                widget(offset + node.nodeSize - 20, TestWidget, {
+                  side: 0,
+                  key: "widget-deco",
+                })
+              );
             }
           });
           return DecorationSet.create(state.doc, decorations);

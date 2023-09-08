@@ -32,32 +32,34 @@ export function useContentEditable(view: EditorView | null) {
           break;
         }
         case "deleteContentBackward": {
-          const { tr } = view.state;
-          tr.delete(
-            view.state.selection.empty
-              ? view.state.selection.from - 1
-              : view.state.selection.from,
-            view.state.selection.to
-          );
+          const { tr, doc, selection } = view.state;
+          const from = selection.empty ? selection.from - 1 : selection.from;
+          const to = selection.to;
+          const storedMarks = doc.resolve(from).marksAcross(doc.resolve(to));
+
+          tr.delete(from, to).setStoredMarks(storedMarks);
+
           view.dispatch(tr);
           event.preventDefault();
           break;
         }
         case "deleteContentForward": {
-          const { tr } = view.state;
-          tr.delete(
-            view.state.selection.from,
-            view.state.selection.empty
-              ? view.state.selection.to + 1
-              : view.state.selection.to
-          );
-          view.dispatch(tr);
+          const { tr, doc, selection } = view.state;
+          const from = selection.from;
+          const to = selection.empty ? selection.to + 1 : selection.to;
+          const storedMarks = doc.resolve(from).marksAcross(doc.resolve(to));
+
+          tr.delete(from, to).setStoredMarks(storedMarks);
           event.preventDefault();
           break;
         }
         case "deleteContent": {
-          const { tr } = view.state;
-          tr.delete(view.state.selection.from, view.state.selection.to);
+          const { tr, doc, selection } = view.state;
+          const storedMarks = doc
+            .resolve(selection.from)
+            .marksAcross(doc.resolve(selection.to));
+
+          tr.delete(selection.from, selection.to).setStoredMarks(storedMarks);
           view.dispatch(tr);
           event.preventDefault();
           break;

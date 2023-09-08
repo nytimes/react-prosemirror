@@ -18,6 +18,9 @@ import {
   DecorationSource,
 } from "../prosemirror-view/decoration.js";
 
+import { useReactEditorState } from "./useReactEditorState.js";
+import { useReactKeys } from "./useReactKeys.js";
+
 function cssToStyles(css: string) {
   const cssJson = `{"${css
     .replace(/; */g, '","')
@@ -84,6 +87,11 @@ type ChildNode = {
   offset: number;
 };
 
+type ChildTrailingHack = {
+  type: "trailinghack";
+  offset: 0;
+};
+
 type Child = ChildNode | ChildWidget;
 
 type SharedMarksProps = {
@@ -92,6 +100,9 @@ type SharedMarksProps = {
 };
 
 function InlineView({ innerPos, childViews }: SharedMarksProps) {
+  const editorState = useReactEditorState();
+  const reactKeys = useReactKeys();
+
   const partitioned = childViews.reduce((acc, child) => {
     const lastPartition = acc[acc.length - 1];
     if (!lastPartition) {
@@ -155,15 +166,33 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
               );
 
             return cloneElement(childElement, {
-              key: createKey(innerPos, child),
+              key: createKey(
+                editorState?.doc,
+                innerPos,
+                child,
+                reactKeys?.posToKey
+              ),
             });
           });
         }
 
         return (
-          <MarkView key={createKey(innerPos, firstChild)} mark={firstMark}>
+          <MarkView
+            key={createKey(
+              editorState?.doc,
+              innerPos,
+              firstChild,
+              reactKeys?.posToKey
+            )}
+            mark={firstMark}
+          >
             <InlineView
-              key={createKey(innerPos, firstChild)}
+              key={createKey(
+                editorState?.doc,
+                innerPos,
+                firstChild,
+                reactKeys?.posToKey
+              )}
               innerPos={innerPos}
               childViews={childViews.map((child) => ({
                 ...child,
@@ -177,11 +206,36 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
   );
 }
 
-function createKey(innerPos: number, child: Child) {
-  return child.type === "widget" && child.widget.type.spec.key
-    ? child.widget.type.spec.key
-    : `${innerPos + child.offset}` +
-        (child.type === "widget" ? `-${child.index}` : "");
+function createKey(
+  doc: Node | undefined,
+  innerPos: number,
+  child: Child | ChildTrailingHack,
+  posToKey: Map<number, string> | undefined
+) {
+  const pos = innerPos + child.offset;
+  const key = posToKey?.get(pos);
+
+  if (child.type === "widget") {
+    if (child.widget.type.spec.key) return child.widget.type.spec.key;
+
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Widget at position ${pos} doesn't have a key specified. This has negative performance implications.`
+    );
+    return `${key}-${child.index}`;
+  }
+
+  if (key) return key;
+
+  if (!doc) return pos;
+
+  const parentPos = doc.resolve(pos).start() - 1;
+
+  const parentKey = posToKey?.get(parentPos);
+
+  if (parentKey) return `${parentKey}-${child.offset}`;
+
+  return pos;
 }
 
 function adjustWidgetMarks(children: Child[]) {
@@ -205,6 +259,9 @@ export function useChildNodeViews(
   node: Node | undefined,
   innerDecorations: DecorationSource
 ) {
+  const editorState = useReactEditorState();
+  const reactKeys = useReactKeys();
+
   if (!node) return null;
   const children: ReactNode[] = [];
   const innerPos = pos + 1;
@@ -232,13 +289,16 @@ export function useChildNodeViews(
     },
     (childNode, outerDeco, innerDeco, offset) => {
       if (!childNode.isInline) {
+        const pos = innerPos + offset;
+        const key = reactKeys?.posToKey.get(pos) ?? pos;
+
         children.push(
           <NodeView
-            key={`${innerPos + offset}`}
+            key={key}
             outerDeco={outerDeco}
             node={childNode}
             innerDeco={innerDeco}
-            pos={innerPos + offset}
+            pos={pos}
           />
         );
         return;
@@ -259,7 +319,12 @@ export function useChildNodeViews(
     children.push(
       <InlineView
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        key={createKey(innerPos, queuedChildNodes[0]!)}
+        key={createKey(
+          editorState?.doc,
+          innerPos,
+          queuedChildNodes[0]!,
+          reactKeys?.posToKey
+        )}
         childViews={queuedChildNodes}
         innerPos={innerPos}
       ></InlineView>
@@ -267,7 +332,16 @@ export function useChildNodeViews(
   }
 
   if (!children.length) {
-    children.push(<TrailingHackView key={innerPos} />);
+    children.push(
+      <TrailingHackView
+        key={createKey(
+          editorState?.doc,
+          innerPos,
+          { type: "trailinghack", offset: 0 },
+          reactKeys?.posToKey
+        )}
+      />
+    );
   }
 
   return children;

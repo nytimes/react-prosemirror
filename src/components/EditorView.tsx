@@ -5,6 +5,7 @@ import React, {
   ReactNode,
   RefAttributes,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -65,6 +66,17 @@ export function EditorView({
   // event handlers!
   const reactEditorView = useReactEditorView(mount, props);
 
+  const editorState =
+    "state" in props ? props.state ?? null : reactEditorView?.state ?? null;
+
+  const contextValue = useMemo(
+    () => ({
+      view: reactEditorView,
+      state: editorState,
+    }),
+    [editorState, reactEditorView]
+  );
+
   useEffect(() => {
     reactEditorView?.domObserver.connectSelection();
     return () => reactEditorView?.domObserver.disconnectSelection();
@@ -81,7 +93,7 @@ export function EditorView({
 
   return (
     <LayoutGroup>
-      <EditorViewContext.Provider value={reactEditorView}>
+      <EditorViewContext.Provider value={contextValue}>
         <NodeViewContext.Provider
           value={{
             nodeViews,
