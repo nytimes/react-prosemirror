@@ -48,7 +48,7 @@ function make(str: string | Decoration): Decoration {
   if (typeof str != "string") return str;
   const match = /^(\d+)(?:-(\d+))?-(.+)$/.exec(str)!;
   if (match[3] == "widget") {
-    return widget(+match[1]!, Widget);
+    return widget(+match[1]!, Widget, { key: str });
   }
   return Decoration.inline(+match[1]!, +match[2]!, { class: match[3] });
 }
@@ -188,7 +188,8 @@ describe("Decoration drawing", () => {
                   B
                 </span>
               );
-            })
+            }),
+            { key: "widget-b" }
           ),
           widget(
             4,
@@ -199,7 +200,7 @@ describe("Decoration drawing", () => {
                 </span>
               );
             }),
-            { side: -100 }
+            { side: -100, key: "widget-a" }
           ),
           widget(
             4,
@@ -210,7 +211,7 @@ describe("Decoration drawing", () => {
                 </span>
               );
             }),
-            { side: 2 }
+            { side: 2, key: "widget-c" }
           ),
         ]),
       ],
@@ -256,7 +257,11 @@ describe("Decoration drawing", () => {
     );
     const { view } = tempEditor({
       doc: doc(p("abc")),
-      plugins: [decoPlugin([widget(2, DestroyableWidget)])],
+      plugins: [
+        decoPlugin([
+          widget(2, DestroyableWidget, { key: "destroyable-widget" }),
+        ]),
+      ],
     });
     act(() => {
       view.dispatch(view.state.tr.delete(1, 4));
@@ -333,10 +338,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".bar")).not.toBeNull();
   });
 
-  // TODO: This is the same issue as with redrawing nodes:
-  // Since we're using the position as the key, we redraw when the
-  // position changes (which isn't actually necessary)
-  it.skip("doesn't redraw when irrelevant content changes", () => {
+  it("doesn't redraw when irrelevant content changes", () => {
     const { view } = tempEditor({
       doc: doc(p("foo"), p("baz")),
       plugins: [decoPlugin(["7-8-foo"])],
@@ -625,6 +627,7 @@ describe("Decoration drawing", () => {
             }),
             {
               marks: [schema.mark("em")],
+              key: "img-widget",
             }
           ),
         ]),
@@ -645,7 +648,7 @@ describe("Decoration drawing", () => {
                 <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
               );
             }),
-            { side: -1 }
+            { side: -1, key: "img-widget" }
           ),
         ]),
         decoPlugin([
@@ -653,7 +656,8 @@ describe("Decoration drawing", () => {
             4,
             forwardRef(function BR(props, ref) {
               return <br {...props} ref={ref as LegacyRef<HTMLBRElement>} />;
-            })
+            }),
+            { key: "br-widget" }
           ),
         ]),
         decoPlugin([
@@ -662,7 +666,7 @@ describe("Decoration drawing", () => {
             forwardRef(function Span(props, ref) {
               return <span {...props} ref={ref} />;
             }),
-            { side: 1 }
+            { side: 1, key: "span-widget" }
           ),
         ]),
       ],
@@ -703,7 +707,8 @@ describe("Decoration drawing", () => {
               return (
                 <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
               );
-            })
+            }),
+            { key: "img-widget" }
           ),
         ]),
       ],
@@ -727,7 +732,8 @@ describe("Decoration drawing", () => {
                   !
                 </span>
               );
-            })
+            }),
+            { key: "span-widget" }
           ),
         ]);
       },
@@ -752,7 +758,8 @@ describe("Decoration drawing", () => {
                   ω
                 </button>
               );
-            })
+            }),
+            { key: "button-widget" }
           ),
         ]);
       },
@@ -780,7 +787,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
-          widget(2, Widget, { side: 1 }),
+          widget(2, Widget, { side: 1, key: "widget" }),
         ]);
       },
     });

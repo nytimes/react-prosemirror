@@ -26,7 +26,6 @@ type ReactWidgetSpec = {
 const noSpec = { side: 0 };
 
 export class ReactWidgetType implements DecorationType {
-  // TODO: implement side affinity?
   side: number;
   spec: ReactWidgetSpec;
 

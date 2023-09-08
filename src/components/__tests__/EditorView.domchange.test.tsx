@@ -212,8 +212,6 @@ describe("DOM change", () => {
     expect(view.state.selection.head).toBe(6);
   });
 
-  // TODO: Do we want to fix this? This is happening because we
-  // use the node position as the React key,
   it("doesn't redraw content with marks when typing in front", async () => {
     const { view } = tempEditor({
       doc: doc(p("f<a>oo", em("bar"), strong("baz"))),

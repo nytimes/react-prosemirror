@@ -334,7 +334,6 @@ describe("EditorView", () => {
   });
 
   it.skip("returns correct screen coordinates for wrapped lines", () => {
-    // @ts-expect-error TODO
     const { view } = tempEditor({});
     const top = view.coordsAtPos(1);
     let pos = 1,
