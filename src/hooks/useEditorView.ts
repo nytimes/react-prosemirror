@@ -1,18 +1,23 @@
 import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
-function withBatchedUpdates<This, T extends unknown[]>(
-  fn: (this: This, ...args: T) => void
+function withConditionalFlushUpdates<This, T extends unknown[]>(
+  fn: (this: This, ...args: T) => void,
+  view: EditorView | null
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    batch(() => {
+    if (view?.composing) {
+      batch(() => {
+        fn.call(this, ...args);
+      });
+    } else {
       fn.call(this, ...args);
-    });
+    }
   };
 }
 
@@ -42,9 +47,10 @@ export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
  * the Editor View unmodified after we upgrade to React 18, which batches every
  * update by default.
  */
-function withBatchedDispatch(
+function withConditionalFlushDispatch(
   props: EditorProps,
-  forceUpdate: () => void
+  forceUpdate: () => void,
+  view: EditorView | null
 ): EditorProps & {
   dispatchTransaction: EditorView["dispatch"];
 } {
@@ -55,10 +61,11 @@ function withBatchedDispatch(
         this: EditorView,
         tr: Transaction
       ) {
-        const batchedDispatchTransaction = withBatchedUpdates(
-          props.dispatchTransaction ?? defaultDispatchTransaction
+        const conditionallyFlushedDispatch = withConditionalFlushUpdates(
+          props.dispatchTransaction ?? defaultDispatchTransaction,
+          view
         );
-        batchedDispatchTransaction.call(this, tr);
+        conditionallyFlushedDispatch.call(this, tr);
         forceUpdate();
       },
     },
@@ -79,20 +86,22 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
+  const editorPropsRef = useRef(props);
 
   const forceUpdate = useForceUpdate();
 
-  const editorProps = withBatchedDispatch(props, forceUpdate);
-
-  const stateProp = "state" in editorProps ? editorProps.state : undefined;
+  const stateProp =
+    "state" in editorPropsRef.current
+      ? editorPropsRef.current.state
+      : undefined;
 
   const state =
-    "defaultState" in editorProps
-      ? editorProps.defaultState
-      : editorProps.state;
+    "defaultState" in editorPropsRef.current
+      ? editorPropsRef.current.defaultState
+      : editorPropsRef.current.state;
 
   const nonStateProps = Object.fromEntries(
-    Object.entries(editorProps).filter(
+    Object.entries(editorPropsRef.current).filter(
       ([propName]) => propName !== "state" && propName !== "defaultState"
     )
   );
@@ -120,14 +129,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
         new EditorView(
           { mount },
           {
-            ...editorProps,
+            ...editorPropsRef.current,
             state,
           }
         )
       );
       return;
     }
-  }, [editorProps, mount, state, view]);
+  }, [props, mount, state, view]);
 
   useLayoutEffect(() => {
     view?.setProps(nonStateProps);
@@ -136,6 +145,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   useLayoutEffect(() => {
     if (stateProp) view?.setProps({ state: stateProp });
   }, [view, stateProp]);
+
+  useLayoutEffect(() => {
+    editorPropsRef.current = withConditionalFlushDispatch(
+      props,
+      forceUpdate,
+      view
+    );
+  }, [props, view]);
 
   return view;
 }
