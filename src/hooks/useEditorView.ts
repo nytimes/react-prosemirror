@@ -107,6 +107,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   );
 
   useLayoutEffect(() => {
+    editorPropsRef.current = withConditionalFlushDispatch(
+      props,
+      forceUpdate,
+      view
+    );
+  }, [props, view, forceUpdate]);
+
+  useLayoutEffect(() => {
     return () => {
       if (view) {
         view.destroy();
@@ -145,14 +153,6 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   useLayoutEffect(() => {
     if (stateProp) view?.setProps({ state: stateProp });
   }, [view, stateProp]);
-
-  useLayoutEffect(() => {
-    editorPropsRef.current = withConditionalFlushDispatch(
-      props,
-      forceUpdate,
-      view
-    );
-  }, [props, view, forceUpdate]);
 
   return view;
 }
