@@ -117,12 +117,12 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   }, [editorProps, mount, state, view]);
 
   useLayoutEffect(() => {
-    view?.setProps(nonStateProps);
-  }, [view, nonStateProps]);
-
-  useLayoutEffect(() => {
     if (stateProp) view?.setProps({ state: stateProp });
   }, [view, stateProp]);
+
+  useLayoutEffect(() => {
+    view?.setProps(nonStateProps);
+  }, [view, nonStateProps]);
 
   return view;
 }
