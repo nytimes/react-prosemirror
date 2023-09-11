@@ -1,10 +1,10 @@
-import { useForceUpdate } from "./useForceUpdate.js";
-
 import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { flushSync } from "react-dom";
+
+import { useForceUpdate } from "./useForceUpdate.js";
 
 /**
  *
