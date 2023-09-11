@@ -59,7 +59,7 @@ function withBatchedDispatch(
           props.dispatchTransaction ?? defaultDispatchTransaction
         );
         batchedDispatchTransaction.call(this, tr);
-        forceUpdate();
+        if (!("state" in props)) forceUpdate();
       },
     },
   };
