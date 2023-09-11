@@ -6,20 +6,6 @@ import { flushSync } from "react-dom";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
-/**
- *
- * The view.composing state is when the compositionStart eventListener activates,
- * which creates an input method editor (IME) for foreign languages.
- * https://prosemirror.net/docs/ref/#view.EditorView.composing
- *
- * In rare exceptions, we want to dispatch transactions in non-batched form
- * when the editorView is in a composing state to maintain DOM parity.
- *
- * See React 18's documentation on opting out of automatic batching
- * https://react.dev/blog/2022/03/08/react-18-upgrade-guide#automatic-batching
- *
- * Returns a conditionally modified props.dispatchTransaction function
- */
 function withFlushedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
@@ -44,11 +30,6 @@ type EditorStateProps =
 
 export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
 
-/**
- * Conditionally modifies dispatchTransaction props
- *
- * Returns modified DirectEditorProps
- */
 function withFlushedDispatch(
   props: EditorProps,
   forceUpdate: () => void
