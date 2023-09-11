@@ -71,10 +71,18 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
 
   const editorProps = withFlushedDispatch(props, forceUpdate);
 
+  const stateProp = "state" in editorProps ? editorProps.state : undefined;
+
   const state =
     "defaultState" in editorProps
       ? editorProps.defaultState
       : editorProps.state;
+
+  const nonStateProps = Object.fromEntries(
+    Object.entries(editorProps).filter(
+      ([propName]) => propName !== "state" && propName !== "defaultState"
+    )
+  );
 
   useLayoutEffect(() => {
     return () => {
@@ -109,8 +117,12 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   }, [editorProps, mount, state, view]);
 
   useLayoutEffect(() => {
-    view?.setProps(editorProps);
-  }, [view, editorProps]);
+    if (stateProp) view?.setProps({ state: stateProp });
+  }, [view, stateProp]);
+
+  useLayoutEffect(() => {
+    view?.setProps(nonStateProps);
+  }, [view, nonStateProps]);
 
   return view;
 }
