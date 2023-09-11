@@ -1,10 +1,10 @@
+import { useForceUpdate } from "./useForceUpdate.js";
+
 import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useRef, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
-
-import { useForceUpdate } from "./useForceUpdate.js";
 
 function withConditionalFlushUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void,
@@ -152,7 +152,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
       forceUpdate,
       view
     );
-  }, [props, view]);
+  }, [props, view, forceUpdate]);
 
   return view;
 }
