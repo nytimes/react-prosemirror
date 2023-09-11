@@ -32,3 +32,21 @@ jobs:
         run:
           git fetch origin main --depth 1 && ./scripts/if-no-version-change.sh
           yarn version check
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Test
+        run: yarn test
