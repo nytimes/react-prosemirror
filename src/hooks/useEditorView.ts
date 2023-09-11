@@ -2,15 +2,15 @@ import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
-import { unstable_batchedUpdates as batch } from "react-dom";
+import { flushSync } from "react-dom";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
-function withBatchedUpdates<This, T extends unknown[]>(
+function withFlushedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    batch(() => {
+    flushSync(() => {
       fn.call(this, ...args);
     });
   };
@@ -30,19 +30,7 @@ type EditorStateProps =
 
 export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
 
-/**
- * Enhances editor props so transactions dispatch in a batched update.
- *
- * It is important that changes to the editor get batched by React so that any
- * components that dispatch transactions in effects do so after rendering with
- * state changes from any previous transaction, so that they may use the latest
- * state and not trigger nested transactions.
- *
- * TODO(OK-4006): We can remove this helper and pass the direct editor props to
- * the Editor View unmodified after we upgrade to React 18, which batches every
- * update by default.
- */
-function withBatchedDispatch(
+function withFlushedDispatch(
   props: EditorProps,
   forceUpdate: () => void
 ): EditorProps & {
@@ -55,10 +43,10 @@ function withBatchedDispatch(
         this: EditorView,
         tr: Transaction
       ) {
-        const batchedDispatchTransaction = withBatchedUpdates(
+        const flushedDispatch = withFlushedUpdates(
           props.dispatchTransaction ?? defaultDispatchTransaction
         );
-        batchedDispatchTransaction.call(this, tr);
+        flushedDispatch.call(this, tr);
         if (!("state" in props)) forceUpdate();
       },
     },
@@ -79,10 +67,9 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
-
   const forceUpdate = useForceUpdate();
 
-  const editorProps = withBatchedDispatch(props, forceUpdate);
+  const editorProps = withFlushedDispatch(props, forceUpdate);
 
   const stateProp = "state" in editorProps ? editorProps.state : undefined;
 
