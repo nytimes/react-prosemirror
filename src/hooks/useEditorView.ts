@@ -3,8 +3,8 @@ import { useForceUpdate } from "./useForceUpdate.js";
 import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
-import { useLayoutEffect, useRef, useState } from "react";
-import { unstable_batchedUpdates as batch } from "react-dom";
+import { useLayoutEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 /**
  *
@@ -20,18 +20,13 @@ import { unstable_batchedUpdates as batch } from "react-dom";
  *
  * Returns a conditionally modified props.dispatchTransaction function
  */
-function withConditionalFlushUpdates<This, T extends unknown[]>(
-  fn: (this: This, ...args: T) => void,
-  view: EditorView | null
+function withFlushedUpdates<This, T extends unknown[]>(
+  fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    if (view?.composing) {
-      batch(() => {
-        fn.call(this, ...args);
-      });
-    } else {
+    flushSync(() => {
       fn.call(this, ...args);
-    }
+    });
   };
 }
 
@@ -54,10 +49,9 @@ export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
  *
  * Returns modified DirectEditorProps
  */
-function withConditionalFlushDispatch(
+function withFlushedDispatch(
   props: EditorProps,
-  forceUpdate: () => void,
-  view: EditorView | null
+  forceUpdate: () => void
 ): EditorProps & {
   dispatchTransaction: EditorView["dispatch"];
 } {
@@ -68,12 +62,11 @@ function withConditionalFlushDispatch(
         this: EditorView,
         tr: Transaction
       ) {
-        const conditionallyFlushedDispatch = withConditionalFlushUpdates(
-          props.dispatchTransaction ?? defaultDispatchTransaction,
-          view
+        const flushedDispatch = withFlushedUpdates(
+          props.dispatchTransaction ?? defaultDispatchTransaction
         );
-        conditionallyFlushedDispatch.call(this, tr);
-        forceUpdate();
+        flushedDispatch.call(this, tr);
+        if (!("state" in props)) forceUpdate();
       },
     },
   };
@@ -93,33 +86,22 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
-  const editorPropsRef = useRef(props);
-
   const forceUpdate = useForceUpdate();
 
-  const stateProp =
-    "state" in editorPropsRef.current
-      ? editorPropsRef.current.state
-      : undefined;
+  const editorProps = withFlushedDispatch(props, forceUpdate);
+
+  const stateProp = "state" in editorProps ? editorProps.state : undefined;
 
   const state =
-    "defaultState" in editorPropsRef.current
-      ? editorPropsRef.current.defaultState
-      : editorPropsRef.current.state;
+    "defaultState" in editorProps
+      ? editorProps.defaultState
+      : editorProps.state;
 
   const nonStateProps = Object.fromEntries(
-    Object.entries(editorPropsRef.current).filter(
+    Object.entries(editorProps).filter(
       ([propName]) => propName !== "state" && propName !== "defaultState"
     )
   );
-
-  useLayoutEffect(() => {
-    editorPropsRef.current = withConditionalFlushDispatch(
-      props,
-      forceUpdate,
-      view
-    );
-  }, [props, view, forceUpdate]);
 
   useLayoutEffect(() => {
     return () => {
@@ -144,14 +126,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
         new EditorView(
           { mount },
           {
-            ...editorPropsRef.current,
+            ...editorProps,
             state,
           }
         )
       );
       return;
     }
-  }, [props, mount, state, view]);
+  }, [editorProps, mount, state, view]);
 
   useLayoutEffect(() => {
     view?.setProps(nonStateProps);
