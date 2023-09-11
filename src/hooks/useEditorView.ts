@@ -1,7 +1,7 @@
 import type { EditorState, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { DirectEditorProps } from "prosemirror-view";
-import { useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -69,7 +69,10 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   const [view, setView] = useState<EditorView | null>(null);
   const forceUpdate = useForceUpdate();
 
-  const editorProps = withFlushedDispatch(props, forceUpdate);
+  const editorProps = useMemo(
+    () => withFlushedDispatch(props, forceUpdate),
+    [props, forceUpdate]
+  );
 
   const stateProp = "state" in editorProps ? editorProps.state : undefined;
 
@@ -78,10 +81,14 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
       ? editorProps.defaultState
       : editorProps.state;
 
-  const nonStateProps = Object.fromEntries(
-    Object.entries(editorProps).filter(
-      ([propName]) => propName !== "state" && propName !== "defaultState"
-    )
+  const nonStateProps = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(editorProps).filter(
+          ([propName]) => propName !== "state" && propName !== "defaultState"
+        )
+      ),
+    [editorProps]
   );
 
   useLayoutEffect(() => {
