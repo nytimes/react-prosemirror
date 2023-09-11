@@ -6,6 +6,20 @@ import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useRef, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
+/**
+ *
+ * The view.composing state is when the compositionStart eventListener activates,
+ * which creates an input method editor (IME) for foreign languages.
+ * https://prosemirror.net/docs/ref/#view.EditorView.composing
+ *
+ * In rare exceptions, we want to dispatch transactions in non-batched form
+ * when the editorView is in a composing state to maintain DOM parity.
+ *
+ * See React 18's documentation on opting out of automatic batching
+ * https://react.dev/blog/2022/03/08/react-18-upgrade-guide#automatic-batching
+ *
+ * Returns a conditionally modified props.dispatchTransaction function
+ */
 function withConditionalFlushUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void,
   view: EditorView | null
@@ -36,16 +50,9 @@ type EditorStateProps =
 export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
 
 /**
- * Enhances editor props so transactions dispatch in a batched update.
+ * Conditionally modifies dispatchTransaction props
  *
- * It is important that changes to the editor get batched by React so that any
- * components that dispatch transactions in effects do so after rendering with
- * state changes from any previous transaction, so that they may use the latest
- * state and not trigger nested transactions.
- *
- * TODO(OK-4006): We can remove this helper and pass the direct editor props to
- * the Editor View unmodified after we upgrade to React 18, which batches every
- * update by default.
+ * Returns modified DirectEditorProps
  */
 function withConditionalFlushDispatch(
   props: EditorProps,
