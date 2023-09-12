@@ -30,7 +30,6 @@
     /* Incremental Build Options */
     "incremental": true,
     /* "Classic" React JSX pragma */
-    "jsx": "react",
-    "allowJs": true
+    "jsx": "react"
   }
 }
