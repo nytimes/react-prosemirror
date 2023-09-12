@@ -98,7 +98,7 @@ const decomp = {
   ý: "´y",
 };
 
-function findAllTextNodes(list: Node[], ret: Node[] = []) {
+function findAllTextNodes(list, ret = []) {
   list.forEach((node) => {
     if (node.nodeType === 3) {
       ret.push(node);
@@ -109,35 +109,29 @@ function findAllTextNodes(list: Node[], ret: Node[] = []) {
   return ret;
 }
 
-function isText(node: Node | null): node is Text {
-  return node?.nodeType === Node.TEXT_NODE;
-}
-
-function getRangeOfPreviousChar(range0: Range | undefined) {
-  const range = range0?.cloneRange();
+function getRangeOfPreviousChar(range0) {
+  const range = range0.cloneRange();
   let textNode =
-    range?.startContainer.nodeType === 3 ? range?.startContainer : null;
-  if (range?.startContainer.nodeType === 1) {
+    range.startContainer.nodeType === 3 ? range.startContainer : null;
+  if (range.startContainer.nodeType === 1) {
     const textNodes = findAllTextNodes(
-      [...(range?.startContainer.childNodes || [])].slice(0, range?.startOffset)
+      [...range.startContainer.childNodes].slice(0, range.startOffset)
     );
-    textNode = textNodes.pop() || null;
+    textNode = textNodes.pop();
   }
-  if (isText(textNode)) {
-    range?.setStart(textNode, textNode?.data.length - 1);
-  }
+  range.setStart(textNode, textNode.data.length - 1);
   return range;
 }
 
-export function pressKey(key: string) {
+export function pressKey(key) {
   const focusElm = document.activeElement;
   if (!focusElm?.hasAttribute("contenteditable")) {
     return userEvent.keyboard(key);
   }
 
-  const isLetter = /[a-záéíóúýþæðö]/i.test(key);
+  const isLetter = /[a-záéíóúýþæðö]/i.test(key); // FIXME: Use unicode groups to detect this
   const isShift = isLetter && key === key.toUpperCase();
-  const seq = decomp[key.toLowerCase() as keyof typeof decomp];
+  const seq = decomp[key.toLowerCase()];
 
   // use ranges for inserts?
   const sequence = [];
@@ -187,7 +181,7 @@ export function pressKey(key: string) {
     });
   }
 
-  let composeSession = false;
+  let composeSession = null;
   let defaultPrevented = false;
   sequence.forEach((event) => {
     let e;
@@ -221,48 +215,48 @@ export function pressKey(key: string) {
     if (data && !defaultPrevented) {
       // ensure we have a selection
       const selection = document.getSelection();
-      if (!selection?.rangeCount) {
-        selection?.selectAllChildren(focusElm);
-        selection?.collapseToEnd();
+      if (!selection.rangeCount) {
+        selection.selectAllChildren(focusElm);
+        selection.collapseToEnd();
       }
-      let selectionRange = selection?.getRangeAt(0);
+      let selectionRange = selection.getRangeAt(0);
       // The test env does not seem to update selection with focus
       // in this case the selection points at <body>.
       // We can sidestep this by setting the caret to active element
       // if the selection container contains the active element:
-      const cAC = selectionRange?.commonAncestorContainer;
-      if (cAC?.contains(focusElm) && cAC !== focusElm) {
-        selection?.selectAllChildren(focusElm);
-        selection?.collapseToEnd();
-        selectionRange = selection?.getRangeAt(0);
+      const cAC = selectionRange.commonAncestorContainer;
+      if (cAC.contains(focusElm) && cAC !== focusElm) {
+        selection.selectAllChildren(focusElm);
+        selection.collapseToEnd();
+        selectionRange = selection.getRangeAt(0);
       }
       if (composeSession) {
-        getRangeOfPreviousChar(selectionRange)?.deleteContents();
+        getRangeOfPreviousChar(selectionRange).deleteContents();
       }
       if (type === "compositionupdate") {
-        composeSession = false;
+        composeSession = true;
       }
       const charCode = data.charCodeAt(0);
       if (charCode === 8) {
-        const r = selection?.isCollapsed
+        const r = selection.isCollapsed
           ? getRangeOfPreviousChar(selectionRange)
           : selectionRange;
-        r?.deleteContents();
-        selection?.collapseToEnd();
+        r.deleteContents();
+        selection.collapseToEnd();
       } else if (charCode > 31) {
-        selectionRange?.deleteContents();
-        selectionRange?.insertNode(document.createTextNode(data));
-        selection?.collapseToEnd();
+        selectionRange.deleteContents();
+        selectionRange.insertNode(document.createTextNode(data));
+        selection.collapseToEnd();
       }
     }
   });
 }
 
-export function simulateType(text: string) {
+export function simulateType(text) {
   text.split("").forEach(pressKey);
 }
 
-export function selectAll(node: Node) {
+export function selectAll(node) {
   const selection = document.getSelection();
-  selection?.selectAllChildren(node);
+  selection.selectAllChildren(node);
 }
