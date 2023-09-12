@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "include": ["src/**/*", "src/**/*.json"],
   "compilerOptions": {
-    "lib": ["DOM", "ES2022"],
+    "lib": ["DOM", "ES2022", "dom.iterable"],
     "target": "ES2015",
     /* Input/output paths */
     "outDir": "dist/types",
