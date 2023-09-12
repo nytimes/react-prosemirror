@@ -15,7 +15,15 @@ import userEvent from "@testing-library/user-event";
 const LOC_LEFT = 1;
 const LOC_RIGHT = 2;
 
-const islKeyboard = [
+interface KeyboardData {
+  code: string;
+  key: string;
+  shiftKey?: boolean;
+  composing?: boolean;
+  location?: number;
+}
+
+const islKeyboard: KeyboardData[] = [
   ..."0123456789".split("").map((c) => ({ code: `Digit${c}`, key: c })),
   ...'=!"#$%&/()'
     .split("")
@@ -89,7 +97,7 @@ const islKeyboard = [
 ];
 
 // a map of characters which will be split into composed keystrokes
-const decomp = {
+const decomp: { [key: string]: string } = {
   á: "´a",
   é: "´e",
   í: "´i",
@@ -98,7 +106,7 @@ const decomp = {
   ý: "´y",
 };
 
-function findAllTextNodes(list, ret = []) {
+function findAllTextNodes(list: Node[], ret: Node[] = []): Node[] {
   list.forEach((node) => {
     if (node.nodeType === 3) {
       ret.push(node);
@@ -109,27 +117,33 @@ function findAllTextNodes(list, ret = []) {
   return ret;
 }
 
-function getRangeOfPreviousChar(range0) {
+function isText(node: Node | null): node is Text {
+  return node?.nodeType === Node.TEXT_NODE;
+}
+
+function getRangeOfPreviousChar(range0: Range): Range {
   const range = range0.cloneRange();
   let textNode =
-    range.startContainer.nodeType === 3 ? range.startContainer : null;
+    range.startContainer.nodeType === 3 ? (range.startContainer as Node) : null;
   if (range.startContainer.nodeType === 1) {
     const textNodes = findAllTextNodes(
-      [...range.startContainer.childNodes].slice(0, range.startOffset)
+      [...(range.startContainer as Node).childNodes].slice(0, range.startOffset)
     );
-    textNode = textNodes.pop();
+    textNode = textNodes.pop() as Node;
   }
-  range.setStart(textNode, textNode.data.length - 1);
+  if (isText(textNode)) {
+    range.setStart(textNode, textNode.data.length - 1);
+  }
   return range;
 }
 
-export function pressKey(key) {
-  const focusElm = document.activeElement;
+export function pressKey(key: string) {
+  const focusElm = document.activeElement as HTMLElement | null;
   if (!focusElm?.hasAttribute("contenteditable")) {
     return userEvent.keyboard(key);
   }
 
-  const isLetter = /[a-záéíóúýþæðö]/i.test(key); // FIXME: Use unicode groups to detect this
+  const isLetter = /[a-záéíóúýþæðö]/i.test(key);
   const isShift = isLetter && key === key.toUpperCase();
   const seq = decomp[key.toLowerCase()];
 
@@ -141,26 +155,33 @@ export function pressKey(key) {
       code: "ShiftLeft",
       key: "Shift",
       shiftKey: isShift,
-    });
+    } as KeyboardEvent);
   }
   if (seq) {
     // accent key
-    const quote = { code: "Quote", key: "Dead", shiftKey: isShift };
-    sequence.push({ type: "keydown", ...quote });
-    sequence.push({ type: "compositionstart" });
-    sequence.push({ type: "compositionupdate", data: seq[0] });
+    const quote = {
+      code: "Quote",
+      key: "Dead",
+      shiftKey: isShift,
+    } as KeyboardData;
+    sequence.push({ type: "keydown", ...quote } as KeyboardEvent);
+    sequence.push({ type: "compositionstart" } as CompositionEvent);
+    sequence.push({
+      type: "compositionupdate",
+      data: seq[0],
+    } as CompositionEvent);
     sequence.push({ type: "input", isComposing: true });
-    sequence.push({ type: "selectionchange" });
-    sequence.push({ type: "keyup", ...quote });
-    sequence.push({ type: "keypress", ...quote });
+    sequence.push({ type: "selectionchange" } as Event);
+    sequence.push({ type: "keyup", ...quote } as KeyboardEvent);
+    sequence.push({ type: "keypress", ...quote } as KeyboardEvent);
     // character
-    const keyData = islKeyboard.find((d) => d.key === seq[1]);
-    sequence.push({ type: "keydown", ...keyData });
-    sequence.push({ type: "compositionupdate", data: key });
-    sequence.push({ type: "compositionend" });
+    const keyData = islKeyboard.find((d) => d.key === seq[1]) as KeyboardData;
+    sequence.push({ type: "keydown", ...keyData } as KeyboardEvent);
+    sequence.push({ type: "compositionupdate", data: key } as CompositionEvent);
+    sequence.push({ type: "compositionend" } as CompositionEvent);
     sequence.push({ type: "input", isComposing: false });
-    sequence.push({ type: "selectionchange" });
-    sequence.push({ type: "keyup", ...keyData });
+    sequence.push({ type: "selectionchange" } as Event);
+    sequence.push({ type: "keyup", ...keyData } as KeyboardEvent);
   } else {
     const keyData = islKeyboard.find((d) => d.key === key) || {
       key,
@@ -169,8 +190,8 @@ export function pressKey(key) {
     };
     sequence.push({ type: "keydown", data: key, ...keyData });
     sequence.push({ type: "input", isComposing: false });
-    sequence.push({ type: "selectionchange" });
-    sequence.push({ type: "keyup", ...keyData });
+    sequence.push({ type: "selectionchange" } as Event);
+    sequence.push({ type: "keyup", ...keyData } as KeyboardEvent);
   }
   if (isShift) {
     sequence.push({
@@ -178,14 +199,15 @@ export function pressKey(key) {
       code: "ShiftLeft",
       key: "Shift",
       shiftKey: isShift,
-    });
+    } as KeyboardEvent);
   }
 
-  let composeSession = null;
+  let composeSession: boolean | null = null;
   let defaultPrevented = false;
   sequence.forEach((event) => {
-    let e;
-    const { type, data } = event;
+    let e: KeyboardEvent | CompositionEvent | Event;
+    const { type } = event;
+    const { data } = event as CompositionEvent;
     if (type.startsWith("key") || type === "input") {
       e = new KeyboardEvent(type, {
         bubbles: true,
@@ -215,48 +237,49 @@ export function pressKey(key) {
     if (data && !defaultPrevented) {
       // ensure we have a selection
       const selection = document.getSelection();
-      if (!selection.rangeCount) {
-        selection.selectAllChildren(focusElm);
-        selection.collapseToEnd();
+      if (!selection?.rangeCount) {
+        selection?.selectAllChildren(focusElm);
+        selection?.collapseToEnd();
       }
-      let selectionRange = selection.getRangeAt(0);
+      let selectionRange = selection?.getRangeAt(0);
       // The test env does not seem to update selection with focus
       // in this case the selection points at <body>.
       // We can sidestep this by setting the caret to active element
       // if the selection container contains the active element:
-      const cAC = selectionRange.commonAncestorContainer;
-      if (cAC.contains(focusElm) && cAC !== focusElm) {
-        selection.selectAllChildren(focusElm);
-        selection.collapseToEnd();
-        selectionRange = selection.getRangeAt(0);
+      const cAC = selectionRange?.commonAncestorContainer;
+      if (cAC?.contains(focusElm) && cAC !== focusElm) {
+        selection?.selectAllChildren(focusElm);
+        selection?.collapseToEnd();
+        selectionRange = selection?.getRangeAt(0);
       }
       if (composeSession) {
-        getRangeOfPreviousChar(selectionRange).deleteContents();
+        getRangeOfPreviousChar(selectionRange as Range).deleteContents();
       }
       if (type === "compositionupdate") {
         composeSession = true;
       }
       const charCode = data.charCodeAt(0);
       if (charCode === 8) {
-        const r = selection.isCollapsed
-          ? getRangeOfPreviousChar(selectionRange)
+        const r = selectionRange?.collapsed
+          ? getRangeOfPreviousChar(selectionRange as Range)
           : selectionRange;
-        r.deleteContents();
-        selection.collapseToEnd();
+        r?.deleteContents();
+        selection?.collapseToEnd();
       } else if (charCode > 31) {
-        selectionRange.deleteContents();
-        selectionRange.insertNode(document.createTextNode(data));
-        selection.collapseToEnd();
+        selectionRange?.deleteContents();
+        selectionRange?.insertNode(document.createTextNode(data));
+        selection?.collapseToEnd();
       }
     }
   });
+  return;
 }
 
-export function simulateType(text) {
+export function simulateType(text: string): void {
   text.split("").forEach(pressKey);
 }
 
-export function selectAll(node) {
+export function selectAll(node: Node): void {
   const selection = document.getSelection();
-  selection.selectAllChildren(node);
+  selection?.selectAllChildren(node);
 }
