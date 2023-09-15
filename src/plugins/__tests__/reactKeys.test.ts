@@ -32,7 +32,7 @@ describe("reactNodeViewPlugin", () => {
   it("should maintain key stability when possible", () => {
     const initialEditorState = EditorState.create({
       doc: schema.topNodeType.create(null, [
-        schema.nodes.paragraph.create(),
+        schema.nodes.paragraph.create({}, schema.text("Hello")),
         schema.nodes.paragraph.create(),
         schema.nodes.paragraph.create(),
       ]),
@@ -42,7 +42,7 @@ describe("reactNodeViewPlugin", () => {
     const initialPluginState = reactKeysPluginKey.getState(initialEditorState)!;
 
     const nextEditorState = initialEditorState.apply(
-      initialEditorState.tr.insertText("Hello, world!", 1)
+      initialEditorState.tr.insertText(", world!", 6)
     );
     const nextPluginState = reactKeysPluginKey.getState(nextEditorState)!;
 
