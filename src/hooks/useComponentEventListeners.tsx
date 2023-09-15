@@ -34,13 +34,13 @@ import {
  */
 export function useComponentEventListeners() {
   const [registry, setRegistry] = useState(
-    new Map<keyof DOMEventMap, Set<EventHandler>>()
+    new Map<keyof DOMEventMap, Array<EventHandler>>()
   );
 
   const registerEventListener = useCallback(
     (eventType: keyof DOMEventMap, handler: EventHandler) => {
-      const handlers = registry.get(eventType) ?? new Set<EventHandler>();
-      handlers.add(handler);
+      const handlers = registry.get(eventType) ?? [];
+      handlers.unshift(handler);
       if (!registry.has(eventType)) {
         registry.set(eventType, handlers);
         setRegistry(new Map(registry));
@@ -52,7 +52,7 @@ export function useComponentEventListeners() {
   const unregisterEventListener = useCallback(
     (eventType: keyof DOMEventMap, handler: EventHandler) => {
       const handlers = registry.get(eventType);
-      handlers?.delete(handler);
+      handlers?.splice(handlers.indexOf(handler), 1);
     },
     [registry]
   );

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { render } from "@testing-library/react";
 import type { EditorState } from "prosemirror-state";
-import type { EditorView } from "prosemirror-view";
 import React from "react";
 
 import { EditorContext } from "../../contexts/EditorContext.js";
 import { LayoutGroup } from "../../contexts/LayoutGroup.js";
+import type { EditorView } from "../../prosemirror-view/index.js";
 import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({

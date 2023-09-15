@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { act, screen } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import { Node as PMNode } from "prosemirror-model";
 import { NodeSelection, Selection } from "prosemirror-state";
 import {
@@ -24,17 +24,15 @@ import {
   DecorationSet,
   EditorView,
 } from "../../prosemirror-view/index.js";
-import { tempEditor } from "../../testing/editorViewTestHelpers.js";
+import {
+  findTextNode,
+  tempEditor,
+} from "../../testing/editorViewTestHelpers.js";
 import { setupProseMirrorView } from "../../testing/setupProseMirrorView.js";
 
 const img = img_({
   src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
 });
-
-async function findTextNode(_: HTMLElement, text: string) {
-  const parent = await screen.findByText(text);
-  return parent.firstChild!;
-}
 
 function allPositions(doc: PMNode) {
   const found: number[] = [];

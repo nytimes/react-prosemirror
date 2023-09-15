@@ -1,16 +1,74 @@
 import type { EditorState, Transaction } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import type { DirectEditorProps } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
-import { flushSync } from "react-dom";
+import { unstable_batchedUpdates as batch } from "react-dom";
+
+import { SelectionDOMObserver } from "../SelectionDOMObserver.js";
+import {
+  resetScrollPos,
+  storeScrollPos,
+} from "../prosemirror-view/domcoords.js";
+import { DirectEditorProps, EditorView } from "../prosemirror-view/index.js";
+import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
-function withFlushedUpdates<This, T extends unknown[]>(
+class ReactEditorView extends EditorView {
+  init() {
+    this.domObserver.start();
+    this.initInput();
+  }
+
+  updateStateInner(state: EditorState, _prevProps: DirectEditorProps) {
+    this.editable = !this.someProp(
+      "editable",
+      (value) => value(this.state) === false
+    );
+
+    const previousState = this.state;
+    this.state = state;
+
+    const scroll =
+      previousState.plugins != state.plugins && !previousState.doc.eq(state.doc)
+        ? "reset"
+        : // @ts-expect-error scrollToSelection is internal
+        state.scrollToSelection >
+          // @ts-expect-error scrollToSelection is internal
+          previousState.scrollToSelection
+        ? "to selection"
+        : "preserve";
+
+    const updateSel = !state.selection.eq(previousState.selection);
+
+    const oldScrollPos =
+      scroll == "preserve" &&
+      updateSel &&
+      this.dom.style.overflowAnchor == null &&
+      storeScrollPos(this);
+
+    if (scroll == "reset") {
+      this.dom.scrollTop = 0;
+    } else if (scroll == "to selection") {
+      this.scrollToSelection();
+    } else if (oldScrollPos) {
+      resetScrollPos(oldScrollPos);
+    }
+  }
+
+  // @ts-expect-error We need this to be an accessor
+  set docView(_) {
+    // disallowed
+  }
+
+  get docView() {
+    return this.dom.pmViewDesc as NodeViewDesc;
+  }
+}
+
+function withBatchedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    flushSync(() => {
+    batch(() => {
       fn.call(this, ...args);
     });
   };
@@ -30,7 +88,19 @@ type EditorStateProps =
 
 export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
 
-function withFlushedDispatch(
+/**
+ * Enhances editor props so transactions dispatch in a batched update.
+ *
+ * It is important that changes to the editor get batched by React so that any
+ * components that dispatch transactions in effects do so after rendering with
+ * state changes from any previous transaction, so that they may use the latest
+ * state and not trigger nested transactions.
+ *
+ * TODO(OK-4006): We can remove this helper and pass the direct editor props to
+ * the Editor View unmodified after we upgrade to React 18, which batches every
+ * update by default.
+ */
+function withBatchedDispatch(
   props: EditorProps,
   forceUpdate: () => void
 ): EditorProps & {
@@ -43,11 +113,11 @@ function withFlushedDispatch(
         this: EditorView,
         tr: Transaction
       ) {
-        const flushedDispatch = withFlushedUpdates(
+        const batchedDispatchTransaction = withBatchedUpdates(
           props.dispatchTransaction ?? defaultDispatchTransaction
         );
-        flushedDispatch.call(this, tr);
-        if (!("state" in props)) forceUpdate();
+        batchedDispatchTransaction.call(this, tr);
+        forceUpdate();
       },
     },
   };
@@ -67,35 +137,19 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   props: EditorProps
 ): EditorView | null {
   const [view, setView] = useState<EditorView | null>(null);
+
   const forceUpdate = useForceUpdate();
 
-  const editorProps = withFlushedDispatch(props, forceUpdate);
-
-  const stateProp = "state" in editorProps ? editorProps.state : undefined;
+  const editorProps = withBatchedDispatch(props, forceUpdate);
 
   const state =
     "defaultState" in editorProps
       ? editorProps.defaultState
       : editorProps.state;
 
-  const nonStateProps = Object.fromEntries(
-    Object.entries(editorProps).filter(
-      ([propName]) => propName !== "state" && propName !== "defaultState"
-    )
-  );
-
-  useLayoutEffect(() => {
-    return () => {
-      if (view) {
-        view.destroy();
-      }
-    };
-  }, [view]);
-
   useLayoutEffect(() => {
     if (view && view.dom !== mount) {
       setView(null);
-      return;
     }
 
     if (!mount) {
@@ -103,11 +157,12 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
 
     if (!view) {
-      const newView = new EditorView(
+      const newView = new ReactEditorView(
         { mount },
         {
           ...editorProps,
           state,
+          DOMObserver: SelectionDOMObserver,
         }
       );
       setView(newView);
@@ -115,13 +170,10 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
   }, [editorProps, mount, state, view]);
 
-  useLayoutEffect(() => {
-    view?.setProps(nonStateProps);
-  }, [view, nonStateProps]);
-
-  useLayoutEffect(() => {
-    if (stateProp) view?.setProps({ state: stateProp });
-  }, [view, stateProp]);
+  view?.setProps({
+    ...editorProps,
+    ...("state" in editorProps && { state: editorProps.state }),
+  });
 
   return view;
 }

@@ -117,12 +117,13 @@ describe("DOM change", () => {
     expect(view.state.selection.head).toBe(5);
   });
 
-  // todoit("can read a simple composition", () => {
-  //   let view = tempEditor({ doc: doc(p("hello")) });
-  //   findTextNode(view.dom, "hello")!.nodeValue = "hellox";
-  //   flush(view);
-  //   ist(view.state.doc, doc(p("hellox")), eq);
-  // });
+  it("can read a simple composition", async () => {
+    const { view } = tempEditor({ doc: doc(p("hello<a>")) });
+    await act(async () => {
+      await userEvent.type(view.dom, "x");
+    });
+    expect(view.state.doc).toEqualNode(doc(p("hellox")));
+  });
 
   // $$FORK: We _do_ repaint text nodes when they're typed into.
   // Unlike prosemirror-view, we prevent user inputs from modifying

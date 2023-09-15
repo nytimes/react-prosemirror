@@ -12,20 +12,20 @@ import {
   NonWidgetType,
   ReactWidgetDecoration,
 } from "../decorations/ReactWidgetType.js";
-import { iterDeco } from "../descriptors/iterDeco.js";
+import { iterDeco } from "../decorations/iterDeco.js";
 import {
   Decoration,
   DecorationSource,
 } from "../prosemirror-view/decoration.js";
 
-import { useReactEditorState } from "./useReactEditorState.js";
+import { useEditorState } from "./useEditorState.js";
 import { useReactKeys } from "./useReactKeys.js";
 
 function cssToStyles(css: string) {
   const cssJson = `{"${css
-    .replace(/; */g, '","')
-    .replace(/: */g, '":"')
-    .replace(";", "")}"}`;
+    .replace(/;? *$/, "")
+    .replace(/;+ */g, '","')
+    .replace(/: */g, '":"')}"}`;
 
   const obj = JSON.parse(cssJson);
 
@@ -43,6 +43,7 @@ export function wrapInDeco(reactNode: JSX.Element | string, deco: Decoration) {
     class: className,
     style: css,
     contenteditable: contentEditable,
+    spellcheck: spellCheck,
     ...attrs
   } = (deco.type as unknown as NonWidgetType).attrs;
 
@@ -55,6 +56,7 @@ export function wrapInDeco(reactNode: JSX.Element | string, deco: Decoration) {
       {
         className,
         contentEditable,
+        spellCheck,
         style: css && cssToStyles(css),
         ...attrs,
       },
@@ -65,7 +67,8 @@ export function wrapInDeco(reactNode: JSX.Element | string, deco: Decoration) {
   return cloneElement(reactNode, {
     className: classnames(reactNode.props.className, className),
     contentEditable,
-    style: css && cssToStyles(css),
+    spellCheck,
+    style: { ...reactNode.props.style, ...(css && cssToStyles(css)) },
     ...attrs,
   });
 }
@@ -100,7 +103,7 @@ type SharedMarksProps = {
 };
 
 function InlineView({ innerPos, childViews }: SharedMarksProps) {
-  const editorState = useReactEditorState();
+  const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
   const partitioned = childViews.reduce((acc, child) => {
@@ -259,7 +262,7 @@ export function useChildNodeViews(
   node: Node | undefined,
   innerDecorations: DecorationSource
 ) {
-  const editorState = useReactEditorState();
+  const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
   if (!node) return null;
@@ -318,10 +321,10 @@ export function useChildNodeViews(
   if (queuedChildNodes.length) {
     children.push(
       <InlineView
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         key={createKey(
           editorState?.doc,
           innerPos,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           queuedChildNodes[0]!,
           reactKeys?.posToKey
         )}

@@ -1,20 +1,12 @@
 import { Plugin, PluginKey } from "prosemirror-state";
 
-/**
- * This is a stand-in for the doc node itself, which doesn't have a
- * unique position to map to.
- */
-export const ROOT_NODE_KEY = Symbol("portal registry root key");
-
-export type NodeKey = string | typeof ROOT_NODE_KEY;
-
 export function createNodeKey() {
   return Math.floor(Math.random() * 0xffffff).toString(16);
 }
 
 export const reactKeysPluginKey = new PluginKey<{
   posToKey: Map<number, string>;
-  keyToPos: Map<NodeKey, number>;
+  keyToPos: Map<string, number>;
 }>("@nytimes/react-prosemirror/reactKeys");
 
 /**
@@ -31,7 +23,7 @@ export function reactKeys() {
       init(_, state) {
         const next = {
           posToKey: new Map<number, string>(),
-          keyToPos: new Map<NodeKey, number>(),
+          keyToPos: new Map<string, number>(),
         };
         state.doc.descendants((_, pos) => {
           const key = createNodeKey();

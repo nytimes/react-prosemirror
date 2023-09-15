@@ -1,8 +1,7 @@
 import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
-import { EditorState, Plugin, TextSelection } from "prosemirror-state";
-import { a, doc, p, strong } from "prosemirror-test-builder";
+import { EditorState, Plugin } from "prosemirror-state";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, {
@@ -15,11 +14,12 @@ import React, {
 } from "react";
 import { createRoot } from "react-dom/client";
 
-import { EditorView } from "../src/components/EditorView.js";
-import { NodeViewComponentProps } from "../src/components/NodeViewComponentProps.js";
-import { widget } from "../src/decorations/ReactWidgetType.js";
-import { useView } from "../src/hooks/useView.js";
-import { reactKeys } from "../src/plugins/reactKeys.js";
+import {
+  NodeViewComponentProps,
+  ProseMirror,
+  reactKeys,
+  widget,
+} from "../src/index.js";
 
 import "./main.css";
 
@@ -99,32 +99,12 @@ const editorState = EditorState.create({
   plugins: [reactKeys()],
 });
 
-// const startDoc = doc(p(strong(a("foo<a>"), "bar")));
-
-// const editorState = EditorState.create({
-//   doc: startDoc,
-//   selection: TextSelection.create(startDoc, startDoc.tag.a),
-// });
-
 const Paragraph = forwardRef(function Paragraph(
-  {
-    children,
-    className,
-    pos,
-  }: NodeViewComponentProps &
-    DetailedHTMLProps<
-      HTMLAttributes<HTMLParagraphElement>,
-      HTMLParagraphElement
-    >,
+  { children, className, ...props }: NodeViewComponentProps,
   ref: Ref<HTMLParagraphElement>
 ) {
-  useView((view) => {
-    view.focus();
-    // eslint-disable-next-line no-console
-    // console.log(pos, view.coordsAtPos(pos));
-  });
   return (
-    <p ref={ref} className={className}>
+    <p ref={ref} className={className} {...props}>
       {children}
     </p>
   );
@@ -188,7 +168,8 @@ function DemoEditor() {
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
-      <EditorView
+      <ProseMirror
+        as={<article />}
         className="ProseMirror"
         state={state}
         dispatchTransaction={(tr) => {
@@ -220,9 +201,8 @@ function DemoEditor() {
           return DecorationSet.create(state.doc, decorations);
         }}
         plugins={plugins}
-        // @ts-expect-error TODO: Gotta fix these types
         nodeViews={{ paragraph: Paragraph }}
-      ></EditorView>
+      ></ProseMirror>
     </main>
   );
 }
@@ -231,169 +211,3 @@ function DemoEditor() {
 const root = createRoot(document.getElementById("root")!);
 
 root.render(<DemoEditor />);
-
-// import { baseKeymap } from "prosemirror-commands";
-// import { keymap } from "prosemirror-keymap";
-// import { Schema } from "prosemirror-model";
-// import { EditorState } from "prosemirror-state";
-// import { Decoration, DecorationSet } from "prosemirror-view";
-// import "prosemirror-view/style/prosemirror.css";
-// import React, { useState } from "react";
-// import { createRoot } from "react-dom/client";
-
-// import {
-//   NodeViewComponentProps,
-//   ProseMirror,
-//   useEditorEffect,
-//   useEditorState,
-//   useNodeViews,
-// } from "../src/index.js";
-// import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
-
-// import "./main.css";
-
-// const schema = new Schema({
-//   nodes: {
-//     doc: { content: "block+" },
-//     paragraph: {
-//       group: "block",
-//       content: "inline*",
-//       toDOM() {
-//         return ["p", 0];
-//       },
-//     },
-//     img: {
-//       group: "inline",
-//       inline: true,
-//       toDOM() {
-//         return [
-//           "img",
-//           {
-//             src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
-//           },
-//         ];
-//       },
-//     },
-//     list: {
-//       group: "block",
-//       content: "list_item+",
-//       toDOM() {
-//         return ["ul", 0];
-//       },
-//     },
-//     list_item: {
-//       content: "paragraph+",
-//       toDOM() {
-//         return ["li", 0];
-//       },
-//     },
-//     text: { group: "inline" },
-//   },
-//   marks: {
-//     em: {
-//       toDOM() {
-//         return ["em", 0];
-//       },
-//     },
-//     strong: {
-//       toDOM() {
-//         return ["strong", 0];
-//       },
-//     },
-//   },
-// });
-
-// const editorState = EditorState.create({
-//   schema,
-//   doc: schema.nodes.doc.create({}, [
-//     schema.nodes.paragraph.create({}, [
-//       schema.text("This ", [schema.marks.em.create()]),
-//       schema.text("is", [
-//         schema.marks.em.create(),
-//         schema.marks.strong.create(),
-//       ]),
-//       schema.nodes.img.create(),
-//       schema.text(" the first paragraph"),
-//     ]),
-//     schema.nodes.paragraph.create(
-//       {},
-//       schema.text("This is the second paragraph")
-//     ),
-//     schema.nodes.paragraph.create(),
-//     schema.nodes.paragraph.create(
-//       {},
-//       schema.text("This is the third paragraph")
-//     ),
-//   ]),
-//   plugins: [keymap(baseKeymap)],
-// });
-
-// function Paragraph({ children }: NodeViewComponentProps) {
-//   return <p>{children}</p>;
-// }
-
-// const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
-//   paragraph: () => ({
-//     component: Paragraph,
-//     dom: document.createElement("div"),
-//     contentDOM: document.createElement("span"),
-//   }),
-// };
-
-// function DemoEditor() {
-//   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-//   const [mount, setMount] = useState<HTMLDivElement | null>(null);
-//   const [state, setState] = useState(editorState);
-
-//   return (
-//     <main>
-//       <h1>React ProseMirror Demo</h1>
-//       <ProseMirror
-//         mount={mount}
-//         state={state}
-//         dispatchTransaction={(tr) => setState((prev) => prev.apply(tr))}
-//         // nodeViews={nodeViews}
-//         decorations={(s) => {
-//           const decorations = [
-//             Decoration.inline(5, 15, { class: "inline-deco" }),
-//           ];
-//           state.doc.forEach((node, offset, index) => {
-//             if (index === 1 || index === 2) {
-//               decorations.push(
-//                 Decoration.node(offset, offset + node.nodeSize, {
-//                   nodeName: "div",
-//                   class: "node-deco",
-//                 })
-//               );
-//             }
-//             if (index === 3) {
-//               decorations.push(
-//                 Decoration.widget(offset + 10, () => {
-//                   const el = document.createElement("div");
-//                   el.style.display = "inline-block";
-//                   el.style.padding = "0.75rem 1rem";
-//                   el.style.border = "solid thin black";
-//                   el.innerText = "Widget";
-//                   return el;
-//                 })
-//               );
-//             }
-//           });
-//           return DecorationSet.create(s.doc, decorations);
-//         }}
-//       >
-//         <div ref={setMount} />
-//         {renderNodeViews()}
-//       </ProseMirror>
-//     </main>
-//   );
-// }
-
-// // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-// const root = createRoot(document.getElementById("root")!);
-
-// root.render(
-//   <React.StrictMode>
-//     <DemoEditor />
-//   </React.StrictMode>
-// );

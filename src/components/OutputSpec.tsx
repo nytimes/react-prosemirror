@@ -35,7 +35,8 @@ const ForwardedOutputSpec = forwardRef(function OutputSpec(
     start = 2;
     for (const name in attrs)
       if (attrs[name] != null) {
-        const attrName = name.replace(" ", ":");
+        const attrName =
+          name === "class" ? "className" : name.replace(" ", ":");
         props[attrName] = attrs[name];
       }
   }

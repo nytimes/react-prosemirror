@@ -1,8 +1,8 @@
 import { reactKeysPluginKey } from "../plugins/reactKeys.js";
 
-import { useReactEditorState } from "./useReactEditorState.js";
+import { useEditorState } from "./useEditorState.js";
 
 export function useReactKeys() {
-  const state = useReactEditorState();
+  const state = useEditorState();
   return state && reactKeysPluginKey.getState(state);
 }

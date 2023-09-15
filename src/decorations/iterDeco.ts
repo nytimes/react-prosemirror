@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Node } from "prosemirror-model";
 
-import {
-  ReactWidgetDecoration,
-  ReactWidgetType,
-} from "../decorations/ReactWidgetType.js";
 import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
+
+import { ReactWidgetDecoration, ReactWidgetType } from "./ReactWidgetType.js";
 
 function compareSide(a: Decoration, b: Decoration) {
   return (

@@ -1,6 +1,9 @@
+/* eslint-disable react/prop-types */
 import { Node } from "prosemirror-model";
 import React, {
   ForwardedRef,
+  ReactElement,
+  cloneElement,
   forwardRef,
   useImperativeHandle,
   useRef,
@@ -17,13 +20,13 @@ import {
 type Props = {
   className?: string;
   node: Node | undefined;
-  contentEditable: boolean;
   innerDeco: DecorationSource;
   outerDeco: Decoration[];
+  as?: ReactElement;
 };
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { node, contentEditable, innerDeco, outerDeco, ...props }: Props,
+  { className, node, innerDeco, outerDeco, as }: Props,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -46,8 +49,20 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
   const children = useChildNodeViews(-1, node, innerDeco);
 
-  const element = (
-    <div ref={innerRef} suppressContentEditableWarning={true} {...props}>
+  const element = as ? (
+    cloneElement(
+      as,
+      { ref: innerRef, className, suppressContentEditableWarning: true },
+      <ChildDescriptorsContext.Provider value={childDescriptors}>
+        {children}
+      </ChildDescriptorsContext.Provider>
+    )
+  ) : (
+    <div
+      ref={innerRef}
+      className={className}
+      suppressContentEditableWarning={true}
+    >
       <ChildDescriptorsContext.Provider value={childDescriptors}>
         {children}
       </ChildDescriptorsContext.Provider>
@@ -61,5 +76,6 @@ export const DocNodeView = forwardRef(function DocNodeView(
     return element;
   }
 
-  return nodeDecorations.reduce(wrapInDeco, element);
+  const wrapped = nodeDecorations.reduce(wrapInDeco, element);
+  return wrapped;
 });

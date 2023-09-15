@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "@jest/globals";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MatcherFunction } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { doc, eq, schema } from "prosemirror-test-builder";
 import React from "react";
 
-import { EditorProps, EditorView } from "../components/EditorView.js";
-import { useView } from "../hooks/useView.js";
+import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
+import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
 import { EditorView as EditorViewT } from "../prosemirror-view/index.js";
 
@@ -52,6 +52,7 @@ export function tempEditor({
 >): {
   view: EditorViewT;
   rerender: (props: Omit<EditorProps, "state" | "plugins">) => void;
+  unmount: () => void;
 } {
   startDoc = startDoc ?? doc();
   const state = EditorState.create({
@@ -68,28 +69,34 @@ export function tempEditor({
   let view: any;
 
   function Test() {
-    useView((v) => {
+    useEditorEffect((v) => {
       view = v;
     });
 
     return null;
   }
 
-  const { rerender } = render(
-    <EditorView defaultState={state} {...props}>
+  const { rerender, unmount } = render(
+    <ProseMirror defaultState={state} {...props}>
       <Test></Test>
-    </EditorView>
+    </ProseMirror>
   );
 
   function rerenderEditor({
     ...newProps
   }: Omit<EditorProps, "state" | "plugins">) {
     rerender(
-      <EditorView defaultState={state} {...{ ...props, ...newProps }}>
+      <ProseMirror defaultState={state} {...{ ...props, ...newProps }}>
         <Test></Test>
-      </EditorView>
+      </ProseMirror>
     );
   }
 
-  return { rerender: rerenderEditor, view };
+  return { rerender: rerenderEditor, unmount, view };
+}
+
+export async function findTextNode(_: HTMLElement, text: string) {
+  const parent = await screen.findByText(text);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return parent.firstChild!;
 }

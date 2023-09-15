@@ -1,6 +1,7 @@
 import { Node } from "prosemirror-model";
-import { Decoration, DecorationSource } from "prosemirror-view";
-import { ReactNode } from "react";
+import { HTMLAttributes, ReactNode } from "react";
+
+import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
 
 export type NodeViewComponentProps = {
   decorations: readonly Decoration[];
@@ -9,4 +10,4 @@ export type NodeViewComponentProps = {
   children?: ReactNode | ReactNode[];
   isSelected: boolean;
   pos: number;
-};
+} & HTMLAttributes<HTMLElement>;

@@ -25,7 +25,7 @@ import {
 import React, { LegacyRef, forwardRef, useEffect } from "react";
 
 import { widget } from "../../decorations/ReactWidgetType.js";
-import { useView } from "../../hooks/useView.js";
+import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import {
   Decoration,
   DecorationSet,
@@ -150,7 +150,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("abcdef")),
       plugins: [decoPlugin(["3-5-foo", "4-6-bar", "1-7-baz"])],
     });
-    const baz = view.dom.querySelectorAll(".baz") as any as HTMLElement[];
+    const baz = view.dom.querySelectorAll(".baz") as unknown as HTMLElement[];
     expect(baz).toHaveLength(5);
     expect(Array.prototype.map.call(baz, (x) => x.textContent).join("-")).toBe(
       "ab-c-d-e-f"
@@ -168,7 +168,9 @@ describe("Decoration drawing", () => {
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["1-widget", "4-widget", "7-widget"])],
     });
-    const found = view.dom.querySelectorAll("button") as any as HTMLElement[];
+    const found = view.dom.querySelectorAll(
+      "button"
+    ) as unknown as HTMLElement[];
     expect(found).toHaveLength(3);
     expect(found[0]!.nextSibling!.textContent).toBe("foo");
     expect(found[1]!.nextSibling!.textContent).toBe("bar");
@@ -724,8 +726,8 @@ describe("Decoration drawing", () => {
           widget(
             3,
             forwardRef(function Span(props, ref) {
-              useView((view) => {
-                expect(view.state).toBe(state);
+              useEditorEffect((view) => {
+                expect(view?.state).toBe(state);
               });
               return (
                 <span {...props} ref={ref}>
@@ -884,7 +886,6 @@ describe("Decoration drawing", () => {
           }: NodeViewComponentProps,
           ref
         ) {
-          // @ts-expect-error Don't worry about it
           decosFromFirstEditor = innerDecorations;
           return (
             <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
