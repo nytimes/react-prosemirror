@@ -1,6 +1,6 @@
 {
   "name": "@nytimes/react-prosemirror",
-  "version": "0.3.0-alpha.4",
+  "version": "0.3.0-beta.0",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/cjs/index.js",
@@ -30,6 +30,7 @@
     "check": "concurrently -P 'npm:check:* {@}' --",
     "clean": "rimraf \"./dist/!(cjs/package.json)\"",
     "demo": "yarn vite",
+    "demo:build": "yarn vite build --outDir docs",
     "dev": "yarn build -- --watch",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",
