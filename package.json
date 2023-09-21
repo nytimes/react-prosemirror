@@ -30,7 +30,7 @@
     "check": "concurrently -P 'npm:check:* {@}' --",
     "clean": "rimraf \"./dist/!(cjs/package.json)\"",
     "demo": "yarn vite",
-    "demo:build": "yarn vite build --outDir docs",
+    "demo:build": "yarn vite build --outDir docs --base=/react-prosemirror/",
     "dev": "yarn build -- --watch",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint --cache --fix .",

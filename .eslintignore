@@ -4,3 +4,4 @@
 .pnp.*
 
 src/prosemirror-view/
+/docs/
