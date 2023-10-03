@@ -86,7 +86,7 @@ export class EditorView {
     this.nodeViews = buildNodeViews(this)
     this.docView = null as unknown as NodeViewDesc
 
-    this.domObserver = new (props.DOMObserver ?? DOMObserver)(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
+    this.domObserver = new DOMObserver(this, (from, to, typeOver, added) => readDOMChange(this, from, to, typeOver, added))
     this.init();
   }
 
@@ -797,6 +797,4 @@ export interface DirectEditorProps extends EditorProps {
   /// [applied](#state.EditorState.apply). The callback will be bound to have
   /// the view instance as its `this` binding.
   dispatchTransaction?: (tr: Transaction) => void
-
-  DOMObserver?: typeof DOMObserver
 }
