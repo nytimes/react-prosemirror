@@ -9,13 +9,13 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { EditorViewContext } from "../contexts/EditorViewContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NonWidgetType } from "../decorations/ReactWidgetType.js";
-import { useChildNodeViews, wrapInDeco } from "../hooks/useChildNodeViews.js";
+import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
 
+import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
@@ -45,11 +45,8 @@ export function NodeView({
     outerDeco
   );
 
-  const view = useContext(EditorViewContext);
-  const state = view?.state;
+  const state = useEditorState();
   const { nodeViews } = useContext(NodeViewContext);
-
-  const children = useChildNodeViews(pos, node, innerDeco);
 
   let element: JSX.Element | null = null;
 
@@ -64,16 +61,17 @@ export function NodeView({
       <Component
         {...props}
         ref={nodeDomRef}
-        node={node}
-        pos={pos}
-        decorations={outerDeco}
-        innerDecorations={innerDeco}
-        isSelected={
-          state?.selection instanceof NodeSelection &&
-          state.selection.node === node
-        }
+        nodeProps={{
+          node: node,
+          pos: pos,
+          decorations: outerDeco,
+          innerDecorations: innerDeco,
+          isSelected:
+            state?.selection instanceof NodeSelection &&
+            state.selection.node === node,
+        }}
       >
-        {children}
+        <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
       </Component>
     );
   } else {
@@ -82,7 +80,7 @@ export function NodeView({
     if (outputSpec) {
       element = (
         <OutputSpec {...props} ref={nodeDomRef} outputSpec={outputSpec}>
-          {children}
+          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
         </OutputSpec>
       );
     }

@@ -14,7 +14,6 @@ import { EditorContext } from "../contexts/EditorContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
-import { useContentEditable } from "../hooks/useContentEditable.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
@@ -99,6 +98,16 @@ export function ProseMirror({
     [editorState, editorView, registerEventListener, unregisterEventListener]
   );
 
+  // TODO: This might not be safe (especially with Suspense?)
+  // I _think_ it's not strictly necessary, but I want to try to get
+  // composition working 100% before removing it, because it makes
+  // it easier to reason about
+  editorView?.domObserver.stop();
+
+  useEffect(() => {
+    editorView?.domObserver.start();
+  });
+
   const viewPlugins = useMemo(() => props.plugins ?? [], [props.plugins]);
 
   useEffect(() => {
@@ -106,7 +115,6 @@ export function ProseMirror({
     return () => editorView?.domObserver.disconnectSelection();
   }, [editorView?.domObserver]);
   useSyncSelection(editorView);
-  useContentEditable(editorView);
   usePluginViews(editorView, editorState, viewPlugins);
 
   const innerDecos = editorView

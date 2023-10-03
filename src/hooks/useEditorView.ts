@@ -2,7 +2,6 @@ import type { EditorState, Transaction } from "prosemirror-state";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
-import { SelectionDOMObserver } from "../SelectionDOMObserver.js";
 import {
   resetScrollPos,
   storeScrollPos,
@@ -162,7 +161,6 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
         {
           ...editorProps,
           state,
-          DOMObserver: SelectionDOMObserver,
         }
       );
       setView(newView);

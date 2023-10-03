@@ -1,25 +1,31 @@
 import classnames from "classnames/dedupe";
 import { Mark, Node } from "prosemirror-model";
-import React, { ReactNode, cloneElement, createElement } from "react";
+import React, {
+  ReactNode,
+  cloneElement,
+  createElement,
+  useContext,
+} from "react";
 
-import { MarkView } from "../components/MarkView.js";
-import { NodeView } from "../components/NodeView.js";
-import { TextNodeView } from "../components/TextNodeView.js";
-import { TrailingHackView } from "../components/TrailingHackView.js";
-import { WidgetView } from "../components/WidgetView.js";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import {
   NonWidgetType,
   ReactWidgetDecoration,
 } from "../decorations/ReactWidgetType.js";
 import { iterDeco } from "../decorations/iterDeco.js";
+import { useEditorState } from "../hooks/useEditorState.js";
+import { useReactKeys } from "../hooks/useReactKeys.js";
 import {
   Decoration,
   DecorationSource,
 } from "../prosemirror-view/decoration.js";
 
-import { useEditorState } from "./useEditorState.js";
-import { useReactKeys } from "./useReactKeys.js";
+import { MarkView } from "./MarkView.js";
+import { NodeView } from "./NodeView.js";
+import { TextNodeView } from "./TextNodeView.js";
+import { TrailingHackView } from "./TrailingHackView.js";
+import { WidgetView } from "./WidgetView.js";
 
 function cssToStyles(css: string) {
   const cssJson = `{"${css
@@ -103,6 +109,7 @@ type SharedMarksProps = {
 };
 
 function InlineView({ innerPos, childViews }: SharedMarksProps) {
+  const { editorView } = useContext(EditorContext);
   const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
@@ -153,6 +160,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
                 <ChildDescriptorsContext.Consumer>
                   {(siblingDescriptors) => (
                     <TextNodeView
+                      view={editorView}
                       node={child.node}
                       siblingDescriptors={siblingDescriptors}
                       decorations={child.outerDeco}
@@ -257,11 +265,15 @@ function adjustWidgetMarks(children: Child[]) {
   }
 }
 
-export function useChildNodeViews(
-  pos: number,
-  node: Node | undefined,
-  innerDecorations: DecorationSource
-) {
+export function ChildNodeViews({
+  pos,
+  node,
+  innerDecorations,
+}: {
+  pos: number;
+  node: Node | undefined;
+  innerDecorations: DecorationSource;
+}) {
   const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
@@ -347,5 +359,5 @@ export function useChildNodeViews(
     );
   }
 
-  return children;
+  return <>{children}</>;
 }

@@ -2,16 +2,8 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
-import { Decoration, DecorationSet } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
-import React, {
-  DetailedHTMLProps,
-  ForwardedRef,
-  HTMLAttributes,
-  Ref,
-  forwardRef,
-  useState,
-} from "react";
+import React, { ForwardedRef, Ref, forwardRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -20,6 +12,7 @@ import {
   reactKeys,
   widget,
 } from "../src/index.js";
+import { Decoration, DecorationSet } from "../src/prosemirror-view/index.js";
 
 import "./main.css";
 
@@ -100,11 +93,11 @@ const editorState = EditorState.create({
 });
 
 const Paragraph = forwardRef(function Paragraph(
-  { children, className, ...props }: NodeViewComponentProps,
+  { children, nodeProps, ...props }: NodeViewComponentProps,
   ref: Ref<HTMLParagraphElement>
 ) {
   return (
-    <p ref={ref} className={className} {...props}>
+    <p ref={ref} {...props}>
       {children}
     </p>
   );
@@ -172,19 +165,25 @@ function DemoEditor() {
         as={<article />}
         className="ProseMirror"
         state={state}
-        dispatchTransaction={(tr) => {
+        dispatchTransaction={function (tr) {
           setState((prev) => prev.apply(tr));
         }}
-        // @ts-expect-error Types don't match because of internalizing EditorView
         decorations={(state) => {
           const decorations = [
             Decoration.inline(5, 15, { class: "inline-deco" }),
           ];
           state.doc.forEach((node, offset, index) => {
-            if (index === 1 || index === 2) {
+            if (index === 1) {
               decorations.push(
                 Decoration.node(offset, offset + node.nodeSize, {
                   nodeName: "div",
+                  class: "node-deco",
+                })
+              );
+            }
+            if (index === 2) {
+              decorations.push(
+                Decoration.node(offset, offset + node.nodeSize, {
                   class: "node-deco",
                 })
               );
@@ -211,3 +210,16 @@ function DemoEditor() {
 const root = createRoot(document.getElementById("root")!);
 
 root.render(<DemoEditor />);
+
+// new EditorView(
+//   { mount: document.getElementById("editor")! },
+//   {
+//     state: EditorState.create({
+//       schema,
+//       plugins,
+//     }),
+//     dispatchTransaction(tr) {
+//       this.updateState(this.state.apply(tr));
+//     },
+//   }
+// );

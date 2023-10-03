@@ -16,6 +16,7 @@ export function useSyncSelection(view: EditorView | null) {
   useEffect(() => {
     if (!view?.state) return;
 
+    if (view?.composing) return;
     selectionToDOM(view);
   });
 }

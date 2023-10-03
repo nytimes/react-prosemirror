@@ -592,7 +592,7 @@ describe("Decoration drawing", () => {
           props: NodeViewComponentProps,
           ref
         ) {
-          current = props.decorations.map((d) => d.spec.name).join();
+          current = props.nodeProps.decorations.map((d) => d.spec.name).join();
           return <hr ref={ref as LegacyRef<HTMLHRElement>} />;
         }),
       },
@@ -685,13 +685,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo")),
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
-          {
-            decorations,
-            innerDecorations,
-            isSelected,
-            children,
-            ...props
-          }: NodeViewComponentProps,
+          { nodeProps, children, ...props }: NodeViewComponentProps,
           ref
         ) {
           return (
@@ -877,16 +871,10 @@ describe("Decoration drawing", () => {
       ],
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
-          {
-            decorations,
-            innerDecorations,
-            isSelected,
-            children,
-            ...props
-          }: NodeViewComponentProps,
+          { nodeProps, children, ...props }: NodeViewComponentProps,
           ref
         ) {
-          decosFromFirstEditor = innerDecorations;
+          decosFromFirstEditor = nodeProps.innerDecorations;
           return (
             <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
               {children}

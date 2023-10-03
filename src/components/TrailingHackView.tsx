@@ -14,5 +14,5 @@ export function TrailingHackView() {
     siblingDescriptors.push(desc);
   });
 
-  return <br ref={ref} />;
+  return <br ref={ref} className="ProseMirror-trailingBreak" />;
 }

@@ -2,17 +2,22 @@ import { Node } from "prosemirror-model";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
-import { wrapInDeco } from "../hooks/useChildNodeViews.js";
 import { Decoration, DecorationSet } from "../prosemirror-view/decoration.js";
+import { EditorView } from "../prosemirror-view/index.js";
 import { TextViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
 
+import { wrapInDeco } from "./ChildNodeViews.js";
+
 type Props = {
+  view: EditorView | null;
   node: Node;
   siblingDescriptors: ViewDesc[];
   decorations: readonly Decoration[];
 };
 
 export class TextNodeView extends Component<Props> {
+  private renderRef: null | JSX.Element = null;
+
   componentDidMount(): void {
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
@@ -60,9 +65,15 @@ export class TextNodeView extends Component<Props> {
   }
 
   render() {
-    return this.props.decorations.reduce(
+    if (this.props.view?.composing) {
+      return this.renderRef;
+    }
+
+    this.renderRef = this.props.decorations.reduce(
       wrapInDeco,
       this.props.node.text as unknown as JSX.Element
     );
+
+    return this.renderRef;
   }
 }

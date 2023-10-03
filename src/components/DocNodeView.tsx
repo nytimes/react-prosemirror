@@ -1,21 +1,25 @@
+// TODO: I must be missing something, but I do not know why
+// this linting rule is only broken in this file
 /* eslint-disable react/prop-types */
 import { Node } from "prosemirror-model";
 import React, {
   ForwardedRef,
   ReactElement,
   cloneElement,
+  createElement,
   forwardRef,
   useImperativeHandle,
   useRef,
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { useChildNodeViews, wrapInDeco } from "../hooks/useChildNodeViews.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import {
   Decoration,
   DecorationSource,
 } from "../prosemirror-view/decoration.js";
+
+import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 
 type Props = {
   className?: string;
@@ -47,27 +51,27 @@ export const DocNodeView = forwardRef(function DocNodeView(
     outerDeco
   );
 
-  const children = useChildNodeViews(-1, node, innerDeco);
+  const props = {
+    ref: innerRef,
+    className,
+    suppressContentEditableWarning: true,
+  };
 
-  const element = as ? (
-    cloneElement(
-      as,
-      { ref: innerRef, className, suppressContentEditableWarning: true },
-      <ChildDescriptorsContext.Provider value={childDescriptors}>
-        {children}
-      </ChildDescriptorsContext.Provider>
-    )
-  ) : (
-    <div
-      ref={innerRef}
-      className={className}
-      suppressContentEditableWarning={true}
-    >
-      <ChildDescriptorsContext.Provider value={childDescriptors}>
-        {children}
-      </ChildDescriptorsContext.Provider>
-    </div>
-  );
+  const element = as
+    ? cloneElement(
+        as,
+        props,
+        <ChildDescriptorsContext.Provider value={childDescriptors}>
+          <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
+        </ChildDescriptorsContext.Provider>
+      )
+    : createElement(
+        "div",
+        props,
+        <ChildDescriptorsContext.Provider value={childDescriptors}>
+          <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
+        </ChildDescriptorsContext.Provider>
+      );
 
   if (!node) return element;
 
