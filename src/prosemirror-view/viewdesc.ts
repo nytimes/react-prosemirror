@@ -569,7 +569,7 @@ export class WidgetViewDesc extends ViewDesc {
   get side() { return (this.widget.type as any).side as number }
 }
 
-class CompositionViewDesc extends ViewDesc {
+export class CompositionViewDesc extends ViewDesc {
   constructor(parent: ViewDesc, dom: DOMNode, readonly textDOM: Text, readonly text: string) {
     super(parent, [], dom, null)
   }
