@@ -18,6 +18,7 @@ import {
   Decoration,
   DecorationSource,
 } from "../prosemirror-view/decoration.js";
+import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 
@@ -27,10 +28,11 @@ type Props = {
   innerDeco: DecorationSource;
   outerDeco: Decoration[];
   as?: ReactElement;
+  viewDesc?: NodeViewDesc;
 };
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { className, node, innerDeco, outerDeco, as }: Props,
+  { className, node, innerDeco, outerDeco, as, viewDesc }: Props,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +50,8 @@ export const DocNodeView = forwardRef(function DocNodeView(
     innerRef,
     innerRef,
     innerDeco,
-    outerDeco
+    outerDeco,
+    viewDesc
   );
 
   const props = {

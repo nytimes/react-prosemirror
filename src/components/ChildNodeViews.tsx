@@ -162,6 +162,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
                     <TextNodeView
                       view={editorView}
                       node={child.node}
+                      pos={childPos}
                       siblingDescriptors={siblingDescriptors}
                       decorations={child.outerDeco}
                     />

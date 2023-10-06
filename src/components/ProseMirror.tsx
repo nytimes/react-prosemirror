@@ -1,5 +1,4 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
-import { DecorationSet } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactElement,
@@ -7,6 +6,7 @@ import React, {
   RefAttributes,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -17,13 +17,17 @@ import { useComponentEventListeners } from "../hooks/useComponentEventListeners.
 import { useEditorView } from "../hooks/useEditorView.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/useViewPlugins.js";
-import { viewDecorations } from "../prosemirror-view/decoration.js";
+import {
+  DecorationSet,
+  viewDecorations,
+} from "../prosemirror-view/decoration.js";
 import {
   DecorationSet as DecorationSetInternal,
   DirectEditorProps,
   EditorView as EditorViewClass,
   computeDocDeco,
 } from "../prosemirror-view/index.js";
+import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -83,7 +87,28 @@ export function ProseMirror({
     [props.plugins, componentEventListenersPlugin]
   );
 
-  const editorView = useEditorView(mount, { ...props, plugins });
+  const initialEditorState = (
+    "defaultState" in props ? props.defaultState : props.state
+  ) as EditorState;
+  const tempDom = document.createElement("div");
+  const docViewDescRef = useRef<NodeViewDesc>(
+    new NodeViewDesc(
+      undefined,
+      [],
+      initialEditorState.doc,
+      [],
+      DecorationSetInternal.empty,
+      tempDom,
+      null,
+      tempDom
+    )
+  );
+
+  const editorView = useEditorView(mount, {
+    ...props,
+    docView: docViewDescRef.current,
+    plugins,
+  });
 
   const editorState =
     "state" in props ? props.state ?? null : editorView?.state ?? null;
@@ -139,6 +164,7 @@ export function ProseMirror({
               innerDeco={innerDecos as unknown as DecorationSetInternal}
               outerDeco={outerDecos}
               as={as}
+              viewDesc={docViewDescRef.current}
             />
             {children}
           </>

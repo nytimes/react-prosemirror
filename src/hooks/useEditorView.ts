@@ -7,7 +7,6 @@ import {
   storeScrollPos,
 } from "../prosemirror-view/domcoords.js";
 import { DirectEditorProps, EditorView } from "../prosemirror-view/index.js";
-import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
@@ -51,15 +50,6 @@ class ReactEditorView extends EditorView {
     } else if (oldScrollPos) {
       resetScrollPos(oldScrollPos);
     }
-  }
-
-  // @ts-expect-error We need this to be an accessor
-  set docView(_) {
-    // disallowed
-  }
-
-  get docView() {
-    return this.dom.pmViewDesc as NodeViewDesc;
   }
 }
 

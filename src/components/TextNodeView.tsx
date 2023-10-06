@@ -11,6 +11,7 @@ import { wrapInDeco } from "./ChildNodeViews.js";
 type Props = {
   view: EditorView | null;
   node: Node;
+  pos: number;
   siblingDescriptors: ViewDesc[];
   decorations: readonly Decoration[];
 };
@@ -65,7 +66,12 @@ export class TextNodeView extends Component<Props> {
   }
 
   render() {
-    if (this.props.view?.composing) {
+    const { view, pos, node } = this.props;
+    if (
+      view?.composing &&
+      view.state.selection.from >= pos &&
+      view.state.selection.from <= pos + node.nodeSize
+    ) {
       return this.renderRef;
     }
 

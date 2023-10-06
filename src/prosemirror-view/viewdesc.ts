@@ -652,7 +652,7 @@ export class NodeViewDesc extends ViewDesc {
     public innerDeco: DecorationSource,
     dom: DOMNode,
     contentDOM: HTMLElement | null,
-    readonly nodeDOM: DOMNode,
+    public nodeDOM: DOMNode,
   ) {
     super(parent, children, dom, contentDOM)
   }
