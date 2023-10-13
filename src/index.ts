@@ -12,3 +12,4 @@ export { reactKeys } from "./plugins/reactKeys.js";
 export { widget } from "./decorations/ReactWidgetType.js";
 
 export type { NodeViewComponentProps } from "./components/NodeViewComponentProps.js";
+export type { WidgetViewComponentProps } from "./components/WidgetViewComponentProps.js";

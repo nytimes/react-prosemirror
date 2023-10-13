@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 import {
   NodeViewComponentProps,
   ProseMirror,
+  WidgetViewComponentProps,
   reactKeys,
   widget,
 } from "../src/index.js";
@@ -105,7 +106,7 @@ const Paragraph = forwardRef(function Paragraph(
 });
 
 const TestWidget = forwardRef(function TestWidget(
-  props,
+  { widget, pos, ...props }: WidgetViewComponentProps,
   ref: ForwardedRef<HTMLSpanElement>
 ) {
   return (
@@ -215,10 +216,48 @@ root.render(<DemoEditor />);
 // new EditorView(
 //   { mount: document.getElementById("editor")! },
 //   {
-//     state: EditorState.create({
-//       schema,
-//       plugins,
-//     }),
+//     state: editorState,
+//     plugins,
+//     decorations(state) {
+//       const decorations = [Decoration.inline(5, 15, { class: "inline-deco" })];
+//       state.doc.forEach((node, offset, index) => {
+//         if (index === 1) {
+//           decorations.push(
+//             Decoration.node(offset, offset + node.nodeSize, {
+//               nodeName: "div",
+//               class: "node-deco",
+//             })
+//           );
+//         }
+//         // if (index === 2) {
+//         //   decorations.push(
+//         //     Decoration.node(offset, offset + node.nodeSize, {
+//         //       class: "node-deco",
+//         //     })
+//         //   );
+//         // }
+//         if (index === 2) {
+//           decorations.push(
+//             Decoration.widget(
+//               offset + 1,
+//               () => {
+//                 const span = document.createElement("span");
+//                 span.appendChild(document.createTextNode("Widget"));
+//                 span.style.display = "inline-block";
+//                 span.style.padding = "0.75rem 1rem";
+//                 span.style.border = "solid thin black";
+//                 return span;
+//               },
+//               {
+//                 side: 0,
+//                 key: "widget-deco",
+//               }
+//             )
+//           );
+//         }
+//       });
+//       return DecorationSet.create(state.doc, decorations);
+//     },
 //     dispatchTransaction(tr) {
 //       this.updateState(this.state.apply(tr));
 //     },

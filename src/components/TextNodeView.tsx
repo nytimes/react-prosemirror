@@ -4,7 +4,11 @@ import { findDOMNode } from "react-dom";
 
 import { Decoration, DecorationSet } from "../prosemirror-view/decoration.js";
 import { EditorView } from "../prosemirror-view/index.js";
-import { TextViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
+import {
+  CompositionViewDesc,
+  TextViewDesc,
+  ViewDesc,
+} from "../prosemirror-view/viewdesc.js";
 
 import { wrapInDeco } from "./ChildNodeViews.js";
 
@@ -19,11 +23,32 @@ type Props = {
 export class TextNodeView extends Component<Props> {
   private renderRef: null | JSX.Element = null;
 
-  componentDidMount(): void {
+  updateEffect() {
+    const { view, decorations, siblingDescriptors, node } = this.props;
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
     const dom = findDOMNode(this);
-    if (!dom) return;
+
+    // We only need to explicitly create a CompositionViewDesc
+    // when a composition was started that produces a new text node.
+    // Otherwise we just rely on re-rendering the renderRef
+    if (!dom) {
+      if (!view?.composing) return;
+
+      const desc = new CompositionViewDesc(
+        undefined,
+        // These are just placeholders/dummies. We can't
+        // actually find the correct DOM nodes from here,
+        // so we let our parent do it.
+        // Passing a valid element here just so that the
+        // ViewDesc constructor doesn't blow up.
+        document.createElement("div"),
+        document.createTextNode(node.text ?? ""),
+        node.text ?? ""
+      );
+      siblingDescriptors.push(desc);
+      return;
+    }
 
     let textNode = dom;
     while (textNode.firstChild) {
@@ -33,40 +58,31 @@ export class TextNodeView extends Component<Props> {
     const desc = new TextViewDesc(
       undefined,
       [],
-      this.props.node,
-      this.props.decorations,
+      node,
+      decorations,
       DecorationSet.empty,
       dom,
       textNode
     );
-    this.props.siblingDescriptors.push(desc);
+    siblingDescriptors.push(desc);
+  }
+
+  componentDidMount(): void {
+    this.updateEffect();
   }
 
   componentDidUpdate(): void {
-    // There simply is no other way to ref a text node
-    // eslint-disable-next-line react/no-find-dom-node
-    const dom = findDOMNode(this);
-    if (!dom) return;
-
-    let textNode = dom;
-    while (textNode.firstChild) {
-      textNode = textNode.firstChild as Element | Text;
-    }
-
-    const desc = new TextViewDesc(
-      undefined,
-      [],
-      this.props.node,
-      this.props.decorations,
-      DecorationSet.empty,
-      dom,
-      textNode
-    );
-    this.props.siblingDescriptors.push(desc);
+    this.updateEffect();
   }
 
   render() {
-    const { view, pos, node } = this.props;
+    const { view, pos, node, decorations } = this.props;
+
+    // During a composition, it's crucial that we don't try to
+    // update the DOM that the user is working in. If there's
+    // an active composition and the selection is in this node,
+    // we freeze the DOM of this element so that it doesn't
+    // interrupt the composition
     if (
       view?.composing &&
       view.state.selection.from >= pos &&
@@ -75,9 +91,9 @@ export class TextNodeView extends Component<Props> {
       return this.renderRef;
     }
 
-    this.renderRef = this.props.decorations.reduce(
+    this.renderRef = decorations.reduce(
       wrapInDeco,
-      this.props.node.text as unknown as JSX.Element
+      node.text as unknown as JSX.Element
     );
 
     return this.renderRef;

@@ -34,7 +34,7 @@ import {
 } from "../../prosemirror-view/index.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
-import { WidgetComponentProps } from "../WidgetComponentProps.js";
+import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
 
 const Widget = forwardRef<HTMLElement>(function Widget(props, ref) {
   return (
@@ -745,7 +745,7 @@ describe("Decoration drawing", () => {
           widget(
             3,
             forwardRef(function Widget(
-              { pos, ...props }: WidgetComponentProps,
+              { pos, ...props }: WidgetViewComponentProps,
               ref
             ) {
               expect(pos).toBe(3);

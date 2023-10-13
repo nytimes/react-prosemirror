@@ -570,7 +570,7 @@ export class WidgetViewDesc extends ViewDesc {
 }
 
 export class CompositionViewDesc extends ViewDesc {
-  constructor(parent: ViewDesc, dom: DOMNode, readonly textDOM: Text, readonly text: string) {
+  constructor(parent: ViewDesc | undefined, dom: DOMNode, public textDOM: Text, public text: string) {
     super(parent, [], dom, null)
   }
 

@@ -10,7 +10,6 @@ import {
 import {
   CompositionViewDesc,
   NodeViewDesc,
-  TrailingHackViewDesc,
   ViewDesc,
 } from "../prosemirror-view/viewdesc.js";
 
@@ -32,7 +31,6 @@ export function useNodeViewDescriptor(
 
     const firstChildDesc = childDescriptors[0];
 
-    const [prevFirstChildDesc] = nodeViewDescRef.current?.children ?? [];
     if (!nodeViewDescRef.current) {
       nodeViewDescRef.current = new NodeViewDesc(
         undefined,
@@ -54,34 +52,50 @@ export function useNodeViewDescriptor(
       // @ts-expect-error ???
       nodeViewDescRef.current.dom.pmViewDesc = nodeViewDescRef.current;
       nodeViewDescRef.current.contentDOM =
-        // THIS IS NOT A SAFE WAY TO GET THE CONTENT DOM
-        nodeViewDescRef.current.dom;
-      // firstChildDesc?.dom.parentElement ?? null;
+        // If there's already a contentDOM, we can just
+        // keep it; it won't have changed. This is especially
+        // important during compositions, where the
+        // firstChildDesc might not have a correct dom node set yet.
+        nodeViewDescRef.current.contentDOM ??
+        firstChildDesc?.dom.parentElement ??
+        null;
       nodeViewDescRef.current.nodeDOM = nodeDomRef.current;
     }
     siblingDescriptors.push(nodeViewDescRef.current);
 
     for (const childDesc of childDescriptors) {
       childDesc.parent = nodeViewDescRef.current;
+
+      // Because TextNodeViews can't locate the DOM nodes
+      // for compositions, we need to override them here
+      if (childDesc instanceof CompositionViewDesc) {
+        const compositionTopDOM =
+          nodeViewDescRef.current.contentDOM?.firstChild;
+        if (!compositionTopDOM)
+          throw new Error(
+            `Started a composition but couldn't find the text node it belongs to.`
+          );
+
+        let textDOM = compositionTopDOM;
+        while (textDOM.firstChild) {
+          textDOM = textDOM.firstChild as Element | Text;
+        }
+
+        if (!textDOM || !(textDOM instanceof Text))
+          throw new Error(
+            `Started a composition but couldn't find the text node it belongs to.`
+          );
+
+        childDesc.dom = compositionTopDOM;
+        childDesc.textDOM = textDOM;
+        childDesc.text = textDOM.data;
+        // @ts-expect-error ???
+        childDesc.textDOM.pmViewDesc = childDesc;
+
+        editorView?.input.compositionNodes.push(childDesc);
+      }
     }
 
-    if (
-      node.isTextblock &&
-      (prevFirstChildDesc instanceof TrailingHackViewDesc ||
-        prevFirstChildDesc instanceof CompositionViewDesc) &&
-      editorView?.composing &&
-      nodeViewDescRef.current.dom
-    ) {
-      const textDom = nodeViewDescRef.current.dom.firstChild;
-      nodeViewDescRef.current.children = [
-        new CompositionViewDesc(
-          nodeViewDescRef.current,
-          textDom!,
-          textDom,
-          textDom?.textContent
-        ),
-      ];
-    }
     return () => {
       if (
         nodeViewDescRef.current?.children[0] instanceof CompositionViewDesc &&
