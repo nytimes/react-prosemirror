@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect } from "@jest/globals";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { MatcherFunction } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
@@ -10,6 +10,7 @@ import React from "react";
 import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
+import { DOMNode } from "../prosemirror-view/dom.js";
 import { EditorView as EditorViewT } from "../prosemirror-view/index.js";
 
 const toEqualNode: MatcherFunction<[actual: unknown, expect: unknown]> =
@@ -45,26 +46,29 @@ export function tempEditor({
   doc: startDoc,
   selection,
   plugins,
+  state: stateProp,
   ...props
 }: { doc?: ReturnType<typeof doc>; selection?: Selection } & Omit<
   EditorProps,
-  "state"
+  "defaultState"
 >): {
   view: EditorViewT;
-  rerender: (props: Omit<EditorProps, "state" | "plugins">) => void;
+  rerender: (props: Omit<EditorProps, "plugins">) => void;
   unmount: () => void;
 } {
   startDoc = startDoc ?? doc();
-  const state = EditorState.create({
-    doc: startDoc,
-    schema,
-    selection:
-      selection ?? startDoc.tag?.a
-        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          TextSelection.create(startDoc, startDoc.tag.a!, startDoc.tag?.b)
-        : undefined,
-    plugins: [...(plugins ?? []), reactKeys()],
-  });
+  const state =
+    stateProp ??
+    EditorState.create({
+      doc: startDoc,
+      schema,
+      selection:
+        selection ?? startDoc.tag?.a
+          ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            TextSelection.create(startDoc, startDoc.tag.a!, startDoc.tag?.b)
+          : undefined,
+      plugins: [...(plugins ?? []), reactKeys()],
+    });
 
   let view: any;
 
@@ -77,16 +81,25 @@ export function tempEditor({
   }
 
   const { rerender, unmount } = render(
-    <ProseMirror defaultState={state} {...props}>
+    <ProseMirror
+      {...(stateProp ? { state: stateProp } : { defaultState: state })}
+      {...props}
+    >
       <Test></Test>
     </ProseMirror>
   );
 
   function rerenderEditor({
+    state: newStateProp,
     ...newProps
-  }: Omit<EditorProps, "state" | "plugins">) {
+  }: Omit<EditorProps, "defaultState" | "plugins">) {
     rerender(
-      <ProseMirror defaultState={state} {...{ ...props, ...newProps }}>
+      <ProseMirror
+        {...(newStateProp && stateProp
+          ? { state: newStateProp }
+          : { defaultState: state })}
+        {...{ ...props, ...newProps }}
+      >
         <Test></Test>
       </ProseMirror>
     );
@@ -95,8 +108,21 @@ export function tempEditor({
   return { rerender: rerenderEditor, unmount, view };
 }
 
-export async function findTextNode(_: HTMLElement, text: string) {
-  const parent = await screen.findByText(text);
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return parent.firstChild!;
+function findTextNodeInner(node: DOMNode, text: string): Text | undefined {
+  if (node.nodeType == 3) {
+    if (node.nodeValue == text) return node as Text;
+  } else if (node.nodeType == 1) {
+    for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
+      const found = findTextNodeInner(ch, text);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+export function findTextNode(node: DOMNode, text: string): Text {
+  const found = findTextNodeInner(node, text);
+  if (found) return found;
+
+  throw new Error("Unable to find matching text node");
 }
