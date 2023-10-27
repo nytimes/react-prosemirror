@@ -8,6 +8,7 @@ import React, {
   useLayoutEffect,
   useRef,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
@@ -42,6 +43,7 @@ export function NodeView({
 }: NodeViewProps) {
   const domRef = useRef<HTMLElement | null>(null);
   const nodeDomRef = useRef<HTMLElement | null>(null);
+  const contentDomRef = useRef<HTMLElement | null>(null);
   // this is ill-conceived; should revisit
   const initialNode = useRef(node);
   const initialOuterDeco = useRef(outerDeco);
@@ -66,22 +68,15 @@ export function NodeView({
   const customNodeView = editorView?.someProp("nodeViews")?.[node.type.name];
 
   useLayoutEffect(() => {
-    if (!customNodeView || !customNodeViewRootRef.current) return;
+    if (!customNodeViewRef.current || !customNodeViewRootRef.current) return;
 
-    customNodeViewRef.current = customNodeView(
-      initialNode.current,
-      editorView,
-      () => posRef.current,
-      initialOuterDeco.current,
-      initialInnerDeco.current
-    );
     const { dom } = customNodeViewRef.current;
     nodeDomRef.current = customNodeViewRootRef.current;
     customNodeViewRootRef.current.appendChild(dom);
     return () => {
       customNodeViewRef.current?.destroy?.();
     };
-  }, [customNodeView, editorView]);
+  }, []);
 
   useLayoutEffect(() => {
     if (!customNodeView || !customNodeViewRef.current) return;
@@ -116,7 +111,9 @@ export function NodeView({
     domRef,
     nodeDomRef,
     innerDeco,
-    outerDeco
+    outerDeco,
+    undefined,
+    contentDomRef
   );
 
   if (Component) {
@@ -138,12 +135,34 @@ export function NodeView({
       </Component>
     );
   } else if (customNodeView) {
+    if (!customNodeViewRef.current) {
+      customNodeViewRef.current = customNodeView(
+        initialNode.current,
+        editorView,
+        () => posRef.current,
+        initialOuterDeco.current,
+        initialInnerDeco.current
+      );
+    }
+    const { contentDOM } = customNodeViewRef.current;
+    contentDomRef.current = contentDOM ?? null;
     element = (
       <div
         ref={customNodeViewRootRef}
         style={{ display: "contents" }}
-        contentEditable={false}
-      />
+        contentEditable={!!contentDOM}
+        suppressContentEditableWarning={true}
+      >
+        {contentDOM &&
+          createPortal(
+            <ChildNodeViews
+              pos={pos}
+              node={node}
+              innerDecorations={innerDeco}
+            />,
+            contentDOM
+          )}
+      </div>
     );
   } else {
     const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
@@ -171,6 +190,8 @@ export function NodeView({
         undefined
   );
 
+  // TODO: Should we only be wrapping non-inline elements? Inline elements have
+  // already been wrapped in ChildNodeViews/InlineView?
   const markedElement = node.marks.reduce(
     (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
     decoratedElement

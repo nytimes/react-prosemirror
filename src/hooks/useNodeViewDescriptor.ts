@@ -19,7 +19,8 @@ export function useNodeViewDescriptor(
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSource,
   outerDecorations: readonly Decoration[],
-  viewDesc?: NodeViewDesc
+  viewDesc?: NodeViewDesc,
+  contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
   const { editorView } = useContext(EditorContext);
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
@@ -56,6 +57,7 @@ export function useNodeViewDescriptor(
         // keep it; it won't have changed. This is especially
         // important during compositions, where the
         // firstChildDesc might not have a correct dom node set yet.
+        contentDOMRef?.current ??
         nodeViewDescRef.current.contentDOM ??
         firstChildDesc?.dom.parentElement ??
         null;

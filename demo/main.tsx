@@ -40,14 +40,10 @@ const schema = new Schema({
       },
       toDOM(node) {
         return [
-          "span",
-          "pos: 8",
-          [
-            "img",
-            {
-              src: node.attrs.src,
-            },
-          ],
+          "img",
+          {
+            src: node.attrs.src,
+          },
         ];
       },
     },
@@ -171,23 +167,11 @@ const plugins = [
 ];
 
 const customNodeViews: Record<string, NodeViewConstructor> = {
-  img: (node, _editorView, getPos) => {
-    const img = document.createElement("img");
-    img.src = node.attrs.src;
-    const dom = document.createElement("span");
-    dom.appendChild(document.createTextNode(`pos: ${getPos()}`));
-    dom.appendChild(img);
+  paragraph: () => {
+    const dom = document.createElement("p");
     return {
       dom,
-      update(node) {
-        const newText = document.createTextNode(`pos: ${getPos()}`);
-        dom.replaceChildren(newText, img);
-        img.src = node.attrs.src;
-        return true;
-      },
-      destroy() {
-        dom.remove();
-      },
+      contentDOM: dom,
     };
   },
 };
@@ -237,7 +221,7 @@ function DemoEditor() {
           return DecorationSet.create(state.doc, decorations);
         }}
         plugins={plugins}
-        nodeViews={{ paragraph: Paragraph }}
+        // nodeViews={{ paragraph: Paragraph }}
         customNodeViews={customNodeViews}
       ></ProseMirror>
     </main>

@@ -93,6 +93,7 @@ export class DOMObserver {
     if (this.onCharData)
       this.view.dom.addEventListener("DOMCharacterDataModified", this.onCharData)
     this.connectSelection()
+    console.log('observer started')
   }
 
   stop() {
@@ -107,6 +108,7 @@ export class DOMObserver {
     }
     if (this.onCharData) this.view.dom.removeEventListener("DOMCharacterDataModified", this.onCharData)
     this.disconnectSelection()
+    console.log('observer stopped')
   }
 
   connectSelection() {
@@ -169,6 +171,7 @@ export class DOMObserver {
     let {view} = this
     if (!view.docView || this.flushingSoon > -1) return
     let mutations = this.pendingRecords()
+    console.log(mutations)
     if (mutations.length) this.queue = []
 
     let sel = view.domSelectionRange()
