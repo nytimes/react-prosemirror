@@ -21,6 +21,7 @@ type Props = {
 };
 
 export class TextNodeView extends Component<Props> {
+  private viewDescRef: null | CompositionViewDesc | TextViewDesc = null;
   private renderRef: null | JSX.Element = null;
 
   updateEffect() {
@@ -35,7 +36,7 @@ export class TextNodeView extends Component<Props> {
     if (!dom) {
       if (!view?.composing) return;
 
-      const desc = new CompositionViewDesc(
+      this.viewDescRef = new CompositionViewDesc(
         undefined,
         // These are just placeholders/dummies. We can't
         // actually find the correct DOM nodes from here,
@@ -46,7 +47,7 @@ export class TextNodeView extends Component<Props> {
         document.createTextNode(node.text ?? ""),
         node.text ?? ""
       );
-      siblingDescriptors.push(desc);
+      siblingDescriptors.push(this.viewDescRef);
       return;
     }
 
@@ -55,16 +56,27 @@ export class TextNodeView extends Component<Props> {
       textNode = textNode.firstChild as Element | Text;
     }
 
-    const desc = new TextViewDesc(
-      undefined,
-      [],
-      node,
-      decorations,
-      DecorationSet.empty,
-      dom,
-      textNode
-    );
-    siblingDescriptors.push(desc);
+    if (!this.viewDescRef || this.viewDescRef instanceof CompositionViewDesc) {
+      this.viewDescRef = new TextViewDesc(
+        undefined,
+        [],
+        node,
+        decorations,
+        DecorationSet.empty,
+        dom,
+        textNode
+      );
+    } else {
+      this.viewDescRef.parent = undefined;
+      this.viewDescRef.children = [];
+      this.viewDescRef.node = node;
+      this.viewDescRef.outerDeco = decorations;
+      this.viewDescRef.innerDeco = DecorationSet.empty;
+      this.viewDescRef.dom = dom;
+      this.viewDescRef.nodeDOM = textNode;
+    }
+
+    siblingDescriptors.push(this.viewDescRef);
   }
 
   componentDidMount(): void {

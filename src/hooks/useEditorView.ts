@@ -137,6 +137,10 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
       : editorProps.state;
 
   useLayoutEffect(() => {
+    function onCompositionEnd() {
+      forceUpdate();
+    }
+
     if (view && view.dom !== mount) {
       setView(null);
     }
@@ -154,9 +158,10 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
         }
       );
       setView(newView);
+      newView.dom.addEventListener("compositionend", onCompositionEnd);
       return;
     }
-  }, [editorProps, mount, state, view]);
+  }, [editorProps, forceUpdate, mount, state, view]);
 
   view?.setProps({
     ...editorProps,

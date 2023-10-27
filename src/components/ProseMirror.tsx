@@ -135,10 +135,6 @@ export function ProseMirror({
 
   const viewPlugins = useMemo(() => props.plugins ?? [], [props.plugins]);
 
-  useEffect(() => {
-    editorView?.domObserver.connectSelection();
-    return () => editorView?.domObserver.disconnectSelection();
-  }, [editorView?.domObserver]);
   useSyncSelection(editorView);
   usePluginViews(editorView, editorState, viewPlugins);
 
