@@ -5,15 +5,21 @@ import React, {
   RefAttributes,
   cloneElement,
   useContext,
+  useLayoutEffect,
   useRef,
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NonWidgetType } from "../decorations/ReactWidgetType.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
+import {
+  Decoration,
+  DecorationSource,
+  NodeView as NodeViewT,
+} from "../prosemirror-view/index.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 import { MarkView } from "./MarkView.js";
@@ -36,17 +42,18 @@ export function NodeView({
 }: NodeViewProps) {
   const domRef = useRef<HTMLElement | null>(null);
   const nodeDomRef = useRef<HTMLElement | null>(null);
-
-  const childDescriptors = useNodeViewDescriptor(
-    node,
-    domRef,
-    nodeDomRef,
-    innerDeco,
-    outerDeco
-  );
+  // this is ill-conceived; should revisit
+  const initialNode = useRef(node);
+  const initialOuterDeco = useRef(outerDeco);
+  const initialInnerDeco = useRef(innerDeco);
+  const posRef = useRef(pos);
+  posRef.current = pos;
+  const customNodeViewRootRef = useRef<HTMLDivElement | null>(null);
+  const customNodeViewRef = useRef<NodeViewT | null>(null);
 
   const state = useEditorState();
   const { nodeViews } = useContext(NodeViewContext);
+  const { editorView } = useContext(EditorContext);
 
   let element: JSX.Element | null = null;
 
@@ -55,6 +62,62 @@ export function NodeView({
         NodeViewComponentProps & RefAttributes<HTMLElement>
       >
     | undefined = nodeViews[node.type.name];
+
+  const customNodeView = editorView?.someProp("nodeViews")?.[node.type.name];
+
+  useLayoutEffect(() => {
+    if (!customNodeView || !customNodeViewRootRef.current) return;
+
+    customNodeViewRef.current = customNodeView(
+      initialNode.current,
+      editorView,
+      () => posRef.current,
+      initialOuterDeco.current,
+      initialInnerDeco.current
+    );
+    const { dom } = customNodeViewRef.current;
+    nodeDomRef.current = customNodeViewRootRef.current;
+    customNodeViewRootRef.current.appendChild(dom);
+    return () => {
+      customNodeViewRef.current?.destroy?.();
+    };
+  }, [customNodeView, editorView]);
+
+  useLayoutEffect(() => {
+    if (!customNodeView || !customNodeViewRef.current) return;
+
+    const { destroy, update } = customNodeViewRef.current;
+
+    const updated = update?.(node, outerDeco, innerDeco) ?? true;
+    if (updated) return;
+
+    destroy?.();
+
+    if (!customNodeView || !customNodeViewRootRef.current) return;
+
+    initialNode.current = node;
+    initialOuterDeco.current = outerDeco;
+    initialInnerDeco.current = innerDeco;
+
+    customNodeViewRef.current = customNodeView(
+      initialNode.current,
+      editorView,
+      () => posRef.current,
+      initialOuterDeco.current,
+      initialInnerDeco.current
+    );
+    const { dom } = customNodeViewRef.current;
+    nodeDomRef.current = customNodeViewRootRef.current;
+    customNodeViewRootRef.current.appendChild(dom);
+  }, [customNodeView, editorView, innerDeco, node, outerDeco]);
+
+  const childDescriptors = useNodeViewDescriptor(
+    node,
+    domRef,
+    nodeDomRef,
+    innerDeco,
+    outerDeco
+  );
 
   if (Component) {
     element = (
@@ -73,6 +136,14 @@ export function NodeView({
       >
         <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
       </Component>
+    );
+  } else if (customNodeView) {
+    element = (
+      <div
+        ref={customNodeViewRootRef}
+        style={{ display: "contents" }}
+        contentEditable={false}
+      />
     );
   } else {
     const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);

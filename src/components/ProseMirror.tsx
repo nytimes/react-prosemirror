@@ -25,6 +25,7 @@ import {
   DecorationSet as DecorationSetInternal,
   DirectEditorProps,
   EditorView as EditorViewClass,
+  NodeViewConstructor,
   computeDocDeco,
 } from "../prosemirror-view/index.js";
 import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
@@ -58,6 +59,9 @@ export type EditorProps = Omit<
         NodeViewComponentProps & RefAttributes<any>
       >;
     };
+    customNodeViews?: {
+      [nodeType: string]: NodeViewConstructor;
+    };
     dispatchTransaction?: (this: EditorViewClass, tr: Transaction) => void;
   };
 
@@ -71,6 +75,7 @@ export function ProseMirror({
   className,
   children,
   nodeViews = {},
+  customNodeViews = {},
   as,
   ...props
 }: Props) {
@@ -108,6 +113,7 @@ export function ProseMirror({
     ...props,
     docView: docViewDescRef.current,
     plugins,
+    nodeViews: customNodeViews,
   });
 
   const editorState =

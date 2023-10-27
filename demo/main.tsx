@@ -2,7 +2,6 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
-// import { EditorView } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, { ForwardedRef, Ref, forwardRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,7 +13,12 @@ import {
   reactKeys,
   widget,
 } from "../src/index.js";
-import { Decoration, DecorationSet } from "../src/prosemirror-view/index.js";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  NodeViewConstructor,
+} from "../src/prosemirror-view/index.js";
 
 import "./main.css";
 
@@ -31,12 +35,19 @@ const schema = new Schema({
     img: {
       group: "inline",
       inline: true,
-      toDOM() {
+      attrs: {
+        src: { default: "" },
+      },
+      toDOM(node) {
         return [
-          "img",
-          {
-            src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
-          },
+          "span",
+          "pos: 8",
+          [
+            "img",
+            {
+              src: node.attrs.src,
+            },
+          ],
         ];
       },
     },
@@ -78,7 +89,9 @@ const editorState = EditorState.create({
         schema.marks.em.create(),
         schema.marks.strong.create(),
       ]),
-      schema.nodes.img.create(),
+      schema.nodes.img.create({
+        src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
+      }),
       schema.text(" the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
@@ -157,6 +170,28 @@ const plugins = [
   viewPlugin,
 ];
 
+const customNodeViews: Record<string, NodeViewConstructor> = {
+  img: (node, _editorView, getPos) => {
+    const img = document.createElement("img");
+    img.src = node.attrs.src;
+    const dom = document.createElement("span");
+    dom.appendChild(document.createTextNode(`pos: ${getPos()}`));
+    dom.appendChild(img);
+    return {
+      dom,
+      update(node) {
+        const newText = document.createTextNode(`pos: ${getPos()}`);
+        dom.replaceChildren(newText, img);
+        img.src = node.attrs.src;
+        return true;
+      },
+      destroy() {
+        dom.remove();
+      },
+    };
+  },
+};
+
 function DemoEditor() {
   const [state, setState] = useState(editorState);
 
@@ -203,6 +238,7 @@ function DemoEditor() {
         }}
         plugins={plugins}
         nodeViews={{ paragraph: Paragraph }}
+        customNodeViews={customNodeViews}
       ></ProseMirror>
     </main>
   );
@@ -229,13 +265,13 @@ root.render(<DemoEditor />);
 //             })
 //           );
 //         }
-//         // if (index === 2) {
-//         //   decorations.push(
-//         //     Decoration.node(offset, offset + node.nodeSize, {
-//         //       class: "node-deco",
-//         //     })
-//         //   );
-//         // }
+//         if (index === 2) {
+//           decorations.push(
+//             Decoration.node(offset, offset + node.nodeSize, {
+//               class: "node-deco",
+//             })
+//           );
+//         }
 //         if (index === 2) {
 //           decorations.push(
 //             Decoration.widget(
@@ -257,6 +293,30 @@ root.render(<DemoEditor />);
 //         }
 //       });
 //       return DecorationSet.create(state.doc, decorations);
+//     },
+//     nodeViews: {
+//       img: (node, _editorView, getPos) => {
+//         const img = document.createElement("img");
+//         img.src = node.attrs.src;
+//         const span = document.createElement("span");
+//         span.appendChild(document.createTextNode(`pos: ${getPos()}`));
+//         span.appendChild(img);
+//         const dom = document.createElement("div");
+//         dom.style["display"] = "contents";
+//         dom.appendChild(span);
+//         return {
+//           dom,
+//           update(node) {
+//             const newText = document.createTextNode(`pos: ${getPos()}`);
+//             span.replaceChildren(newText, img);
+//             img.src = node.attrs.src;
+//             return true;
+//           },
+//           destroy() {
+//             dom.remove();
+//           },
+//         };
+//       },
 //     },
 //     dispatchTransaction(tr) {
 //       this.updateState(this.state.apply(tr));
