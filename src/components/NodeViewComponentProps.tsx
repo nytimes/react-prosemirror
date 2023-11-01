@@ -1,7 +1,6 @@
 import { Node } from "prosemirror-model";
+import { Decoration, DecorationSource } from "prosemirror-view";
 import { HTMLAttributes, ReactNode } from "react";
-
-import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
 
 export type NodeViewComponentProps = {
   nodeProps: {

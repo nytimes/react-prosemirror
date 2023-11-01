@@ -9,7 +9,7 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { MarkViewDesc, ViewDesc } from "../prosemirror-view/viewdesc.js";
+import { MarkViewDesc, ViewDesc } from "../viewdesc.js";
 
 import { OutputSpec } from "./OutputSpec.js";
 

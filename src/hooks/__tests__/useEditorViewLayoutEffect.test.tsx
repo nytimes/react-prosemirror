@@ -5,7 +5,7 @@ import React from "react";
 
 import { EditorContext } from "../../contexts/EditorContext.js";
 import { LayoutGroup } from "../../contexts/LayoutGroup.js";
-import type { EditorView } from "../../prosemirror-view/index.js";
+import type { EditorView } from "prosemirror-view";
 import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({

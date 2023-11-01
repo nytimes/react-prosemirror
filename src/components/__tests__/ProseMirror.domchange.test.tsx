@@ -36,8 +36,8 @@ import {
   strong,
 } from "prosemirror-test-builder";
 import { Step } from "prosemirror-transform";
+import { EditorView } from "prosemirror-view";
 
-import { EditorView } from "../../prosemirror-view/index.js";
 import {
   findTextNode,
   tempEditor,

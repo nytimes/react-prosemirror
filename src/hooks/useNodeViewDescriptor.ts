@@ -1,17 +1,10 @@
 import { Node } from "prosemirror-model";
+import { Decoration, DecorationSource } from "prosemirror-view";
 import { MutableRefObject, useContext, useLayoutEffect, useRef } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
-import {
-  Decoration,
-  DecorationSource,
-} from "../prosemirror-view/decoration.js";
-import {
-  CompositionViewDesc,
-  NodeViewDesc,
-  ViewDesc,
-} from "../prosemirror-view/viewdesc.js";
+import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
@@ -50,7 +43,6 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current.outerDeco = outerDecorations;
       nodeViewDescRef.current.innerDeco = innerDecorations;
       nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
-      // @ts-expect-error ???
       nodeViewDescRef.current.dom.pmViewDesc = nodeViewDescRef.current;
       nodeViewDescRef.current.contentDOM =
         // If there's already a contentDOM, we can just
@@ -91,7 +83,6 @@ export function useNodeViewDescriptor(
         childDesc.dom = compositionTopDOM;
         childDesc.textDOM = textDOM;
         childDesc.text = textDOM.data;
-        // @ts-expect-error ???
         childDesc.textDOM.pmViewDesc = childDesc;
 
         editorView?.input.compositionNodes.push(childDesc);

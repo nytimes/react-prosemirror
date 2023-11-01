@@ -3,8 +3,8 @@
 import { expect } from "@jest/globals";
 import { act } from "@testing-library/react";
 import { doc, em, p, strong } from "prosemirror-test-builder";
+import { EditorView, __endComposition } from "prosemirror-view";
 
-import { EditorView, __endComposition } from "../../prosemirror-view/index.js";
 import {
   findTextNode,
   tempEditor,

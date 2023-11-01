@@ -1,4 +1,11 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
+import {
+  DecorationSet,
+  DecorationSet as DecorationSetInternal,
+  DirectEditorProps,
+  EditorView as EditorViewClass,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactElement,
@@ -13,22 +20,13 @@ import React, {
 import { EditorContext } from "../contexts/EditorContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
+import { computeDocDeco } from "../decorations/computeDocDeco.js";
+import { viewDecorations } from "../decorations/viewDecorations.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 import { useSyncSelection } from "../hooks/useSyncSelection.js";
-import { usePluginViews } from "../hooks/useViewPlugins.js";
-import {
-  DecorationSet,
-  viewDecorations,
-} from "../prosemirror-view/decoration.js";
-import {
-  DecorationSet as DecorationSetInternal,
-  DirectEditorProps,
-  EditorView as EditorViewClass,
-  NodeViewConstructor,
-  computeDocDeco,
-} from "../prosemirror-view/index.js";
-import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
+import { usePluginViews } from "../hooks/usePluginViews.js";
+import { NodeViewDesc } from "../viewdesc.js";
 
 import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";

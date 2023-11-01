@@ -1,7 +1,6 @@
 import { EditorState } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
 import { createContext } from "react";
-
-import { EditorView } from "../prosemirror-view/index.js";
 
 interface EditorViewContextValue {
   view: EditorView | null;

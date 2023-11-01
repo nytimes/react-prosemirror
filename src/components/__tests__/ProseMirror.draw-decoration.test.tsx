@@ -22,16 +22,16 @@ import {
   schema,
   strong,
 } from "prosemirror-test-builder";
-import React, { LegacyRef, forwardRef, useEffect } from "react";
-
-import { widget } from "../../decorations/ReactWidgetType.js";
-import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import {
   Decoration,
   DecorationSet,
   DecorationSource,
   EditorView,
-} from "../../prosemirror-view/index.js";
+} from "prosemirror-view";
+import React, { LegacyRef, forwardRef, useEffect } from "react";
+
+import { widget } from "../../decorations/ReactWidgetType.js";
+import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
@@ -57,10 +57,17 @@ function decoPlugin(decos: readonly (string | Decoration)[]) {
   return new Plugin({
     state: {
       init(config) {
-        return DecorationSet.create(config.doc!, decos.map(make));
+        return config.doc
+          ? DecorationSet.create(config.doc, decos.map(make))
+          : DecorationSet.empty;
       },
       apply(tr, set, state) {
-        if (tr.docChanged) set = set.map(tr.mapping, tr.doc);
+        if (tr.docChanged) {
+          if (set === DecorationSet.empty) {
+            set = DecorationSet.create(tr.doc, decos.map(make));
+          }
+          set = set.map(tr.mapping, tr.doc);
+        }
         const change = tr.getMeta("updateDecorations");
         if (change) {
           if (change.remove) set = set.remove(change.remove);

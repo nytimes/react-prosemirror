@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Node } from "prosemirror-model";
-
-import { Decoration, DecorationSource } from "../prosemirror-view/index.js";
+import { Decoration, DecorationSource } from "prosemirror-view";
 
 import { ReactWidgetDecoration, ReactWidgetType } from "./ReactWidgetType.js";
 

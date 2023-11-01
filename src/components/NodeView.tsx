@@ -1,5 +1,10 @@
 import { DOMOutputSpec, Node } from "prosemirror-model";
 import { NodeSelection } from "prosemirror-state";
+import {
+  Decoration,
+  DecorationSource,
+  NodeView as NodeViewT,
+} from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   RefAttributes,
@@ -16,11 +21,6 @@ import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { NonWidgetType } from "../decorations/ReactWidgetType.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import {
-  Decoration,
-  DecorationSource,
-  NodeView as NodeViewT,
-} from "../prosemirror-view/index.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 import { MarkView } from "./MarkView.js";

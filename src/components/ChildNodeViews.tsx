@@ -1,5 +1,6 @@
 import classnames from "classnames/dedupe";
 import { Mark, Node } from "prosemirror-model";
+import { Decoration, DecorationSource } from "prosemirror-view";
 import React, {
   ReactNode,
   cloneElement,
@@ -16,10 +17,6 @@ import {
 import { iterDeco } from "../decorations/iterDeco.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
-import {
-  Decoration,
-  DecorationSource,
-} from "../prosemirror-view/decoration.js";
 
 import { MarkView } from "./MarkView.js";
 import { NodeView } from "./NodeView.js";

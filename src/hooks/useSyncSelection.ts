@@ -1,7 +1,7 @@
+import { EditorView } from "prosemirror-view";
 import { useEffect } from "react";
 
-import { EditorView } from "../prosemirror-view/index.js";
-import { selectionToDOM } from "../prosemirror-view/selection.js";
+import { selectionToDOM } from "../selection/selectionToDOM.js";
 
 export function useSyncSelection(view: EditorView | null) {
   useEffect(() => {
@@ -17,6 +17,7 @@ export function useSyncSelection(view: EditorView | null) {
     if (!view?.state) return;
 
     if (view?.composing) return;
+
     selectionToDOM(view);
   });
 }

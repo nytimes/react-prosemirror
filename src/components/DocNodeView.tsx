@@ -2,6 +2,7 @@
 // this linting rule is only broken in this file
 /* eslint-disable react/prop-types */
 import { Node } from "prosemirror-model";
+import { Decoration, DecorationSource } from "prosemirror-view";
 import React, {
   ForwardedRef,
   ReactElement,
@@ -14,11 +15,7 @@ import React, {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
-import {
-  Decoration,
-  DecorationSource,
-} from "../prosemirror-view/decoration.js";
-import { NodeViewDesc } from "../prosemirror-view/viewdesc.js";
+import { NodeViewDesc } from "../viewdesc.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 

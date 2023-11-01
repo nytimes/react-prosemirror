@@ -2,6 +2,12 @@ import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
 import React, { ForwardedRef, Ref, forwardRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -13,12 +19,6 @@ import {
   reactKeys,
   widget,
 } from "../src/index.js";
-import {
-  Decoration,
-  DecorationSet,
-  EditorView,
-  NodeViewConstructor,
-} from "../src/prosemirror-view/index.js";
 
 import "./main.css";
 
@@ -221,8 +221,8 @@ function DemoEditor() {
           return DecorationSet.create(state.doc, decorations);
         }}
         plugins={plugins}
-        // nodeViews={{ paragraph: Paragraph }}
-        customNodeViews={customNodeViews}
+        nodeViews={{ paragraph: Paragraph }}
+        // customNodeViews={customNodeViews}
       ></ProseMirror>
     </main>
   );

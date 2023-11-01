@@ -3,9 +3,9 @@
 import { act } from "@testing-library/react";
 import { Plugin } from "prosemirror-state";
 import { blockquote, br, doc, p } from "prosemirror-test-builder";
+import { Decoration, DecorationSet } from "prosemirror-view";
 import React, { LegacyRef, forwardRef, useEffect } from "react";
 
-import { Decoration, DecorationSet } from "../../prosemirror-view/index.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 

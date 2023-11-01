@@ -11,7 +11,7 @@ import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
 import { DOMNode } from "../prosemirror-view/dom.js";
-import { EditorView as EditorViewT } from "../prosemirror-view/index.js";
+import { EditorView as EditorViewT } from "prosemirror-view";
 
 const toEqualNode: MatcherFunction<[actual: unknown, expect: unknown]> =
   function (actual, expected) {

@@ -1,9 +1,9 @@
 import { Mark } from "prosemirror-model";
 import { Mappable } from "prosemirror-transform";
+import { Decoration, DecorationType } from "prosemirror-view";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 import { WidgetViewComponentProps } from "../components/WidgetViewComponentProps.js";
-import { Decoration, DecorationType } from "../prosemirror-view/decoration.js";
 
 function compareObjs(
   a: { [prop: string]: unknown },

@@ -1,5 +1,5 @@
 import { createContext } from "react";
 
-import { ViewDesc } from "../prosemirror-view/viewdesc.js";
+import { ViewDesc } from "../viewdesc.js";
 
 export const ChildDescriptorsContext = createContext<ViewDesc[]>([]);

@@ -1,14 +1,9 @@
 import { Node } from "prosemirror-model";
+import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
-import { Decoration, DecorationSet } from "../prosemirror-view/decoration.js";
-import { EditorView } from "../prosemirror-view/index.js";
-import {
-  CompositionViewDesc,
-  TextViewDesc,
-  ViewDesc,
-} from "../prosemirror-view/viewdesc.js";
+import { CompositionViewDesc, TextViewDesc, ViewDesc } from "../viewdesc.js";
 
 import { wrapInDeco } from "./ChildNodeViews.js";
 

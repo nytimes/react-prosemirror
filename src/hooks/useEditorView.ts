@@ -1,55 +1,46 @@
-import type { EditorState, Transaction } from "prosemirror-state";
+import { EditorState, Plugin, Transaction } from "prosemirror-state";
+import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
-import {
-  resetScrollPos,
-  storeScrollPos,
-} from "../prosemirror-view/domcoords.js";
-import { DirectEditorProps, EditorView } from "../prosemirror-view/index.js";
+import { NodeViewDesc } from "../viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
 class ReactEditorView extends EditorView {
-  init() {
-    this.domObserver.start();
-    this.initInput();
+  constructor(
+    place:
+      | null
+      | Node
+      | ((editor: HTMLElement) => void)
+      | { mount: HTMLElement },
+    props: DirectEditorProps & { docView: NodeViewDesc }
+  ) {
+    // Call the superclass constructor with an empty
+    // document and limited props. We'll set everything
+    // else ourselves.
+    super(place, {
+      state: EditorState.create({
+        schema: props.state.schema,
+        plugins: props.state.plugins,
+      }),
+      plugins: props.plugins,
+    });
+
+    this._props = props;
+    this.state = props.state;
+
+    // updateCursorWrapper(this);
+
+    // Destroy the DOM created by the default
+    // ProseMirror ViewDesc implementation; we
+    // have a NodeViewDesc from React instead.
+    this.docView.dom.replaceChildren();
+    this.docView = props.docView;
   }
 
-  updateStateInner(state: EditorState, _prevProps: DirectEditorProps) {
-    this.editable = !this.someProp(
-      "editable",
-      (value) => value(this.state) === false
-    );
-
-    const previousState = this.state;
-    this.state = state;
-
-    const scroll =
-      previousState.plugins != state.plugins && !previousState.doc.eq(state.doc)
-        ? "reset"
-        : // @ts-expect-error scrollToSelection is internal
-        state.scrollToSelection >
-          // @ts-expect-error scrollToSelection is internal
-          previousState.scrollToSelection
-        ? "to selection"
-        : "preserve";
-
-    const updateSel = !state.selection.eq(previousState.selection);
-
-    const oldScrollPos =
-      scroll == "preserve" &&
-      updateSel &&
-      this.dom.style.overflowAnchor == null &&
-      storeScrollPos(this);
-
-    if (scroll == "reset") {
-      this.dom.scrollTop = 0;
-    } else if (scroll == "to selection") {
-      this.scrollToSelection();
-    } else if (oldScrollPos) {
-      resetScrollPos(oldScrollPos);
-    }
+  updatePluginViews() {
+    // We handle this in usePluginViews
   }
 }
 
@@ -75,7 +66,8 @@ type EditorStateProps =
       defaultState: EditorState;
     };
 
-export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
+export type EditorProps = Omit<DirectEditorProps, "state"> &
+  EditorStateProps & { docView: NodeViewDesc };
 
 /**
  * Enhances editor props so transactions dispatch in a batched update.
