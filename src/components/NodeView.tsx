@@ -65,6 +65,8 @@ export function NodeView({
       >
     | undefined = nodeViews[node.type.name];
 
+  // TODO: Would be great to pull all of the custom node view stuff into
+  // a hook
   const customNodeView = editorView?.someProp("nodeViews")?.[node.type.name];
 
   useLayoutEffect(() => {
