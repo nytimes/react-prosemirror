@@ -178,12 +178,28 @@ const customNodeViews: Record<string, NodeViewConstructor> = {
 
 function DemoEditor() {
   const [state, setState] = useState(editorState);
+  const [showReactNodeViews, setShowReactNodeViews] = useState(true);
 
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
+      <button
+        onClick={() => {
+          if (showReactNodeViews) {
+            setShowReactNodeViews((prev) => !prev);
+          } else {
+            window.location.reload();
+          }
+        }}
+      >
+        Switch to{" "}
+        {showReactNodeViews
+          ? "ProseMirror node views"
+          : "React node views (requires reload)"}
+      </button>
       <ProseMirror
         as={<article />}
+        key={`${showReactNodeViews}`}
         className="ProseMirror"
         state={state}
         dispatchTransaction={function (tr) {
@@ -221,9 +237,9 @@ function DemoEditor() {
           return DecorationSet.create(state.doc, decorations);
         }}
         plugins={plugins}
-        nodeViews={{ paragraph: Paragraph }}
-        // customNodeViews={customNodeViews}
-      ></ProseMirror>
+        nodeViews={showReactNodeViews ? { paragraph: Paragraph } : undefined}
+        customNodeViews={showReactNodeViews ? undefined : customNodeViews}
+      />
     </main>
   );
 }

@@ -9,6 +9,7 @@ import React, {
   ForwardRefExoticComponent,
   RefAttributes,
   cloneElement,
+  createElement,
   useContext,
   useLayoutEffect,
   useRef,
@@ -145,23 +146,18 @@ export function NodeView({
     }
     const { contentDOM } = customNodeViewRef.current;
     contentDomRef.current = contentDOM ?? null;
-    element = (
-      <div
-        ref={customNodeViewRootRef}
-        style={{ display: "contents" }}
-        contentEditable={!!contentDOM}
-        suppressContentEditableWarning={true}
-      >
-        {contentDOM &&
-          createPortal(
-            <ChildNodeViews
-              pos={pos}
-              node={node}
-              innerDecorations={innerDeco}
-            />,
-            contentDOM
-          )}
-      </div>
+    element = createElement(
+      node.isInline ? "span" : "div",
+      {
+        ref: customNodeViewRootRef,
+        contentEditable: !!contentDOM,
+        suppressContentEditableWarning: true,
+      },
+      contentDOM &&
+        createPortal(
+          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />,
+          contentDOM
+        )
     );
   } else {
     const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
