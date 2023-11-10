@@ -1,4 +1,4 @@
-import { EditorState, Plugin, Transaction } from "prosemirror-state";
+import { EditorState, Transaction } from "prosemirror-state";
 import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
@@ -7,6 +7,7 @@ import { NodeViewDesc } from "../viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
+// @ts-expect-error We're making use of knowledge of internal methods here
 class ReactEditorView extends EditorView {
   constructor(
     place:
@@ -27,6 +28,7 @@ class ReactEditorView extends EditorView {
       plugins: props.plugins,
     });
 
+    // @ts-expect-error We're making use of knowledge of internal attributes here
     this._props = props;
     this.state = props.state;
 
@@ -35,7 +37,9 @@ class ReactEditorView extends EditorView {
     // Destroy the DOM created by the default
     // ProseMirror ViewDesc implementation; we
     // have a NodeViewDesc from React instead.
+    // @ts-expect-error We're making use of knowledge of internal attributes here
     this.docView.dom.replaceChildren();
+    // @ts-expect-error We're making use of knowledge of internal attributes here
     this.docView = props.docView;
   }
 
@@ -117,7 +121,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
   props: EditorProps
 ): EditorView | null {
-  const [view, setView] = useState<EditorView | null>(null);
+  const [view, setView] = useState<ReactEditorView | null>(null);
 
   const forceUpdate = useForceUpdate();
 
@@ -160,5 +164,5 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     ...("state" in editorProps && { state: editorProps.state }),
   });
 
-  return view;
+  return view as unknown as EditorView;
 }

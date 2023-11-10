@@ -10,10 +10,7 @@ import React, {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
-import {
-  NonWidgetType,
-  ReactWidgetDecoration,
-} from "../decorations/ReactWidgetType.js";
+import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
 import { iterDeco } from "../decorations/iterDeco.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
@@ -48,7 +45,8 @@ export function wrapInDeco(reactNode: JSX.Element | string, deco: Decoration) {
     contenteditable: contentEditable,
     spellcheck: spellCheck,
     ...attrs
-  } = (deco.type as unknown as NonWidgetType).attrs;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } = (deco as any).type.attrs;
 
   // We auto-wrap text nodes in spans so that we can apply attributes
   // and styles, but we want to avoid double-wrapping the same

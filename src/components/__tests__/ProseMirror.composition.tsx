@@ -3,6 +3,7 @@
 import { expect } from "@jest/globals";
 import { act } from "@testing-library/react";
 import { doc, em, p, strong } from "prosemirror-test-builder";
+// @ts-expect-error This is an internal export
 import { EditorView, __endComposition } from "prosemirror-view";
 
 import {
@@ -53,7 +54,7 @@ function compose(
     else update[i]!(node!);
     const { focusNode, focusOffset } = sel;
     act(() => {
-      pm.domObserver.flush();
+      (pm as any).domObserver.flush();
     });
 
     if (options.cancel && i == update.length - 1) {
@@ -70,7 +71,7 @@ function compose(
   event(pm, "compositionend");
   if (options.end) {
     options.end(node!);
-    pm.domObserver.flush();
+    (pm as any).domObserver.flush();
   }
   endComposition(pm);
   expect(pm.composing).toBeFalsy();
@@ -397,7 +398,7 @@ describe("EditorView composition", () => {
   //   event(pm, "compositionstart");
   //   const one = findTextNode(pm.dom, "one")!;
   //   edit(one, "!");
-  //   pm.domObserver.flush();
+  //   (pm as any).domObserver.flush();
   //   event(pm, "compositionend");
   //   one.nodeValue = "one!!";
   //   const L2 = pm.dom.lastChild;
@@ -405,12 +406,12 @@ describe("EditorView composition", () => {
   //   const two = findTextNode(pm.dom, "two")!;
   //   ist(pm.dom.lastChild, L2);
   //   edit(two, ".");
-  //   pm.domObserver.flush();
+  //   (pm as any).domObserver.flush();
   //   ist(document.getSelection()!.focusNode, two);
   //   ist(document.getSelection()!.focusOffset, 4);
   //   ist(pm.composing);
   //   event(pm, "compositionend");
-  //   pm.domObserver.flush();
+  //   (pm as any).domObserver.flush();
   //   ist(pm.state.doc, doc(p("one!!"), p("two.")), eq);
   // });
 

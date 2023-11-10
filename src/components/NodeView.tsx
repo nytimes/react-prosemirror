@@ -18,7 +18,6 @@ import { createPortal } from "react-dom";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { NonWidgetType } from "../decorations/ReactWidgetType.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
@@ -182,7 +181,8 @@ export function NodeView({
 
   const decoratedElement = cloneElement(
     outerDeco.reduce(wrapInDeco, element),
-    outerDeco.some((d) => (d.type as unknown as NonWidgetType).attrs.nodeName)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    outerDeco.some((d) => (d as any).type.attrs.nodeName)
       ? { ref: domRef }
       : // If all of the node decorations were attr-only, then
         // we've already passed the domRef to the NodeView component
@@ -202,9 +202,8 @@ export function NodeView({
       {cloneElement(
         markedElement,
         node.marks.length ||
-          outerDeco.some(
-            (d) => (d.type as unknown as NonWidgetType).attrs.nodeName
-          )
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          outerDeco.some((d) => (d as any).type.attrs.nodeName)
           ? { ref: domRef }
           : // If all of the node decorations were attr-only, then
             // we've already passed the domRef to the NodeView component

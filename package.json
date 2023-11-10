@@ -74,7 +74,7 @@
     "prosemirror-model": "^1.18.3",
     "prosemirror-state": "^1.4.2",
     "prosemirror-test-builder": "^1.1.1",
-    "prosemirror-transform": "^1.7.3",
+    "prosemirror-transform": "^1.8.0",
     "prosemirror-view": "^1.29.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

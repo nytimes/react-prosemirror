@@ -1,9 +1,10 @@
 import { Mark } from "prosemirror-model";
 import { Mappable } from "prosemirror-transform";
-import { Decoration, DecorationType } from "prosemirror-view";
+import { Decoration } from "prosemirror-view";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 import { WidgetViewComponentProps } from "../components/WidgetViewComponentProps.js";
+import { DOMNode } from "../viewdesc.js";
 
 function compareObjs(
   a: { [prop: string]: unknown },
@@ -14,6 +15,23 @@ function compareObjs(
   for (const p in b) if (!(p in a)) return false;
   return true;
 }
+
+export interface DecorationType {
+  spec: unknown;
+  map(
+    mapping: Mappable,
+    span: Decoration,
+    offset: number,
+    oldOffset: number
+  ): Decoration | null;
+  valid(node: Node, span: Decoration): boolean;
+  eq(other: DecorationType): boolean;
+  destroy(dom: DOMNode): void;
+}
+
+export type DecorationWithType = Decoration & {
+  type: DecorationType;
+};
 
 type ReactWidgetSpec = {
   side?: number;
@@ -49,6 +67,8 @@ export class ReactWidgetType implements DecorationType {
       span.from + oldOffset,
       this.side < 0 ? -1 : 1
     );
+    // @ts-expect-error The Decoration constructor is private/internal, but
+    // we need to use it for our custom widget implementation here.
     return deleted ? null : new Decoration(pos - offset, pos - offset, this);
   }
 
@@ -77,16 +97,9 @@ export function widget(
   >,
   spec?: ReactWidgetSpec
 ) {
+  // @ts-expect-error The Decoration constructor is private/internal, but
+  // we need to use it for our custom widget implementation here.
   return new Decoration(pos, pos, new ReactWidgetType(component, spec));
-}
-
-export interface NonWidgetType extends DecorationType {
-  attrs: {
-    nodeName?: string;
-    class?: string;
-    style?: string;
-    [attr: string]: string | undefined;
-  };
 }
 
 export interface ReactWidgetDecoration extends Decoration {

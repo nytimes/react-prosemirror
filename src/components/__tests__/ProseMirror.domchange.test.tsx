@@ -50,7 +50,7 @@ const img = img_({
 
 function flush(view: EditorView) {
   act(() => {
-    view.domObserver.flush();
+    (view as any).domObserver.flush();
   });
 }
 
@@ -486,8 +486,8 @@ describe("DOM change", () => {
       },
     });
 
-    view.input.lastKeyCode = 8;
-    view.input.lastKeyCodeTime = Date.now();
+    (view as any).input.lastKeyCode = 8;
+    (view as any).input.lastKeyCodeTime = Date.now();
     const textNode = findTextNode(view.dom, "aa");
     textNode.nodeValue = "a";
     flush(view);
@@ -507,8 +507,8 @@ describe("DOM change", () => {
       },
     });
 
-    view.input.lastKeyCode = 8;
-    view.input.lastKeyCodeTime = Date.now();
+    (view as any).input.lastKeyCode = 8;
+    (view as any).input.lastKeyCodeTime = Date.now();
 
     const textNode = findTextNode(view.dom, "foofoo");
     textNode.nodeValue = "foo";
@@ -567,8 +567,8 @@ describe("DOM change", () => {
       },
     });
 
-    view.input.lastKeyCode = 8;
-    view.input.lastKeyCodeTime = Date.now();
+    (view as any).input.lastKeyCode = 8;
+    (view as any).input.lastKeyCodeTime = Date.now();
     const textNode = findTextNode(view.dom, "lalala");
     textNode.nodeValue = "lala";
     flush(view);

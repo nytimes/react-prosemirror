@@ -1315,7 +1315,7 @@ __metadata:
     prosemirror-model: ^1.18.3
     prosemirror-state: ^1.4.2
     prosemirror-test-builder: ^1.1.1
-    prosemirror-transform: ^1.7.3
+    prosemirror-transform: ^1.8.0
     prosemirror-view: ^1.29.1
     react: ^18.2.0
     react-dom: ^18.2.0
@@ -7281,6 +7281,15 @@ __metadata:
   dependencies:
     prosemirror-model: ^1.0.0
   checksum: dbafa4cee8a0ea3ff0a27eda27e3b5ff21f8b39619b09894963c68f5fb2454b67bd2206fb18fdb4176f65fb4f72f307f8a41ddbb4fa35a6feb83675902cc2889
+  languageName: node
+  linkType: hard
+
+"prosemirror-transform@npm:^1.8.0":
+  version: 1.8.0
+  resolution: "prosemirror-transform@npm:1.8.0"
+  dependencies:
+    prosemirror-model: ^1.0.0
+  checksum: 6d16ca4f954ad7b040a4adbb5ddfa8c8ad14b0514f15e1ecfd5e32f08eb3f8696492975b9e599b4776e991ab76df114166dcf6ec7b966a67b02b2069a28415f1
   languageName: node
   linkType: hard
 

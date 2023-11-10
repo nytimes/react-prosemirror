@@ -1,8 +1,8 @@
 import { NodeSelection, Selection, TextSelection } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
+import { Decoration, EditorView } from "prosemirror-view";
 
 import { browser } from "../browser.js";
-import { NodeViewDesc } from "../viewdesc.js";
+import { DOMNode, DOMSelection, NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 // Scans forward and backward through DOM positions equivalent to the
 // given one to see if the two are in the same place (i.e. after a
@@ -56,6 +56,7 @@ function scanFor(
       off = domIndex(node) + (dir < 0 ? 0 : 1);
       node = parent;
     } else if (node.nodeType == 1) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       node = node.childNodes[off + (dir < 0 ? -1 : 0)]!;
       if ((node as HTMLElement).contentEditable == "false") return false;
       off = dir < 0 ? nodeSize(node) : 0;
@@ -66,55 +67,79 @@ function scanFor(
 }
 
 export const domIndex = function (node: Node) {
+  let n: Node | null = node;
   for (let index = 0; ; index++) {
-    node = node.previousSibling!;
-    if (!node) return index;
+    n = n.previousSibling;
+    if (!n) return index;
   }
 };
 
 export function nodeSize(node: Node) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return node.nodeType == 3 ? node.nodeValue!.length : node.childNodes.length;
 }
 
+interface InternalView extends EditorView {
+  docView: ViewDesc;
+  lastSelectedViewDesc: ViewDesc | undefined;
+  domSelectionRange(): {
+    focusNode: DOMNode | null;
+    focusOffset: number;
+    anchorNode: DOMNode | null;
+    anchorOffset: number;
+  };
+  domSelection(): DOMSelection;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  domObserver: any;
+  cursorWrapper: { dom: DOMNode; deco: Decoration } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  input: any;
+}
+
 export function syncNodeSelection(view: EditorView, sel: Selection) {
+  const v = view as InternalView;
   if (sel instanceof NodeSelection) {
-    const desc = view.docView.descAt(sel.from);
-    if (desc != view.lastSelectedViewDesc) {
-      clearNodeSelection(view);
+    const desc = v.docView.descAt(sel.from);
+    if (desc != v.lastSelectedViewDesc) {
+      clearNodeSelection(v);
       if (desc) (desc as NodeViewDesc).selectNode();
-      view.lastSelectedViewDesc = desc;
+      v.lastSelectedViewDesc = desc;
     }
   } else {
-    clearNodeSelection(view);
+    clearNodeSelection(v);
   }
 }
 
 // Clear all DOM statefulness of the last node selection.
 function clearNodeSelection(view: EditorView) {
-  if (view.lastSelectedViewDesc) {
-    if (view.lastSelectedViewDesc.parent)
-      (view.lastSelectedViewDesc as NodeViewDesc).deselectNode();
-    view.lastSelectedViewDesc = undefined;
+  const v = view as InternalView;
+  if (v.lastSelectedViewDesc) {
+    if (v.lastSelectedViewDesc.parent)
+      (v.lastSelectedViewDesc as NodeViewDesc).deselectNode();
+    v.lastSelectedViewDesc = undefined;
   }
 }
 
 export function hasSelection(view: EditorView) {
-  const sel = view.domSelectionRange();
+  const v = view as InternalView;
+  const sel = v.domSelectionRange();
   if (!sel.anchorNode) return false;
   try {
     // Firefox will raise 'permission denied' errors when accessing
     // properties of `sel.anchorNode` when it's in a generated CSS
     // element.
     return (
-      view.dom.contains(
+      v.dom.contains(
         sel.anchorNode.nodeType == 3
           ? sel.anchorNode.parentNode
           : sel.anchorNode
       ) &&
-      (view.editable ||
-        view.dom.contains(
+      (v.editable ||
+        v.dom.contains(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           sel.focusNode!.nodeType == 3
-            ? sel.focusNode!.parentNode
+            ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              sel.focusNode!.parentNode
             : sel.focusNode
         ))
     );
@@ -132,10 +157,13 @@ function editorOwnsSelection(view: EditorView) {
 }
 
 function selectCursorWrapper(view: EditorView) {
-  const domSel = view.domSelection(),
+  const v = view as InternalView;
+  const domSel = v.domSelection(),
     range = document.createRange();
-  const node = view.cursorWrapper!.dom,
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const node = v.cursorWrapper!.dom,
     img = node.nodeName == "IMG";
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   if (img) range.setEnd(node.parentNode!, domIndex(node) + 1);
   else range.setEnd(node, 0);
   range.collapse(false);
@@ -148,17 +176,20 @@ function selectCursorWrapper(view: EditorView) {
   // focused element.
   if (
     !img &&
-    !view.state.selection.visible &&
+    !v.state.selection.visible &&
     browser.ie &&
     browser.ie_version <= 11
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (node as any).disabled = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (node as any).disabled = false;
   }
 }
 
 function temporarilyEditableNear(view: EditorView, pos: number) {
-  const { node, offset } = view.docView.domFromPos(pos, 0);
+  const v = view as InternalView;
+  const { node, offset } = v.docView.domFromPos(pos, 0);
   const after =
     offset < node.childNodes.length ? node.childNodes[offset] : null;
   const before = offset ? node.childNodes[offset - 1] : null;
@@ -175,12 +206,14 @@ function temporarilyEditableNear(view: EditorView, pos: number) {
     if (after) return setEditable(after as HTMLElement);
     else if (before) return setEditable(before as HTMLElement);
   }
+  return;
 }
 
 function setEditable(element: HTMLElement) {
   element.contentEditable = "true";
   if (browser.safari && element.draggable) {
     element.draggable = false;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (element as any).wasDraggable = true;
   }
   return element;
@@ -188,29 +221,31 @@ function setEditable(element: HTMLElement) {
 
 function resetEditable(element: HTMLElement) {
   element.contentEditable = "false";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((element as any).wasDraggable) {
     element.draggable = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (element as any).wasDraggable = null;
   }
 }
 
 function removeClassOnSelectionChange(view: EditorView) {
-  const doc = view.dom.ownerDocument;
-  doc.removeEventListener("selectionchange", view.input.hideSelectionGuard!);
-  const domSel = view.domSelectionRange();
+  const v = view as InternalView;
+  const doc = v.dom.ownerDocument;
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  doc.removeEventListener("selectionchange", v.input.hideSelectionGuard!);
+  const domSel = v.domSelectionRange();
   const node = domSel.anchorNode,
     offset = domSel.anchorOffset;
   doc.addEventListener(
     "selectionchange",
-    (view.input.hideSelectionGuard = () => {
+    (v.input.hideSelectionGuard = () => {
       if (domSel.anchorNode != node || domSel.anchorOffset != offset) {
-        doc.removeEventListener(
-          "selectionchange",
-          view.input.hideSelectionGuard!
-        );
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        doc.removeEventListener("selectionchange", v.input.hideSelectionGuard!);
         setTimeout(() => {
-          if (!editorOwnsSelection(view) || view.state.selection.visible)
-            view.dom.classList.remove("ProseMirror-hideselection");
+          if (!editorOwnsSelection(v) || v.state.selection.visible)
+            v.dom.classList.remove("ProseMirror-hideselection");
         }, 20);
       }
     })
@@ -221,22 +256,23 @@ const brokenSelectBetweenUneditable =
   browser.safari || (browser.chrome && browser.chrome_version < 63);
 
 export function selectionToDOM(view: EditorView, force = false) {
-  const sel = view.state.selection;
-  syncNodeSelection(view, sel);
+  const v = view as InternalView;
+  const sel = v.state.selection;
+  syncNodeSelection(v, sel);
 
-  if (!editorOwnsSelection(view)) return;
+  if (!editorOwnsSelection(v)) return;
 
   // The delayed drag selection causes issues with Cell Selections
   // in Safari. And the drag selection delay is to workarond issues
   // which only present in Chrome.
   if (
     !force &&
-    view.input.mouseDown &&
-    view.input.mouseDown.allowDefault &&
+    v.input.mouseDown &&
+    v.input.mouseDown.allowDefault &&
     browser.chrome
   ) {
-    const domSel = view.domSelectionRange(),
-      curSel = view.domObserver.currentSelection;
+    const domSel = v.domSelectionRange(),
+      curSel = v.domObserver.currentSelection;
     if (
       domSel.anchorNode &&
       curSel.anchorNode &&
@@ -247,39 +283,39 @@ export function selectionToDOM(view: EditorView, force = false) {
         curSel.anchorOffset
       )
     ) {
-      view.input.mouseDown.delayedSelectionSync = true;
-      view.domObserver.setCurSelection();
+      v.input.mouseDown.delayedSelectionSync = true;
+      v.domObserver.setCurSelection();
       return;
     }
   }
 
-  view.domObserver.disconnectSelection();
+  v.domObserver.disconnectSelection();
 
-  if (view.cursorWrapper) {
-    selectCursorWrapper(view);
+  if (v.cursorWrapper) {
+    selectCursorWrapper(v);
   } else {
     const { anchor, head } = sel;
     let resetEditableFrom;
     let resetEditableTo;
     if (brokenSelectBetweenUneditable && !(sel instanceof TextSelection)) {
       if (!sel.$from.parent.inlineContent)
-        resetEditableFrom = temporarilyEditableNear(view, sel.from);
+        resetEditableFrom = temporarilyEditableNear(v, sel.from);
       if (!sel.empty && !sel.$from.parent.inlineContent)
-        resetEditableTo = temporarilyEditableNear(view, sel.to);
+        resetEditableTo = temporarilyEditableNear(v, sel.to);
     }
-    view.docView.setSelection(anchor, head, view.root, force);
+    v.docView.setSelection(anchor, head, v.root, force);
     if (brokenSelectBetweenUneditable) {
       if (resetEditableFrom) resetEditable(resetEditableFrom);
       if (resetEditableTo) resetEditable(resetEditableTo);
     }
     if (sel.visible) {
-      view.dom.classList.remove("ProseMirror-hideselection");
+      v.dom.classList.remove("ProseMirror-hideselection");
     } else {
-      view.dom.classList.add("ProseMirror-hideselection");
-      if ("onselectionchange" in document) removeClassOnSelectionChange(view);
+      v.dom.classList.add("ProseMirror-hideselection");
+      if ("onselectionchange" in document) removeClassOnSelectionChange(v);
     }
   }
 
-  view.domObserver.setCurSelection();
-  view.domObserver.connectSelection();
+  v.domObserver.setCurSelection();
+  v.domObserver.connectSelection();
 }

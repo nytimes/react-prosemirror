@@ -2,13 +2,12 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 
-import { ReactWidgetDecoration, ReactWidgetType } from "./ReactWidgetType.js";
+import { ReactWidgetDecoration } from "./ReactWidgetType.js";
+import { InternalDecorationSource } from "./internalTypes.js";
 
 function compareSide(a: Decoration, b: Decoration) {
-  return (
-    (a.type as unknown as ReactWidgetType).side -
-    (b.type as unknown as ReactWidgetType).side
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (a as any).type.side - (b as any).type.side;
 }
 
 // This function abstracts iterating over the nodes and decorations in
@@ -35,13 +34,19 @@ export function iterDeco(
     index: number
   ) => void
 ) {
-  const locals = deco.locals(parent);
+  const locals = (deco as InternalDecorationSource).locals(parent);
   let offset = 0;
   // Simple, cheap variant for when there are no local decorations
   if (locals.length == 0) {
     for (let i = 0; i < parent.childCount; i++) {
       const child = parent.child(i);
-      onNode(child, locals, deco.forChild(offset, child), offset, i);
+      onNode(
+        child,
+        locals,
+        (deco as InternalDecorationSource).forChild(offset, child),
+        offset,
+        i
+      );
       offset += child.nodeSize;
     }
     return;
@@ -113,9 +118,16 @@ export function iterDeco(
 
     const outerDeco =
       child.isInline && !child.isLeaf
-        ? active.filter((d) => !d.inline)
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          active.filter((d) => !(d as any).inline)
         : active.slice();
-    onNode(child, outerDeco, deco.forChild(offset, child), offset, index);
+    onNode(
+      child,
+      outerDeco,
+      (deco as InternalDecorationSource).forChild(offset, child),
+      offset,
+      index
+    );
     offset = end;
   }
 }

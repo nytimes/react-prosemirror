@@ -75,7 +75,8 @@ export const DocNodeView = forwardRef(function DocNodeView(
 
   if (!node) return element;
 
-  const nodeDecorations = outerDeco.filter((deco) => !deco.inline);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const nodeDecorations = outerDeco.filter((deco) => !(deco as any).inline);
   if (!nodeDecorations.length) {
     return element;
   }

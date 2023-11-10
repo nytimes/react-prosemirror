@@ -7,7 +7,9 @@ export function useSyncSelection(view: EditorView | null) {
   useEffect(() => {
     if (!view) return;
 
-    const { domObserver } = view;
+    // We don't have access to view.domObserver types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { domObserver } = view as any;
     domObserver.connectSelection();
 
     return () => domObserver.disconnectSelection();

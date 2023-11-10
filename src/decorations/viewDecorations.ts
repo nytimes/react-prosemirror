@@ -7,6 +7,13 @@ import {
   EditorView,
 } from "prosemirror-view";
 
+import {
+  InternalDecoration,
+  InternalDecorationSet,
+  InternalDecorationSource,
+} from "./internalTypes.js";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const none: readonly any[] = [],
   noSpec = {};
 
@@ -29,11 +36,13 @@ class DecorationGroup implements DecorationSource {
     if (child.isLeaf) return DecorationSet.empty;
     let found: DecorationSet[] = [];
     for (let i = 0; i < this.members.length; i++) {
-      const result = this.members[i]!.forChild(offset, child);
+      const result = (
+        this.members[i] as unknown as InternalDecorationSource
+      ).forChild(offset, child);
       if (result == empty) continue;
       if (result instanceof DecorationGroup)
         found = found.concat(result.members);
-      else found.push(result);
+      else found.push(result as unknown as DecorationSet);
     }
     return DecorationGroup.from(found);
   }
@@ -45,7 +54,12 @@ class DecorationGroup implements DecorationSource {
     )
       return false;
     for (let i = 0; i < this.members.length; i++)
-      if (!this.members[i]!.eq(other.members[i])) return false;
+      if (
+        !(this.members[i] as unknown as InternalDecorationSource).eq(
+          other.members[i] as DecorationSource
+        )
+      )
+        return false;
     return true;
   }
 
@@ -53,7 +67,9 @@ class DecorationGroup implements DecorationSource {
     let result: Decoration[] | undefined,
       sorted = true;
     for (let i = 0; i < this.members.length; i++) {
-      const locals = this.members[i]!.localsInner(node);
+      const locals = (
+        this.members[i] as unknown as InternalDecorationSet
+      ).localsInner(node);
       if (!locals.length) continue;
       if (!result) {
         result = locals as Decoration[];
@@ -62,7 +78,8 @@ class DecorationGroup implements DecorationSource {
           result = result.slice();
           sorted = false;
         }
-        for (let j = 0; j < locals.length; j++) result.push(locals[j]);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        for (let j = 0; j < locals.length; j++) result.push(locals[j]!);
       }
     }
     return result ? removeOverlap(sorted ? result : result.sort(byPos)) : none;
@@ -75,6 +92,7 @@ class DecorationGroup implements DecorationSource {
       case 0:
         return empty;
       case 1:
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return members[0]!;
       default:
         return new DecorationGroup(
@@ -108,17 +126,23 @@ function byPos(a: Decoration, b: Decoration) {
 function removeOverlap(spans: readonly Decoration[]): Decoration[] {
   let working: Decoration[] = spans as Decoration[];
   for (let i = 0; i < working.length - 1; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const span = working[i]!;
     if (span.from != span.to)
       for (let j = i + 1; j < working.length; j++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const next = working[j]!;
         if (next.from == span.from) {
           if (next.to != span.to) {
             if (working == spans) working = spans.slice();
             // Followed by a partially overlapping larger span. Split that
             // span.
-            working[j] = next.copy(next.from, span.to);
-            insertAhead(working, j + 1, next.copy(span.to, next.to));
+            working[j] = (next as InternalDecoration).copy(next.from, span.to);
+            insertAhead(
+              working,
+              j + 1,
+              (next as InternalDecoration).copy(span.to, next.to)
+            );
           }
           continue;
         } else {
@@ -126,8 +150,15 @@ function removeOverlap(spans: readonly Decoration[]): Decoration[] {
             if (working == spans) working = spans.slice();
             // The end of this one overlaps with a subsequent span. Split
             // this one.
-            working[i] = span.copy(span.from, next.from);
-            insertAhead(working, j, span.copy(next.from, span.to));
+            working[i] = (span as InternalDecoration).copy(
+              span.from,
+              next.from
+            );
+            insertAhead(
+              working,
+              j,
+              (span as InternalDecoration).copy(next.from, span.to)
+            );
           }
           break;
         }
@@ -137,6 +168,7 @@ function removeOverlap(spans: readonly Decoration[]): Decoration[] {
 }
 
 function insertAhead(array: Decoration[], i: number, deco: Decoration) {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   while (i < array.length && byPos(deco, array[i]!) > 0) i++;
   array.splice(i, 0, deco);
 }
@@ -147,7 +179,12 @@ export function viewDecorations(view: EditorView): DecorationSource {
     const result = f(view.state);
     if (result && result != empty) found.push(result);
   });
-  if (view.cursorWrapper)
-    found.push(DecorationSet.create(view.state.doc, [view.cursorWrapper.deco]));
+  // We don't have access to types for view.cursorWrapper here
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((view as any).cursorWrapper)
+    found.push(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      DecorationSet.create(view.state.doc, [(view as any).cursorWrapper.deco])
+    );
   return DecorationGroup.from(found);
 }

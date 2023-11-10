@@ -24,8 +24,8 @@ import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
 import { useEditorView } from "../hooks/useEditorView.js";
-import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { usePluginViews } from "../hooks/usePluginViews.js";
+import { useSyncSelection } from "../hooks/useSyncSelection.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { DocNodeView } from "./DocNodeView.js";
@@ -127,14 +127,12 @@ export function ProseMirror({
     [editorState, editorView, registerEventListener, unregisterEventListener]
   );
 
-  // TODO: This might not be safe (especially with Suspense?)
-  // I _think_ it's not strictly necessary, but I want to try to get
-  // composition working 100% before removing it, because it makes
-  // it easier to reason about
-  editorView?.domObserver.stop();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (editorView as any | null)?.domObserver.stop();
 
   useEffect(() => {
-    editorView?.domObserver.start();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (editorView as any | null)?.domObserver.start();
   });
 
   const viewPlugins = useMemo(() => props.plugins ?? [], [props.plugins]);

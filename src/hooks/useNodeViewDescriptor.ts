@@ -43,6 +43,7 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current.outerDeco = outerDecorations;
       nodeViewDescRef.current.innerDeco = innerDecorations;
       nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
+      // @ts-expect-error We have our own ViewDesc implementations
       nodeViewDescRef.current.dom.pmViewDesc = nodeViewDescRef.current;
       nodeViewDescRef.current.contentDOM =
         // If there's already a contentDOM, we can just
@@ -83,9 +84,13 @@ export function useNodeViewDescriptor(
         childDesc.dom = compositionTopDOM;
         childDesc.textDOM = textDOM;
         childDesc.text = textDOM.data;
+        // @ts-expect-error We have our own ViewDesc implementations
         childDesc.textDOM.pmViewDesc = childDesc;
 
-        editorView?.input.compositionNodes.push(childDesc);
+        // We don't have access to the types for editorView.input, so just
+        // escape hatching here
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (editorView as any | null)?.input.compositionNodes.push(childDesc);
       }
     }
 

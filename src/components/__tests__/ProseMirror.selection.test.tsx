@@ -103,7 +103,7 @@ describe("EditorView", () => {
       setDOMSel(node, offset);
       view.dom.focus();
       act(() => {
-        view.domObserver.flush();
+        (view as any).domObserver.flush();
       });
       const sel = view.state.selection;
       expect(sel.head == null ? sel.from : sel.head).toBe(expected);

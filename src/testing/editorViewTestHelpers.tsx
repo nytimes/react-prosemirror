@@ -5,13 +5,13 @@ import { MatcherFunction } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { doc, eq, schema } from "prosemirror-test-builder";
+import { EditorView as EditorViewT } from "prosemirror-view";
 import React from "react";
 
 import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
-import { DOMNode } from "../prosemirror-view/dom.js";
-import { EditorView as EditorViewT } from "prosemirror-view";
+import { DOMNode } from "../viewdesc.js";
 
 const toEqualNode: MatcherFunction<[actual: unknown, expect: unknown]> =
   function (actual, expected) {

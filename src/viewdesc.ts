@@ -1,26 +1,15 @@
-import {
-  DOMSerializer,
-  Fragment,
-  Mark,
-  Node,
-  ParseRule,
-} from "prosemirror-model";
-import { TextSelection } from "prosemirror-state";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { Fragment, Mark, Node, ParseRule } from "prosemirror-model";
 import { Decoration, DecorationSource, EditorView } from "prosemirror-view";
 
 import { browser } from "./browser.js";
 import { ReactWidgetDecoration } from "./decorations/ReactWidgetType.js";
-import {
-  domIndex,
-  isEquivalentPosition,
-  nodeSize,
-} from "./selection/selectionToDOM.js";
+import { InternalDecorationSource } from "./decorations/internalTypes.js";
+import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
 
 export type DOMNode = InstanceType<typeof window.Node>;
-
-// declare global {
-//   interface Node { pmViewDesc?: ViewDesc }
-// }
+export type DOMSelection = InstanceType<typeof window.Selection>;
 
 /// By default, document nodes are rendered using the result of the
 /// [`toDOM`](#model.NodeSpec.toDOM) method of their spec, and managed
@@ -134,6 +123,8 @@ export class ViewDesc {
   ) {
     // An expando property on the DOM node provides a link back to its
     // description.
+    // @ts-expect-error We're using custom view implementations here but
+    // we match the API so this is relatively safe.
     dom.pmViewDesc = this;
   }
 
@@ -255,6 +246,7 @@ export class ViewDesc {
           !((desc = domAfter.pmViewDesc) && desc.parent == this)
         )
           domAfter = domAfter.nextSibling;
+
         return domAfter ? this.posBeforeChild(desc!) : this.posAtEnd;
       }
     }
@@ -295,7 +287,10 @@ export class ViewDesc {
   // this one.
   nearestDesc(dom: DOMNode): ViewDesc | undefined;
   nearestDesc(dom: DOMNode, onlyNodes: true): NodeViewDesc | undefined;
-  nearestDesc(dom: DOMNode, onlyNodes = false) {
+  nearestDesc(
+    dom: DOMNode,
+    onlyNodes = false
+  ): ViewDesc | NodeViewDesc | undefined {
     for (
       let first = true, cur: DOMNode | null = dom;
       cur;
@@ -316,12 +311,14 @@ export class ViewDesc {
         else return desc;
       }
     }
+    return;
   }
 
   getDesc(dom: DOMNode) {
     const desc = dom.pmViewDesc;
     for (let cur: ViewDesc | undefined = desc; cur; cur = cur.parent)
       if (cur == this) return desc;
+    return;
   }
 
   posFromDOM(dom: DOMNode, offset: number, bias: number) {
@@ -340,12 +337,13 @@ export class ViewDesc {
       const end = offset + child.size;
       if (offset == pos && end != offset) {
         while (!child.border && child.children.length)
-          child = child.children[0];
+          child = child.children[0]!;
         return child;
       }
       if (pos < end) return child.descAt(pos - offset - child.border);
       offset = end;
     }
+    return;
   }
 
   domFromPos(
@@ -379,7 +377,9 @@ export class ViewDesc {
       prev instanceof WidgetViewDesc &&
       prev.side >= 0;
       i--
-    ) {}
+    ) {
+      // ...
+    }
     // Scan towards the first useable node
     if (side <= 0) {
       let prev,
@@ -429,6 +429,7 @@ export class ViewDesc {
         from,
         to,
         fromOffset: 0,
+
         toOffset: this.contentDOM!.childNodes.length,
       };
 
@@ -478,11 +479,13 @@ export class ViewDesc {
           }
           to += next.size;
         }
+
         if (toOffset == -1) toOffset = this.contentDOM!.childNodes.length;
         break;
       }
       offset = end;
     }
+
     return { node: this.contentDOM!, from, to, fromOffset, toOffset };
   }
 
@@ -531,6 +534,7 @@ export class ViewDesc {
     let anchorDOM = this.domFromPos(anchor, anchor ? -1 : 1);
     let headDOM =
       head == anchor ? anchorDOM : this.domFromPos(head, head ? -1 : 1);
+
     const domSel = (root as Document).getSelection()!;
 
     let brKludge = false;
@@ -541,8 +545,9 @@ export class ViewDesc {
     if ((browser.gecko || browser.safari) && anchor == head) {
       const { node, offset } = anchorDOM;
       if (node.nodeType == 3) {
-        brKludge = !!(offset && node.nodeValue![offset - 1] == "\n");
+        brKludge = !!(offset && node.nodeValue?.[offset - 1] == "\n");
         // Issue #1128
+
         if (brKludge && offset == node.nodeValue!.length) {
           for (
             let scan: DOMNode | null = node, after;
@@ -710,7 +715,7 @@ export class WidgetViewDesc extends ViewDesc {
   }
 
   matchesWidget(widget: Decoration) {
-    return this.dirty == NOT_DIRTY && widget.type.eq(this.widget.type);
+    return this.dirty == NOT_DIRTY && (widget as any).type.eq(this.widget.type);
   }
 
   parseRule() {
@@ -786,29 +791,6 @@ export class MarkViewDesc extends ViewDesc {
     super(parent, children, dom, contentDOM);
   }
 
-  static create(
-    parent: ViewDesc,
-    mark: Mark,
-    inline: boolean,
-    view: EditorView
-  ) {
-    const custom = view.nodeViews[mark.type.name];
-    let spec: { dom: HTMLElement; contentDOM?: HTMLElement } =
-      custom && (custom as any)(mark, view, inline);
-    if (!spec || !spec.dom)
-      spec = DOMSerializer.renderSpec(
-        document,
-        mark.type.spec.toDOM!(mark, inline)
-      ) as any;
-    return new MarkViewDesc(
-      parent,
-      [],
-      mark,
-      spec.dom,
-      spec.contentDOM || (spec.dom as HTMLElement)
-    );
-  }
-
   parseRule(): ParseRule | null {
     if (this.dirty & NODE_DIRTY || this.mark.type.spec.reparseInView)
       return null;
@@ -833,20 +815,6 @@ export class MarkViewDesc extends ViewDesc {
       this.dirty = NOT_DIRTY;
     }
   }
-
-  slice(from: number, to: number, view: EditorView) {
-    const copy = MarkViewDesc.create(this.parent!, this.mark, true, view);
-    let nodes = this.children;
-    const size = this.size;
-    // @ts-expect-error ...
-    if (to < size) nodes = replaceNodes(nodes, to, size, view);
-    // @ts-expect-error ...
-    if (from > 0) nodes = replaceNodes(nodes, 0, from, view);
-    // @ts-expect-error ...
-    for (let i = 0; i < nodes.length; i++) nodes[i].parent = copy;
-    copy.children = nodes;
-    return copy;
-  }
 }
 
 // Node view descs are the main, most common type of view desc, and
@@ -864,98 +832,6 @@ export class NodeViewDesc extends ViewDesc {
     public nodeDOM: DOMNode
   ) {
     super(parent, children, dom, contentDOM);
-  }
-
-  // By default, a node is rendered using the `toDOM` method from the
-  // node type spec. But client code can use the `nodeViews` spec to
-  // supply a custom node view, which can influence various aspects of
-  // the way the node works.
-  //
-  // (Using subclassing for this was intentionally decided against,
-  // since it'd require exposing a whole slew of finicky
-  // implementation details to the user code that they probably will
-  // never need.)
-  static create(
-    parent: ViewDesc | undefined,
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    view: EditorView,
-    pos: number
-  ) {
-    const custom = view.nodeViews[node.type.name];
-    let descObj: ViewDesc;
-    const spec: NodeView | undefined =
-      custom &&
-      (custom as any)(
-        node,
-        view,
-        () => {
-          // (This is a function that allows the custom view to find its
-          // own position)
-          if (!descObj) return pos;
-          if (descObj.parent) return descObj.parent.posBeforeChild(descObj);
-        },
-        outerDeco,
-        innerDeco
-      );
-
-    let dom = spec && spec.dom,
-      contentDOM = spec && spec.contentDOM;
-    if (node.isText) {
-      if (!dom) dom = document.createTextNode(node.text!);
-      else if (dom.nodeType != 3)
-        throw new RangeError("Text must be rendered as a DOM text node");
-    } else if (!dom) {
-      ({ dom, contentDOM } = DOMSerializer.renderSpec(
-        document,
-        node.type.spec.toDOM!(node)
-      ));
-    }
-    if (!contentDOM && !node.isText && dom.nodeName != "BR") {
-      // Chrome gets confused by <br contenteditable=false>
-      if (!(dom as HTMLElement).hasAttribute("contenteditable"))
-        (dom as HTMLElement).contentEditable = "false";
-      if (node.type.spec.draggable) (dom as HTMLElement).draggable = true;
-    }
-
-    const nodeDOM = dom;
-    dom = applyOuterDeco(dom, outerDeco, node);
-
-    if (spec)
-      return (descObj = new CustomNodeViewDesc(
-        parent,
-        node,
-        outerDeco,
-        innerDeco,
-        dom,
-        contentDOM || null,
-        nodeDOM,
-        spec,
-        view,
-        pos + 1
-      ));
-    else if (node.isText)
-      return new TextViewDesc(
-        parent,
-        [],
-        node,
-        outerDeco,
-        innerDeco,
-        dom,
-        nodeDOM
-      );
-    else
-      return new NodeViewDesc(
-        parent,
-        [],
-        node,
-        outerDeco,
-        innerDeco,
-        dom,
-        contentDOM || null,
-        nodeDOM
-      );
   }
 
   parseRule(): ParseRule | null {
@@ -1001,7 +877,7 @@ export class NodeViewDesc extends ViewDesc {
       this.dirty == NOT_DIRTY &&
       node.eq(this.node) &&
       sameOuterDeco(outerDeco, this.outerDeco) &&
-      innerDeco.eq(this.innerDeco)
+      (innerDeco as InternalDecorationSource).eq(this.innerDeco)
     );
   }
 
@@ -1013,146 +889,6 @@ export class NodeViewDesc extends ViewDesc {
     return this.node.isLeaf ? 0 : 1;
   }
 
-  // Syncs `this.children` to match `this.node.content` and the local
-  // decorations, possibly introducing nesting for marks. Then, in a
-  // separate step, syncs the DOM inside `this.contentDOM` to
-  // `this.children`.
-  updateChildren(view: EditorView, pos: number) {
-    let inline = this.node.inlineContent,
-      off = pos;
-    const composition = view.composing
-      ? this.localCompositionInfo(view, pos)
-      : null;
-    const localComposition =
-      composition && composition.pos > -1 ? composition : null;
-    const compositionInChild = composition && composition.pos < 0;
-    const updater = new ViewTreeUpdater(
-      this,
-      localComposition && localComposition.node,
-      view
-    );
-    iterDeco(
-      this.node,
-      this.innerDeco,
-      (widget, i, insideNode) => {
-        if (widget.spec.marks)
-          updater.syncToMarks(widget.spec.marks, inline, view);
-        else if ((widget.type as WidgetType).side >= 0 && !insideNode)
-          updater.syncToMarks(
-            i == this.node.childCount ? Mark.none : this.node.child(i).marks,
-            inline,
-            view
-          );
-        // If the next node is a desc matching this widget, reuse it,
-        // otherwise insert the widget as a new view desc.
-        updater.placeWidget(widget, view, off);
-      },
-      (child, outerDeco, innerDeco, i) => {
-        // Make sure the wrapping mark descs match the node's marks.
-        updater.syncToMarks(child.marks, inline, view);
-        // Try several strategies for drawing this node
-        let compIndex;
-        if (updater.findNodeMatch(child, outerDeco, innerDeco, i)) {
-          // Found precise match with existing node view
-        } else if (
-          compositionInChild &&
-          view.state.selection.from > off &&
-          view.state.selection.to < off + child.nodeSize &&
-          (compIndex = updater.findIndexWithChild(composition!.node)) > -1 &&
-          updater.updateNodeAt(child, outerDeco, innerDeco, compIndex, view)
-        ) {
-          // Updated the specific node that holds the composition
-        } else if (
-          updater.updateNextNode(child, outerDeco, innerDeco, view, i, off)
-        ) {
-          // Could update an existing node to reflect this node
-        } else {
-          // Add it as a new view
-          updater.addNode(child, outerDeco, innerDeco, view, off);
-        }
-        off += child.nodeSize;
-      }
-    );
-    // Drop all remaining descs after the current position.
-    updater.syncToMarks([], inline, view);
-    if (this.node.isTextblock) updater.addTextblockHacks();
-    updater.destroyRest();
-
-    // Sync the DOM if anything changed
-    if (updater.changed || this.dirty == CONTENT_DIRTY) {
-      // May have to protect focused DOM from being changed if a composition is active
-      if (localComposition)
-        this.protectLocalComposition(view, localComposition);
-      renderDescs(this.contentDOM!, this.children, view);
-      if (browser.ios) iosHacks(this.dom as HTMLElement);
-    }
-  }
-
-  localCompositionInfo(
-    view: EditorView,
-    pos: number
-  ): { node: Text; pos: number; text: string } | null {
-    // Only do something if both the selection and a focused text node
-    // are inside of this node
-    const { from, to } = view.state.selection;
-    if (
-      !(view.state.selection instanceof TextSelection) ||
-      from < pos ||
-      to > pos + this.node.content.size
-    )
-      return null;
-    const sel = view.domSelectionRange();
-    const textNode = nearbyTextNode(sel.focusNode!, sel.focusOffset);
-    if (!textNode || !this.dom.contains(textNode.parentNode)) return null;
-
-    if (this.node.inlineContent) {
-      // Find the text in the focused node in the node, stop if it's not
-      // there (may have been modified through other means, in which
-      // case it should overwritten)
-      const text = textNode.nodeValue!;
-      const textPos = findTextInFragment(
-        this.node.content,
-        text,
-        from - pos,
-        to - pos
-      );
-      return textPos < 0 ? null : { node: textNode, pos: textPos, text };
-    } else {
-      return { node: textNode, pos: -1, text: "" };
-    }
-  }
-
-  protectLocalComposition(
-    view: EditorView,
-    { node, pos, text }: { node: Text; pos: number; text: string }
-  ) {
-    // The node is already part of a local view desc, leave it there
-    if (this.getDesc(node)) return;
-
-    // Create a composition view for the orphaned nodes
-    let topNode: DOMNode = node;
-    for (; ; topNode = topNode.parentNode!) {
-      if (topNode.parentNode == this.contentDOM) break;
-      while (topNode.previousSibling)
-        topNode.parentNode!.removeChild(topNode.previousSibling);
-      while (topNode.nextSibling)
-        topNode.parentNode!.removeChild(topNode.nextSibling);
-      if (topNode.pmViewDesc) topNode.pmViewDesc = undefined;
-    }
-    const desc = new CompositionViewDesc(this, topNode, node, text);
-    view.input.compositionNodes.push(desc);
-
-    // Patch up this.children to contain the composition view
-    // @ts-expect-error ...
-    this.children = replaceNodes(
-      this.children,
-      pos,
-      pos + text.length,
-      view,
-      desc
-    );
-  }
-
   // If this desc must be updated to match the given node decoration,
   // do so and return true.
   update(
@@ -1161,40 +897,7 @@ export class NodeViewDesc extends ViewDesc {
     _innerDeco: DecorationSource,
     _view: EditorView
   ) {
-    // if (this.dirty == NODE_DIRTY || !node.sameMarkup(this.node)) return false;
-    // this.updateInner(node, outerDeco, innerDeco, view);
     return true;
-  }
-
-  updateInner(
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    view: EditorView
-  ) {
-    this.updateOuterDeco(outerDeco);
-    this.node = node;
-    this.innerDeco = innerDeco;
-    if (this.contentDOM) this.updateChildren(view, this.posAtStart);
-    this.dirty = NOT_DIRTY;
-  }
-
-  updateOuterDeco(outerDeco: readonly Decoration[]) {
-    if (sameOuterDeco(outerDeco, this.outerDeco)) return;
-    const needsWrap = this.nodeDOM.nodeType != 1;
-    const oldDOM = this.dom;
-    this.dom = patchOuterDeco(
-      this.dom,
-      this.nodeDOM,
-      // @ts-expect-error ...
-      computeOuterDeco(this.outerDeco, this.node, needsWrap),
-      computeOuterDeco(outerDeco, this.node, needsWrap)
-    );
-    if (this.dom != oldDOM) {
-      oldDOM.pmViewDesc = undefined;
-      this.dom.pmViewDesc = this;
-    }
-    this.outerDeco = outerDeco;
   }
 
   // Mark this node as being the selected node.
@@ -1218,30 +921,6 @@ export class NodeViewDesc extends ViewDesc {
   get domAtom() {
     return this.node.isAtom;
   }
-}
-
-// Create a view desc for the top-level document node, to be exported
-// and used by the view class.
-export function docViewDesc(
-  doc: Node,
-  outerDeco: readonly Decoration[],
-  innerDeco: DecorationSource,
-  dom: HTMLElement,
-  view: EditorView
-): NodeViewDesc {
-  applyOuterDeco(dom, outerDeco, doc);
-  const docView = new NodeViewDesc(
-    undefined,
-    [],
-    doc,
-    outerDeco,
-    innerDeco,
-    dom,
-    dom,
-    dom
-  );
-  if (docView.contentDOM) docView.updateChildren(view, 0);
-  return docView;
 }
 
 export class TextViewDesc extends NodeViewDesc {
@@ -1270,23 +949,6 @@ export class TextViewDesc extends NodeViewDesc {
     _innerDeco: DecorationSource,
     _view: EditorView
   ) {
-    // if (
-    //   this.dirty == NODE_DIRTY ||
-    //   (this.dirty != NOT_DIRTY && !this.inParent()) ||
-    //   !node.sameMarkup(this.node)
-    // )
-    //   return false;
-    // this.updateOuterDeco(outerDeco);
-    // if (
-    //   (this.dirty != NOT_DIRTY || node.text != this.node.text) &&
-    //   node.text != this.nodeDOM.nodeValue
-    // ) {
-    //   this.nodeDOM.nodeValue = node.text!;
-    //   if (view.trackWrites == this.nodeDOM) view.trackWrites = null;
-    // }
-    // this.node = node;
-    // this.dirty = NOT_DIRTY;
-    // return true;
     return true;
   }
 
@@ -1310,21 +972,6 @@ export class TextViewDesc extends NodeViewDesc {
   ignoreMutation(mutation: MutationRecord) {
     return (
       mutation.type != "characterData" && (mutation.type as any) != "selection"
-    );
-  }
-
-  slice(from: number, to: number, view: EditorView) {
-    const node = this.node.cut(from, to),
-      dom = document.createTextNode(node.text!);
-    // @ts-expect-error ...
-    return new TextViewDesc(
-      this.parent,
-      node,
-      this.outerDeco,
-      this.innerDeco,
-      dom,
-      dom,
-      view
     );
   }
 
@@ -1359,910 +1006,9 @@ export class TrailingHackViewDesc extends ViewDesc {
   }
 }
 
-// A separate subclass is used for customized node views, so that the
-// extra checks only have to be made for nodes that are actually
-// customized.
-class CustomNodeViewDesc extends NodeViewDesc {
-  constructor(
-    parent: ViewDesc | undefined,
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    dom: DOMNode,
-    contentDOM: HTMLElement | null,
-    nodeDOM: DOMNode,
-    readonly spec: NodeView,
-    // @ts-expect-error ...
-    view: EditorView,
-    pos: number
-  ) {
-    super(parent, [], node, outerDeco, innerDeco, dom, contentDOM, nodeDOM);
-  }
-
-  // A custom `update` method gets to decide whether the update goes
-  // through. If it does, and there's a `contentDOM` node, our logic
-  // updates the children.
-  update(
-    _node: Node,
-    _outerDeco: readonly Decoration[],
-    _innerDeco: DecorationSource,
-    _view: EditorView
-  ) {
-    // if (this.dirty == NODE_DIRTY) return false;
-    // if (this.spec.update) {
-    //   const result = this.spec.update(node, outerDeco, innerDeco);
-    //   if (result) this.updateInner(node, outerDeco, innerDeco, view);
-    //   return result;
-    // } else if (!this.contentDOM && !node.isLeaf) {
-    //   return false;
-    // } else {
-    //   return super.update(node, outerDeco, innerDeco, view);
-    // }
-    return true;
-  }
-
-  selectNode() {
-    this.spec.selectNode ? this.spec.selectNode() : super.selectNode();
-  }
-
-  deselectNode() {
-    this.spec.deselectNode ? this.spec.deselectNode() : super.deselectNode();
-  }
-
-  setSelection(
-    anchor: number,
-    head: number,
-    root: Document | ShadowRoot,
-    force: boolean
-  ) {
-    this.spec.setSelection
-      ? this.spec.setSelection(anchor, head, root)
-      : super.setSelection(anchor, head, root, force);
-  }
-
-  destroy() {
-    if (this.spec.destroy) this.spec.destroy();
-    super.destroy();
-  }
-
-  stopEvent(event: Event) {
-    return this.spec.stopEvent ? this.spec.stopEvent(event) : false;
-  }
-
-  ignoreMutation(mutation: MutationRecord) {
-    return this.spec.ignoreMutation
-      ? this.spec.ignoreMutation(mutation)
-      : super.ignoreMutation(mutation);
-  }
-}
-
-// Sync the content of the given DOM node with the nodes associated
-// with the given array of view descs, recursing into mark descs
-// because this should sync the subtree for a whole node at a time.
-function renderDescs(
-  parentDOM: HTMLElement,
-  descs: readonly ViewDesc[],
-  view: EditorView
-) {
-  let dom = parentDOM.firstChild,
-    written = false;
-  for (let i = 0; i < descs.length; i++) {
-    const desc = descs[i]!;
-    const childDOM = desc.dom;
-    if (childDOM.parentNode == parentDOM) {
-      while (childDOM != dom) {
-        dom = rm(dom!);
-        written = true;
-      }
-      dom = dom.nextSibling;
-    } else {
-      written = true;
-      parentDOM.insertBefore(childDOM, dom);
-    }
-    if (desc instanceof MarkViewDesc) {
-      const pos = dom ? dom.previousSibling : parentDOM.lastChild;
-      renderDescs(desc.contentDOM!, desc.children, view);
-      dom = pos ? pos.nextSibling : parentDOM.firstChild;
-    }
-  }
-  while (dom) {
-    dom = rm(dom);
-    written = true;
-  }
-  if (written && view.trackWrites == parentDOM) view.trackWrites = null;
-}
-
-type OuterDecoLevel = { [attr: string]: string };
-
-const OuterDecoLevel: { new (nodeName?: string): OuterDecoLevel } = function (
-  this: any,
-  nodeName?: string
-) {
-  if (nodeName) this.nodeName = nodeName;
-} as any;
-OuterDecoLevel.prototype = Object.create(null);
-
-const noDeco = [new OuterDecoLevel()];
-
-function computeOuterDeco(
-  outerDeco: readonly Decoration[],
-  node: Node,
-  needsWrap: boolean
-) {
-  if (outerDeco.length == 0) return noDeco;
-
-  let top = needsWrap ? noDeco[0]! : new OuterDecoLevel();
-  const result = [top];
-
-  for (let i = 0; i < outerDeco.length; i++) {
-    const attrs = outerDeco[i]!.type.attrs;
-    if (!attrs) continue;
-    if (attrs.nodeName) result.push((top = new OuterDecoLevel(attrs.nodeName)));
-
-    for (const name in attrs) {
-      const val = attrs[name];
-      if (val == null) continue;
-      if (needsWrap && result.length == 1)
-        result.push((top = new OuterDecoLevel(node.isInline ? "span" : "div")));
-      if (name == "class") top.class = (top.class ? top.class + " " : "") + val;
-      else if (name == "style")
-        top.style = (top.style ? top.style + ";" : "") + val;
-      else if (name != "nodeName") top[name] = val;
-    }
-  }
-
-  return result;
-}
-
-function patchOuterDeco(
-  outerDOM: DOMNode,
-  nodeDOM: DOMNode,
-  prevComputed: readonly OuterDecoLevel[],
-  curComputed: readonly OuterDecoLevel[]
-) {
-  // Shortcut for trivial case
-  if (prevComputed == noDeco && curComputed == noDeco) return nodeDOM;
-
-  let curDOM = nodeDOM;
-  for (let i = 0; i < curComputed.length; i++) {
-    const deco = curComputed[i]!;
-    let prev = prevComputed[i];
-    if (i) {
-      let parent: DOMNode | null;
-      if (
-        prev &&
-        prev.nodeName == deco.nodeName &&
-        curDOM != outerDOM &&
-        (parent = curDOM.parentNode) &&
-        parent.nodeName!.toLowerCase() == deco.nodeName
-      ) {
-        curDOM = parent;
-      } else {
-        parent = document.createElement(deco.nodeName!);
-        (parent as any).pmIsDeco = true;
-        parent.appendChild(curDOM);
-        prev = noDeco[0];
-        curDOM = parent;
-      }
-    }
-    patchAttributes(curDOM as HTMLElement, prev || noDeco[0]!, deco);
-  }
-  return curDOM;
-}
-
-function patchAttributes(
-  dom: HTMLElement,
-  prev: { [name: string]: string },
-  cur: { [name: string]: string }
-) {
-  for (const name in prev)
-    if (
-      name != "class" &&
-      name != "style" &&
-      name != "nodeName" &&
-      !(name in cur)
-    )
-      dom.removeAttribute(name);
-  for (const name in cur)
-    if (
-      name != "class" &&
-      name != "style" &&
-      name != "nodeName" &&
-      cur[name] != prev[name]
-    )
-      // @ts-expect-error ...
-      dom.setAttribute(name, cur[name]);
-  if (prev.class != cur.class) {
-    const prevList = prev.class ? prev.class.split(" ").filter(Boolean) : [];
-    const curList = cur.class ? cur.class.split(" ").filter(Boolean) : [];
-    // @ts-expect-error ...
-    for (let i = 0; i < prevList.length; i++)
-      if (curList.indexOf(prevList[i]) == -1)
-        // @ts-expect-error ...
-        dom.classList.remove(prevList[i]);
-    // @ts-expect-error ...
-    for (let i = 0; i < curList.length; i++)
-      if (prevList.indexOf(curList[i]) == -1)
-        // @ts-expect-error ...
-        dom.classList.add(curList[i]);
-    if (dom.classList.length == 0) dom.removeAttribute("class");
-  }
-  if (prev.style != cur.style) {
-    if (prev.style) {
-      let prop =
-          /\s*([\w\-\xa1-\uffff]+)\s*:(?:"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|\(.*?\)|[^;])*/g,
-        m;
-      while ((m = prop.exec(prev.style)))
-        // @ts-expect-error ...
-        dom.style.removeProperty(m[1]);
-    }
-    if (cur.style) dom.style.cssText += cur.style;
-  }
-}
-
-function applyOuterDeco(dom: DOMNode, deco: readonly Decoration[], node: Node) {
-  // @ts-expect-error ...
-  return patchOuterDeco(
-    dom,
-    dom,
-    noDeco,
-    computeOuterDeco(deco, node, dom.nodeType != 1)
-  );
-}
-
 function sameOuterDeco(a: readonly Decoration[], b: readonly Decoration[]) {
   if (a.length != b.length) return false;
   // @ts-expect-error ...
   for (let i = 0; i < a.length; i++) if (!a[i].type.eq(b[i].type)) return false;
   return true;
-}
-
-// Remove a DOM node and return its next sibling.
-function rm(dom: DOMNode) {
-  const next = dom.nextSibling;
-  dom.parentNode!.removeChild(dom);
-  return next;
-}
-
-// Helper class for incrementally updating a tree of mark descs and
-// the widget and node descs inside of them.
-class ViewTreeUpdater {
-  // Index into `this.top`'s child array, represents the current
-  // update position.
-  index = 0;
-  // When entering a mark, the current top and index are pushed
-  // onto this.
-  stack: (ViewDesc | number)[] = [];
-  // Tracks whether anything was changed
-  changed = false;
-  preMatch: {
-    index: number;
-    matched: Map<ViewDesc, number>;
-    matches: readonly ViewDesc[];
-  };
-  top: ViewDesc;
-
-  constructor(
-    top: NodeViewDesc,
-    readonly lock: DOMNode | null,
-    private readonly view: EditorView
-  ) {
-    this.top = top;
-    this.preMatch = preMatch(top.node.content, top);
-  }
-
-  // Destroy and remove the children between the given indices in
-  // `this.top`.
-  destroyBetween(start: number, end: number) {
-    if (start == end) return;
-    // @ts-expect-error ...
-    for (let i = start; i < end; i++) this.top.children[i].destroy();
-    this.top.children.splice(start, end - start);
-    this.changed = true;
-  }
-
-  // Destroy all remaining children in `this.top`.
-  destroyRest() {
-    this.destroyBetween(this.index, this.top.children.length);
-  }
-
-  // Sync the current stack of mark descs with the given array of
-  // marks, reusing existing mark descs when possible.
-  syncToMarks(marks: readonly Mark[], inline: boolean, view: EditorView) {
-    let keep = 0,
-      depth = this.stack.length >> 1;
-    const maxKeep = Math.min(depth, marks.length);
-    while (
-      keep < maxKeep &&
-      (keep == depth - 1 ? this.top : (this.stack[(keep + 1) << 1] as ViewDesc))
-        // @ts-expect-error ...
-        .matchesMark(marks[keep]) &&
-      marks[keep].type.spec.spanning !== false
-    )
-      keep++;
-
-    while (keep < depth) {
-      this.destroyRest();
-      this.top.dirty = NOT_DIRTY;
-      this.index = this.stack.pop() as number;
-      this.top = this.stack.pop() as ViewDesc;
-      depth--;
-    }
-    while (depth < marks.length) {
-      this.stack.push(this.top, this.index + 1);
-      let found = -1;
-      for (
-        let i = this.index;
-        i < Math.min(this.index + 3, this.top.children.length);
-        i++
-      ) {
-        const next = this.top.children[i];
-        // @ts-expect-error ...
-        if (next.matchesMark(marks[depth]) && !this.isLocked(next.dom)) {
-          found = i;
-          break;
-        }
-      }
-      if (found > -1) {
-        if (found > this.index) {
-          this.changed = true;
-          this.destroyBetween(this.index, found);
-        }
-        // @ts-expect-error ...
-        this.top = this.top.children[this.index];
-      } else {
-        // @ts-expect-error ...
-        const markDesc = MarkViewDesc.create(
-          this.top,
-          marks[depth],
-          inline,
-          view
-        );
-        this.top.children.splice(this.index, 0, markDesc);
-        this.top = markDesc;
-        this.changed = true;
-      }
-      this.index = 0;
-      depth++;
-    }
-  }
-
-  // Try to find a node desc matching the given data. Skip over it and
-  // return true when successful.
-  findNodeMatch(
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    index: number
-  ): boolean {
-    let found = -1,
-      targetDesc;
-    if (
-      index >= this.preMatch.index &&
-      // @ts-expect-error ...
-      (targetDesc = this.preMatch.matches[index - this.preMatch.index])
-        .parent == this.top &&
-      // @ts-expect-error ...
-      targetDesc.matchesNode(node, outerDeco, innerDeco)
-    ) {
-      // @ts-expect-error ...
-      found = this.top.children.indexOf(targetDesc, this.index);
-    } else {
-      for (
-        let i = this.index, e = Math.min(this.top.children.length, i + 5);
-        i < e;
-        i++
-      ) {
-        const child = this.top.children[i];
-        // @ts-expect-error ...
-        if (
-          child.matchesNode(node, outerDeco, innerDeco) &&
-          !this.preMatch.matched.has(child)
-        ) {
-          found = i;
-          break;
-        }
-      }
-    }
-    if (found < 0) return false;
-    this.destroyBetween(this.index, found);
-    this.index++;
-    return true;
-  }
-
-  updateNodeAt(
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    index: number,
-    view: EditorView
-  ) {
-    const child = this.top.children[index] as NodeViewDesc;
-    if (child.dirty == NODE_DIRTY && child.dom == child.contentDOM)
-      child.dirty = CONTENT_DIRTY;
-    if (!child.update(node, outerDeco, innerDeco, view)) return false;
-    this.destroyBetween(this.index, index);
-    this.index++;
-    return true;
-  }
-
-  findIndexWithChild(domNode: DOMNode) {
-    for (;;) {
-      const parent = domNode.parentNode;
-      if (!parent) return -1;
-      if (parent == this.top.contentDOM) {
-        const desc = domNode.pmViewDesc;
-        if (desc)
-          for (let i = this.index; i < this.top.children.length; i++) {
-            if (this.top.children[i] == desc) return i;
-          }
-        return -1;
-      }
-      domNode = parent;
-    }
-  }
-
-  // Try to update the next node, if any, to the given data. Checks
-  // pre-matches to avoid overwriting nodes that could still be used.
-  updateNextNode(
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    view: EditorView,
-    index: number,
-    pos: number
-  ): boolean {
-    for (let i = this.index; i < this.top.children.length; i++) {
-      const next = this.top.children[i];
-      if (next instanceof NodeViewDesc) {
-        const preMatch = this.preMatch.matched.get(next);
-        if (preMatch != null && preMatch != index) return false;
-        let nextDOM = next.dom,
-          updated;
-
-        // Can't update if nextDOM is or contains this.lock, except if
-        // it's a text node whose content already matches the new text
-        // and whose decorations match the new ones.
-        const locked =
-          this.isLocked(nextDOM) &&
-          !(
-            node.isText &&
-            next.node &&
-            next.node.isText &&
-            next.nodeDOM.nodeValue == node.text &&
-            next.dirty != NODE_DIRTY &&
-            sameOuterDeco(outerDeco, next.outerDeco)
-          );
-        if (!locked && next.update(node, outerDeco, innerDeco, view)) {
-          this.destroyBetween(this.index, i);
-          if (next.dom != nextDOM) this.changed = true;
-          this.index++;
-          return true;
-        } else if (
-          !locked &&
-          (updated = this.recreateWrapper(
-            next,
-            node,
-            outerDeco,
-            innerDeco,
-            view,
-            pos
-          ))
-        ) {
-          this.top.children[this.index] = updated;
-          if (updated.contentDOM) {
-            updated.dirty = CONTENT_DIRTY;
-            updated.updateChildren(view, pos + 1);
-            updated.dirty = NOT_DIRTY;
-          }
-          this.changed = true;
-          this.index++;
-          return true;
-        }
-        break;
-      }
-    }
-    return false;
-  }
-
-  // When a node with content is replaced by a different node with
-  // identical content, move over its children.
-  recreateWrapper(
-    next: NodeViewDesc,
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    view: EditorView,
-    pos: number
-  ) {
-    if (
-      next.dirty ||
-      node.isAtom ||
-      !next.children.length ||
-      !next.node.content.eq(node.content)
-    )
-      return null;
-    const wrapper = NodeViewDesc.create(
-      this.top,
-      node,
-      outerDeco,
-      innerDeco,
-      view,
-      pos
-    );
-    if (wrapper.contentDOM) {
-      wrapper.children = next.children;
-      next.children = [];
-      for (const ch of wrapper.children) ch.parent = wrapper;
-    }
-    next.destroy();
-    return wrapper;
-  }
-
-  // Insert the node as a newly created node desc.
-  addNode(
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    view: EditorView,
-    pos: number
-  ) {
-    const desc = NodeViewDesc.create(
-      this.top,
-      node,
-      outerDeco,
-      innerDeco,
-      view,
-      pos
-    );
-    if (desc.contentDOM) desc.updateChildren(view, pos + 1);
-    this.top.children.splice(this.index++, 0, desc);
-    this.changed = true;
-  }
-
-  // @ts-expect-error ...
-  placeWidget(widget: Decoration, view: EditorView, pos: number) {
-    const next =
-      this.index < this.top.children.length
-        ? this.top.children[this.index]
-        : null;
-    if (
-      next &&
-      next.matchesWidget(widget) &&
-      (widget == (next as WidgetViewDesc).widget ||
-        !(next as any).widget.type.toDOM.parentNode)
-    ) {
-      this.index++;
-    } else {
-      // @ts-expect-error ...
-      const desc = new WidgetViewDesc(this.top, widget, view);
-      this.top.children.splice(this.index++, 0, desc);
-      this.changed = true;
-    }
-  }
-
-  // Make sure a textblock looks and behaves correctly in
-  // contentEditable.
-  addTextblockHacks() {
-    let lastChild = this.top.children[this.index - 1],
-      parent = this.top;
-    while (lastChild instanceof MarkViewDesc) {
-      parent = lastChild;
-      lastChild = parent.children[parent.children.length - 1];
-    }
-
-    if (
-      !lastChild || // Empty textblock
-      !(lastChild instanceof TextViewDesc) ||
-      /\n$/.test(lastChild.node.text!) ||
-      (this.view.requiresGeckoHackNode && /\s$/.test(lastChild.node.text!))
-    ) {
-      // Avoid bugs in Safari's cursor drawing (#1165) and Chrome's mouse selection (#1152)
-      if (
-        (browser.safari || browser.chrome) &&
-        lastChild &&
-        (lastChild.dom as HTMLElement).contentEditable == "false"
-      )
-        this.addHackNode("IMG", parent);
-      this.addHackNode("BR", this.top);
-    }
-  }
-
-  addHackNode(nodeName: string, parent: ViewDesc) {
-    // @ts-expect-error ...
-    if (
-      parent == this.top &&
-      this.index < parent.children.length &&
-      parent.children[this.index].matchesHack(nodeName)
-    ) {
-      this.index++;
-    } else {
-      const dom = document.createElement(nodeName);
-      if (nodeName == "IMG") {
-        dom.className = "ProseMirror-separator";
-        (dom as HTMLImageElement).alt = "";
-      }
-      if (nodeName == "BR") dom.className = "ProseMirror-trailingBreak";
-      const hack = new TrailingHackViewDesc(this.top, [], dom, null);
-      if (parent != this.top) parent.children.push(hack);
-      else parent.children.splice(this.index++, 0, hack);
-      this.changed = true;
-    }
-  }
-
-  isLocked(node: DOMNode) {
-    return (
-      this.lock &&
-      (node == this.lock ||
-        (node.nodeType == 1 && node.contains(this.lock.parentNode)))
-    );
-  }
-}
-
-// Iterate from the end of the fragment and array of descs to find
-// directly matching ones, in order to avoid overeagerly reusing those
-// for other nodes. Returns the fragment index of the first node that
-// is part of the sequence of matched nodes at the end of the
-// fragment.
-function preMatch(
-  frag: Fragment,
-  parentDesc: ViewDesc
-): {
-  index: number;
-  matched: Map<ViewDesc, number>;
-  matches: readonly ViewDesc[];
-} {
-  let curDesc = parentDesc,
-    descI = curDesc.children.length;
-  let fI = frag.childCount,
-    matched = new Map(),
-    matches = [];
-  outer: while (fI > 0) {
-    let desc;
-    for (;;) {
-      if (descI) {
-        const next = curDesc.children[descI - 1];
-        if (next instanceof MarkViewDesc) {
-          curDesc = next;
-          descI = next.children.length;
-        } else {
-          desc = next;
-          descI--;
-          break;
-        }
-      } else if (curDesc == parentDesc) {
-        break outer;
-      } else {
-        // FIXME
-        descI = curDesc.parent!.children.indexOf(curDesc);
-        curDesc = curDesc.parent!;
-      }
-    }
-    // @ts-expect-error ...
-    const node = desc.node;
-    if (!node) continue;
-    if (node != frag.child(fI - 1)) break;
-    --fI;
-    matched.set(desc, fI);
-    matches.push(desc);
-  }
-  // @ts-expect-error ...
-  return { index: fI, matched, matches: matches.reverse() };
-}
-
-function compareSide(a: Decoration, b: Decoration) {
-  return (a.type as WidgetType).side - (b.type as WidgetType).side;
-}
-
-// This function abstracts iterating over the nodes and decorations in
-// a fragment. Calls `onNode` for each node, with its local and child
-// decorations. Splits text nodes when there is a decoration starting
-// or ending inside of them. Calls `onWidget` for each widget.
-function iterDeco(
-  parent: Node,
-  deco: DecorationSource,
-  onWidget: (widget: Decoration, index: number, insideNode: boolean) => void,
-  onNode: (
-    node: Node,
-    outerDeco: readonly Decoration[],
-    innerDeco: DecorationSource,
-    index: number
-  ) => void
-) {
-  let locals = deco.locals(parent),
-    offset = 0;
-  // Simple, cheap variant for when there are no local decorations
-  if (locals.length == 0) {
-    for (let i = 0; i < parent.childCount; i++) {
-      const child = parent.child(i);
-      onNode(child, locals, deco.forChild(offset, child), i);
-      offset += child.nodeSize;
-    }
-    return;
-  }
-
-  let decoIndex = 0,
-    active = [],
-    restNode = null;
-  for (let parentIndex = 0; ; ) {
-    // @ts-expect-error ...
-    if (decoIndex < locals.length && locals[decoIndex].to == offset) {
-      let widget = locals[decoIndex++],
-        widgets;
-      // @ts-expect-error ...
-      while (decoIndex < locals.length && locals[decoIndex].to == offset)
-        (widgets || (widgets = [widget])).push(locals[decoIndex++]);
-      if (widgets) {
-        // @ts-expect-error ...
-        widgets.sort(compareSide);
-        // @ts-expect-error ...
-        for (let i = 0; i < widgets.length; i++)
-          onWidget(widgets[i], parentIndex, !!restNode);
-      } else {
-        // @ts-expect-error ...
-        onWidget(widget, parentIndex, !!restNode);
-      }
-    }
-
-    let child, index;
-    if (restNode) {
-      index = -1;
-      child = restNode;
-      restNode = null;
-    } else if (parentIndex < parent.childCount) {
-      index = parentIndex;
-      child = parent.child(parentIndex++);
-    } else {
-      break;
-    }
-
-    // @ts-expect-error ...
-    for (let i = 0; i < active.length; i++)
-      if (active[i].to <= offset) active.splice(i--, 1);
-    // @ts-expect-error ...
-    while (
-      decoIndex < locals.length &&
-      locals[decoIndex].from <= offset &&
-      locals[decoIndex].to > offset
-    )
-      active.push(locals[decoIndex++]);
-
-    let end = offset + child.nodeSize;
-    if (child.isText) {
-      let cutAt = end;
-      // @ts-expect-error ...
-      if (decoIndex < locals.length && locals[decoIndex].from < cutAt)
-        cutAt = locals[decoIndex].from;
-      // @ts-expect-error ...
-      for (let i = 0; i < active.length; i++)
-        if (active[i].to < cutAt) cutAt = active[i].to;
-      if (cutAt < end) {
-        restNode = child.cut(cutAt - offset);
-        child = child.cut(0, cutAt - offset);
-        end = cutAt;
-        index = -1;
-      }
-    }
-
-    // @ts-expect-error ...
-    const outerDeco =
-      child.isInline && !child.isLeaf
-        ? active.filter((d) => !d.inline)
-        : active.slice();
-    // @ts-expect-error ...
-    onNode(child, outerDeco, deco.forChild(offset, child), index);
-    offset = end;
-  }
-}
-
-// List markers in Mobile Safari will mysteriously disappear
-// sometimes. This works around that.
-function iosHacks(dom: HTMLElement) {
-  if (dom.nodeName == "UL" || dom.nodeName == "OL") {
-    const oldCSS = dom.style.cssText;
-    dom.style.cssText = oldCSS + "; list-style: square !important";
-    window.getComputedStyle(dom).listStyle;
-    dom.style.cssText = oldCSS;
-  }
-}
-
-function nearbyTextNode(node: DOMNode, offset: number): Text | null {
-  for (;;) {
-    if (node.nodeType == 3) return node as Text;
-    if (node.nodeType == 1 && offset > 0) {
-      // @ts-expect-error ...
-      if (
-        node.childNodes.length > offset &&
-        node.childNodes[offset].nodeType == 3
-      )
-        return node.childNodes[offset] as Text;
-      // @ts-expect-error ...
-      node = node.childNodes[offset - 1];
-      offset = nodeSize(node);
-    } else if (node.nodeType == 1 && offset < node.childNodes.length) {
-      // @ts-expect-error ...
-      node = node.childNodes[offset];
-      offset = 0;
-    } else {
-      return null;
-    }
-  }
-}
-
-// Find a piece of text in an inline fragment, overlapping from-to
-function findTextInFragment(
-  frag: Fragment,
-  text: string,
-  from: number,
-  to: number
-) {
-  for (let i = 0, pos = 0; i < frag.childCount && pos <= to; ) {
-    const child = frag.child(i++),
-      childStart = pos;
-    pos += child.nodeSize;
-    if (!child.isText) continue;
-    let str = child.text!;
-    while (i < frag.childCount) {
-      const next = frag.child(i++);
-      pos += next.nodeSize;
-      if (!next.isText) break;
-      str += next.text;
-    }
-    if (pos >= from) {
-      const found =
-        childStart < to ? str.lastIndexOf(text, to - childStart - 1) : -1;
-      if (found >= 0 && found + text.length + childStart >= from)
-        return childStart + found;
-      if (
-        from == to &&
-        str.length >= to + text.length - childStart &&
-        str.slice(to - childStart, to - childStart + text.length) == text
-      )
-        return to;
-    }
-  }
-  return -1;
-}
-
-// Replace range from-to in an array of view descs with replacement
-// (may be null to just delete). This goes very much against the grain
-// of the rest of this code, which tends to create nodes with the
-// right shape in one go, rather than messing with them after
-// creation, but is necessary in the composition hack.
-function replaceNodes(
-  nodes: readonly ViewDesc[],
-  from: number,
-  to: number,
-  view: EditorView,
-  replacement?: ViewDesc
-) {
-  const result = [];
-  for (let i = 0, off = 0; i < nodes.length; i++) {
-    // @ts-expect-error ...
-    const child = nodes[i],
-      start = off,
-      end = (off += child.size);
-    if (start >= to || end <= from) {
-      result.push(child);
-    } else {
-      if (start < from)
-        result.push(
-          (child as MarkViewDesc | TextViewDesc).slice(0, from - start, view)
-        );
-      if (replacement) {
-        result.push(replacement);
-        replacement = undefined;
-      }
-      // @ts-expect-error ...
-      if (end > to)
-        result.push(
-          (child as MarkViewDesc | TextViewDesc).slice(
-            to - start,
-            child.size,
-            view
-          )
-        );
-    }
-  }
-  return result;
 }
