@@ -79,25 +79,26 @@ const schema = new Schema({
 const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
-    schema.nodes.paragraph.create({}, [
-      schema.text("This ", [schema.marks.em.create()]),
-      schema.text("is", [
-        schema.marks.em.create(),
-        schema.marks.strong.create(),
-      ]),
-      schema.nodes.img.create({
-        src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
-      }),
-      schema.text(" the first paragraph"),
-    ]),
+    // schema.nodes.paragraph.create({}, [
+    //   schema.text("This ", [schema.marks.em.create()]),
+    //   schema.text("is", [
+    //     schema.marks.em.create(),
+    //     schema.marks.strong.create(),
+    //   ]),
+    //   schema.nodes.img.create({
+    //     src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
+    //   }),
+    //   schema.text(" the first paragraph"),
+    // ]),
+    // schema.nodes.paragraph.create(
+    //   {},
+    //   schema.text("This is the second paragraph")
+    // ),
+    // schema.nodes.paragraph.create(),
     schema.nodes.paragraph.create(
       {},
-      schema.text("This is the second paragraph")
-    ),
-    schema.nodes.paragraph.create(),
-    schema.nodes.paragraph.create(
-      {},
-      schema.text("This is the third paragraph")
+      // schema.text("This is the third paragraph")
+      schema.text("fumzy")
     ),
   ]),
   plugins: [reactKeys()],
@@ -205,37 +206,37 @@ function DemoEditor() {
         dispatchTransaction={function (tr) {
           setState((prev) => prev.apply(tr));
         }}
-        decorations={(state) => {
-          const decorations = [
-            Decoration.inline(5, 15, { class: "inline-deco" }),
-          ];
-          state.doc.forEach((node, offset, index) => {
-            if (index === 1) {
-              decorations.push(
-                Decoration.node(offset, offset + node.nodeSize, {
-                  nodeName: "div",
-                  class: "node-deco",
-                })
-              );
-            }
-            if (index === 2) {
-              decorations.push(
-                Decoration.node(offset, offset + node.nodeSize, {
-                  class: "node-deco",
-                })
-              );
-            }
-            if (index === 3) {
-              decorations.push(
-                widget(offset + node.nodeSize - 20, TestWidget, {
-                  side: 0,
-                  key: "widget-deco",
-                })
-              );
-            }
-          });
-          return DecorationSet.create(state.doc, decorations);
-        }}
+        // decorations={(state) => {
+        //   const decorations = [
+        //     Decoration.inline(5, 15, { class: "inline-deco" }),
+        //   ];
+        //   state.doc.forEach((node, offset, index) => {
+        //     if (index === 1) {
+        //       decorations.push(
+        //         Decoration.node(offset, offset + node.nodeSize, {
+        //           nodeName: "div",
+        //           class: "node-deco",
+        //         })
+        //       );
+        //     }
+        //     if (index === 2) {
+        //       decorations.push(
+        //         Decoration.node(offset, offset + node.nodeSize, {
+        //           class: "node-deco",
+        //         })
+        //       );
+        //     }
+        //     if (index === 3) {
+        //       decorations.push(
+        //         widget(offset + node.nodeSize - 20, TestWidget, {
+        //           side: 0,
+        //           key: "widget-deco",
+        //         })
+        //       );
+        //     }
+        //   });
+        //   return DecorationSet.create(state.doc, decorations);
+        // }}
         plugins={plugins}
         nodeViews={showReactNodeViews ? { paragraph: Paragraph } : undefined}
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}

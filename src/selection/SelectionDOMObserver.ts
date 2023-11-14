@@ -5,7 +5,7 @@ import { DOMNode, DOMSelectionRange, parentNode } from "../dom.js";
 
 import { hasFocusAndSelection } from "./hasFocusAndSelection.js";
 import { selectionFromDOM } from "./selectionFromDOM.js";
-import { isEquivalentPosition, selectionToDOM } from "./selectionToDOM.js";
+import { isEquivalentPosition } from "./selectionToDOM.js";
 
 class SelectionState {
   anchorNode: Node | null = null;
@@ -140,7 +140,7 @@ export class SelectionDOMObserver {
 
   onSelectionChange() {
     if (!hasFocusAndSelection(this.view)) return;
-    if (this.suppressingSelectionUpdates) return selectionToDOM(this.view);
+    // if (this.suppressingSelectionUpdates) return selectionToDOM(this.view);
     // Deletions on IE11 fire their events in the wrong order, giving
     // us a selection change event before the DOM changes are
     // reported.

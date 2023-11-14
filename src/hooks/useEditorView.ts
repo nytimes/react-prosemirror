@@ -1,7 +1,7 @@
 import { EditorState, Transaction } from "prosemirror-state";
 import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
-import { unstable_batchedUpdates as batch } from "react-dom";
+import { flushSync } from "react-dom";
 
 import { SelectionDOMObserver } from "../selection/SelectionDOMObserver.js";
 import { NodeViewDesc } from "../viewdesc.js";
@@ -56,11 +56,11 @@ class ReactEditorView extends EditorView {
   }
 }
 
-function withBatchedUpdates<This, T extends unknown[]>(
+function withFlushedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    batch(() => {
+    flushSync(() => {
       fn.call(this, ...args);
     });
   };
@@ -106,7 +106,7 @@ function withBatchedDispatch(
         this: EditorView,
         tr: Transaction
       ) {
-        const batchedDispatchTransaction = withBatchedUpdates(
+        const batchedDispatchTransaction = withFlushedUpdates(
           props.dispatchTransaction ?? defaultDispatchTransaction
         );
         batchedDispatchTransaction.call(this, tr);
