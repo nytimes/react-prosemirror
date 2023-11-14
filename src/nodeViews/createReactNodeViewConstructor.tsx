@@ -159,7 +159,7 @@ export function createReactNodeViewConstructor(
         [node, contentDOMWrapper, contentDOMParent]
       );
       return (
-        <NodePosProvider key={nodeKey}>
+        <NodePosProvider nodeKey={nodeKey}>
           <ReactComponent
             node={node}
             decorations={decorations}
