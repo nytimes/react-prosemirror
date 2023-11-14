@@ -3,6 +3,7 @@ import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
+import { SelectionDOMObserver } from "../selection/SelectionDOMObserver.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -31,6 +32,13 @@ class ReactEditorView extends EditorView {
     // @ts-expect-error We're making use of knowledge of internal attributes here
     this._props = props;
     this.state = props.state;
+
+    // @ts-expect-error We're making use of knowledge of internal attributes here
+    this.domObserver.stop();
+    // @ts-expect-error We're making use of knowledge of internal attributes here
+    this.domObserver = new SelectionDOMObserver(this);
+    // @ts-expect-error We're making use of knowledge of internal attributes here
+    this.domObserver.start();
 
     // updateCursorWrapper(this);
 

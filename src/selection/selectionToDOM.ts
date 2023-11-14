@@ -2,7 +2,8 @@ import { NodeSelection, Selection, TextSelection } from "prosemirror-state";
 import { Decoration, EditorView } from "prosemirror-view";
 
 import { browser } from "../browser.js";
-import { DOMNode, DOMSelection, NodeViewDesc, ViewDesc } from "../viewdesc.js";
+import { DOMNode, DOMSelection } from "../dom.js";
+import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 // Scans forward and backward through DOM positions equivalent to the
 // given one to see if the two are in the same place (i.e. after a

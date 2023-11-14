@@ -22,6 +22,7 @@ import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
+import { useBeforeInput } from "../hooks/useBeforeInput.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 import { usePluginViews } from "../hooks/usePluginViews.js";
@@ -137,6 +138,7 @@ export function ProseMirror({
 
   const viewPlugins = useMemo(() => props.plugins ?? [], [props.plugins]);
 
+  useBeforeInput(editorView);
   useSyncSelection(editorView);
   usePluginViews(editorView, editorState, viewPlugins);
 

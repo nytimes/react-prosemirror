@@ -6,10 +6,8 @@ import { Decoration, DecorationSource, EditorView } from "prosemirror-view";
 import { browser } from "./browser.js";
 import { ReactWidgetDecoration } from "./decorations/ReactWidgetType.js";
 import { InternalDecorationSource } from "./decorations/internalTypes.js";
+import { DOMNode } from "./dom.js";
 import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
-
-export type DOMNode = InstanceType<typeof window.Node>;
-export type DOMSelection = InstanceType<typeof window.Selection>;
 
 /// By default, document nodes are rendered using the result of the
 /// [`toDOM`](#model.NodeSpec.toDOM) method of their spec, and managed

@@ -4,7 +4,7 @@ import { Decoration } from "prosemirror-view";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 import { WidgetViewComponentProps } from "../components/WidgetViewComponentProps.js";
-import { DOMNode } from "../viewdesc.js";
+import { DOMNode } from "../dom.js";
 
 function compareObjs(
   a: { [prop: string]: unknown },
