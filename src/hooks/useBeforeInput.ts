@@ -1,14 +1,52 @@
 import { EditorView } from "prosemirror-view";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function useBeforeInput(view: EditorView | null) {
+  const compositionTextRef = useRef<string | null>(null);
   useEffect(() => {
     if (!view) return;
+
+    function onCompositionStart() {
+      // @ts-expect-error Internal property (domObserver)
+      view?.domObserver.stop();
+    }
+
+    function onCompositionEnd(event: CompositionEvent) {
+      if (!view) return;
+      if (compositionTextRef.current === null) return;
+
+      if (
+        view.someProp("handleTextInput")?.(
+          view,
+          view.state.selection.from,
+          view.state.selection.to,
+          event.data
+        )
+      ) {
+        event.preventDefault();
+        // @ts-expect-error Internal property (domObserver)
+        view.domObserver.start();
+        return;
+      }
+
+      const { tr } = view.state;
+      tr.insertText(event.data);
+      view.dispatch(tr);
+      event.preventDefault();
+      // @ts-expect-error Internal property (domObserver)
+      view.domObserver.start();
+    }
 
     function onBeforeInput(event: InputEvent) {
       if (!view) return;
 
       switch (event.inputType) {
+        case "insertCompositionText": {
+          if (event.data === null) return;
+
+          compositionTextRef.current = event.data;
+          break;
+        }
         case "insertText": {
           if (event.data === null) return;
 
@@ -71,6 +109,13 @@ export function useBeforeInput(view: EditorView | null) {
     }
 
     view.dom.addEventListener("beforeinput", onBeforeInput);
-    return () => view.dom.removeEventListener("beforeinput", onBeforeInput);
+    view.dom.addEventListener("compositionend", onCompositionEnd);
+    view.dom.addEventListener("compositionstart", onCompositionStart);
+
+    return () => {
+      view.dom.removeEventListener("compositionstart", onCompositionStart);
+      view.dom.removeEventListener("compositionend", onCompositionEnd);
+      view.dom.removeEventListener("beforeinput", onBeforeInput);
+    };
   }, [view]);
 }

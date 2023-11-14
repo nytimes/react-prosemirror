@@ -3,8 +3,7 @@ import { Decoration, DecorationSource } from "prosemirror-view";
 import { MutableRefObject, useContext, useLayoutEffect, useRef } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { EditorContext } from "../contexts/EditorContext.js";
-import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
+import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
@@ -15,7 +14,6 @@ export function useNodeViewDescriptor(
   viewDesc?: NodeViewDesc,
   contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
-  const { editorView } = useContext(EditorContext);
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
@@ -60,50 +58,7 @@ export function useNodeViewDescriptor(
 
     for (const childDesc of childDescriptors) {
       childDesc.parent = nodeViewDescRef.current;
-
-      // Because TextNodeViews can't locate the DOM nodes
-      // for compositions, we need to override them here
-      if (childDesc instanceof CompositionViewDesc) {
-        const compositionTopDOM =
-          nodeViewDescRef.current.contentDOM?.firstChild;
-        if (!compositionTopDOM)
-          throw new Error(
-            `Started a composition but couldn't find the text node it belongs to.`
-          );
-
-        let textDOM = compositionTopDOM;
-        while (textDOM.firstChild) {
-          textDOM = textDOM.firstChild as Element | Text;
-        }
-
-        if (!textDOM || !(textDOM instanceof Text))
-          throw new Error(
-            `Started a composition but couldn't find the text node it belongs to.`
-          );
-
-        childDesc.dom = compositionTopDOM;
-        childDesc.textDOM = textDOM;
-        childDesc.text = textDOM.data;
-        // @ts-expect-error We have our own ViewDesc implementations
-        childDesc.textDOM.pmViewDesc = childDesc;
-
-        // We don't have access to the types for editorView.input, so just
-        // escape hatching here
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (editorView as any | null)?.input.compositionNodes.push(childDesc);
-      }
     }
-
-    return () => {
-      if (
-        nodeViewDescRef.current?.children[0] instanceof CompositionViewDesc &&
-        !editorView?.composing
-      ) {
-        nodeViewDescRef.current?.children[0].dom.parentNode?.removeChild(
-          nodeViewDescRef.current?.children[0].dom
-        );
-      }
-    };
   });
 
   return childDescriptors;
