@@ -41,6 +41,7 @@ interface NodeViewWrapperProps {
 interface NodeViewWrapperRef {
   node: Node;
   contentDOMWrapper: HTMLElement | null;
+  contentDOMParent: HTMLElement | null;
   setNode: Dispatch<SetStateAction<Node>>;
   setDecorations: Dispatch<SetStateAction<readonly Decoration[]>>;
   setIsSelected: Dispatch<SetStateAction<boolean>>;
@@ -142,18 +143,21 @@ export function createReactNodeViewConstructor(
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
 
+      const [contentDOMParent, setContentDOMParent] =
+        useState<HTMLElement | null>(null);
+
       useImperativeHandle(
         ref,
         () => ({
           node,
           contentDOMWrapper: contentDOMWrapper,
+          contentDOMParent: contentDOMParent,
           setNode,
           setDecorations,
           setIsSelected,
         }),
-        [node, contentDOMWrapper]
+        [node, contentDOMWrapper, contentDOMParent]
       );
-
       return (
         <NodePosProvider key={nodeKey}>
           <ReactComponent
@@ -166,6 +170,14 @@ export function createReactNodeViewConstructor(
                 style={{ display: "contents" }}
                 ref={(nextContentDOMWrapper) => {
                   setContentDOMWrapper(nextContentDOMWrapper);
+                  // we preserve a reference to the contentDOMWrapper'
+                  // parent so that later we can reassemble the DOM hierarchy
+                  // React expects when cleaning up the ContentDOMWrapper element
+                  if (nextContentDOMWrapper?.parentNode) {
+                    setContentDOMParent(
+                      nextContentDOMWrapper.parentNode as HTMLElement
+                    );
+                  }
                 }}
               />
             )}
@@ -252,6 +264,14 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
+        // React expects the contentDOMParent to be a child of the
+        // DOM element where the portal was mounted, but in some situations
+        // contenteditable may have already detached the contentDOMParent
+        // from the DOM. Here we attempt to reassemble the DOM that React
+        // expects when cleaning up the portal.
+        if (componentRef?.contentDOMParent) {
+          this.dom.appendChild(componentRef.contentDOMParent);
+        }
         unregisterElement();
         reactNodeView.destroy?.();
       },
