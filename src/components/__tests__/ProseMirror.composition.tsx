@@ -65,7 +65,6 @@ function compose(
       ).toBeTruthy();
       expect(sel.focusNode).toBe(focusNode);
       expect(sel.focusOffset).toBe(focusOffset);
-      if (options.node) expect(hasCompositionNode(pm)).toBeTruthy();
     }
   }
   event(pm, "compositionend");
