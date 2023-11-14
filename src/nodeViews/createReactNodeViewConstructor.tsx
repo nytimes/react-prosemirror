@@ -270,7 +270,7 @@ export function createReactNodeViewConstructor(
         // from the DOM. Here we attempt to reassemble the DOM that React
         // expects when cleaning up the portal.
         if (componentRef?.contentDOMParent) {
-          this.dom.appendChild(componentRef?.contentDOMParent);
+          this.dom.appendChild(componentRef.contentDOMParent);
         }
         unregisterElement();
         reactNodeView.destroy?.();
