@@ -174,7 +174,9 @@ export function createReactNodeViewConstructor(
                   // parent so that later we can reassemble the DOM hierarchy
                   // React expects when cleaning up the ContentDOMWrapper element
                   if (nextContentDOMWrapper?.parentNode) {
-                    setContentDOMParent(nextContentDOMWrapper.parentNode as HTMLElement);                    
+                    setContentDOMParent(
+                      nextContentDOMWrapper.parentNode as HTMLElement
+                    );
                   }
                 }}
               />
