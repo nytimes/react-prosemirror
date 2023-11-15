@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 import { EditorProvider } from "../contexts/EditorContext.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
-import { react } from "../plugins/react.js";
 import { EditorProps, useEditorView } from "../hooks/useEditorView.js";
+import { react } from "../plugins/react.js";
 
 export type ProseMirrorProps = EditorProps & {
   mount: HTMLElement | null;
