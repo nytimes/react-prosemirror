@@ -367,7 +367,7 @@ const reactNodeViews = {
 const editorState = EditorState.create({
   schema,
   // You must add the react if you use
-  // the useNodeViews hook.
+  // the useNodeViews or useNodePos hook.
   plugins: [react()],
 });
 
@@ -642,4 +642,4 @@ type react = Plugin<Map<number, string>>;
 A ProseMirror Plugin that assists in maintaining the correct hierarchy for React
 node views.
 
-If you use `useNodeViews`, you _must_ include this plugin in your `EditorState`.
+If you use `useNodeViews` or `useNodePos`, you _must_ include this plugin in your `EditorState`.
