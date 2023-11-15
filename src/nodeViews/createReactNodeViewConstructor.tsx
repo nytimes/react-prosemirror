@@ -27,6 +27,7 @@ import {
   createNodeKey,
   reactPluginKey,
 } from "../plugins/react.js";
+
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
 export interface NodeViewComponentProps {
