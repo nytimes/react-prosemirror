@@ -1,6 +1,13 @@
 # React ProseMirror
 
-A fully featured library for safely integrating ProseMirror and React.
+<p align="center">
+  <img src="react-prosemirror-logo.png" alt="React ProseMirror Logo" width="120px" height="120px"/>
+  <br>
+  <em>A fully featured library for safely integrating ProseMirror and React.</em>
+  <br>
+</p>
+
+[![Join the chat at https://gitter.im/nytimes/react-prosemirror](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nytimes/react-prosemirror?utm_source=badge&utm_medium=badge&utm_content=badge)
 
 ## Installation
 
@@ -36,6 +43,7 @@ yarn add @nytimes/react-prosemirror
   - [`useEditorEventCallback`](#useeditoreventcallback-1)
   - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
+  - [`useNodePos`](#usenodepos)
   - [`useNodeViews`](#usenodeviews)
   - [`react`](#react)
 
@@ -150,21 +158,27 @@ we can use `useEditorEffect`.
 
 ```tsx
 // SelectionWidget.tsx
-import { useEditorEffect } from "@nytimes/react-prosemirror";
+import { useRef } from "react"
+import { useEditorEffect } from "@nytimes/react-prosemirror"
 
 export function SelectionWidget() {
-  const [selectionCoords, setSelectionCoords] = useState()
+  const ref = useRef()
 
   useEditorEffect((view) => {
-    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+    if (!view || !ref.current) return
+
+    const viewClientRect = view.dom.getBoundingClientRect()
+    const coords = view.coordsAtPos(view.state.selection.anchor))
+
+    ref.current.style.top = coords.top - viewClientRect.top;
+    ref.current.style.left = coords.left - viewClientRect.left;
   })
 
   return (
     <div
+      ref={ref}
       style={{
-        position: "absolute";
-        left: selectionCoords.left;
-        top: selectionCoords.top;
+        position: "absolute"
       }}
     />
   )
@@ -279,12 +293,13 @@ You can use this hook to implement custom behavior in your NodeViews:
 ```tsx
 import { useEditorEventListener } from "@nytimes/react-prosemirror";
 
-function Paragraph({ node, getPos, children }) {
+function Paragraph({ node, children }) {
+  const nodeStart = useNodePos();
+
   useEditorEventListener("keydown", (view, event) => {
     if (event.code !== "ArrowDown") {
       return false;
     }
-    const nodeStart = getPos();
     const nodeEnd = nodeStart + node.nodeSize;
     const { selection } = view.state;
     if (selection.anchor < nodeStart || selection.anchor > nodeEnd) {
@@ -555,26 +570,45 @@ EditorView lives in an ancestor component.
 Example usage:
 
 ```tsx
-import { useEditorEffect } from '@nytimes/react-prosemirror';
+import { useRef } from "react"
+import { useEditorEffect } from "@nytimes/react-prosemirror"
 
 export function SelectionWidget() {
-  const [selectionCoords, setSelectionCoords] = useState()
+  const ref = useRef()
 
   useEditorEffect((view) => {
-    setSelectionCoords(view.coordsAtPos(view.state.selection.anchor))
+    if (!view || !ref.current) return
+
+    const viewClientRect = view.dom.getBoundingClientRect()
+    const coords = view.coordsAtPos(view.state.selection.anchor))
+
+    ref.current.style.top = coords.top - viewClientRect.top;
+    ref.current.style.left = coords.left - viewClientRect.left;
   })
 
   return (
     <div
+      ref={ref}
       style={{
-        position: 'absolute';
-        left: selectionCoords.left;
-        top: selectionCoords.top;
+        position: "absolute"
       }}
     />
   )
 }
 ```
+
+### `useNodePos`
+
+```tsx
+type useNodePos = () => number;
+```
+
+Returns the node's current position in the document. Takes the place of
+ProseMirror's `getPos` function that gets passed to NodeView's, which is unsafe
+to use in React render functions.
+
+This hook can only be used in React components rendered with
+[`useNodeViews`](#usenodeviews).
 
 ### `useNodeViews`
 

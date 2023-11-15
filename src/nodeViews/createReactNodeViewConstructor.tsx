@@ -20,18 +20,17 @@ import { createPortal } from "react-dom";
 
 import { PortalRegistryContext } from "../contexts/PortalRegistryContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
+import { NodePosProvider } from "../hooks/useNodePos.js";
 import {
   NodeKey,
   ROOT_NODE_KEY,
   createNodeKey,
   reactPluginKey,
 } from "../plugins/react.js";
-
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
 export interface NodeViewComponentProps {
   decorations: readonly Decoration[];
-  getPos: () => number;
   node: Node;
   children: ReactNode;
   isSelected: boolean;
@@ -44,14 +43,13 @@ interface NodeViewWrapperState {
 }
 
 interface NodeViewWrapperProps {
-  editorView: EditorView;
-  getPos: () => number;
   initialState: NodeViewWrapperState;
 }
 
 interface NodeViewWrapperRef {
   node: Node;
   contentDOMWrapper: HTMLElement | null;
+  contentDOMParent: HTMLElement | null;
   setNode: Dispatch<SetStateAction<Node>>;
   setDecorations: Dispatch<SetStateAction<readonly Decoration[]>>;
   setIsSelected: Dispatch<SetStateAction<boolean>>;
@@ -179,10 +177,7 @@ export function createReactNodeViewConstructor(
     const NodeViewWrapper = forwardRef<
       NodeViewWrapperRef,
       NodeViewWrapperProps
-    >(function NodeViewWrapper(
-      { initialState, getPos }: NodeViewWrapperProps,
-      ref
-    ) {
+    >(function NodeViewWrapper({ initialState }: NodeViewWrapperProps, ref) {
       const [node, setNode] = useState<Node>(initialState.node);
       const [decorations, setDecorations] = useState<readonly Decoration[]>(
         initialState.decorations
@@ -211,35 +206,47 @@ export function createReactNodeViewConstructor(
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
 
+      const [contentDOMParent, setContentDOMParent] =
+        useState<HTMLElement | null>(null);
+
       useImperativeHandle(
         ref,
         () => ({
           node,
           contentDOMWrapper: contentDOMWrapper,
+          contentDOMParent: contentDOMParent,
           setNode,
           setDecorations,
           setIsSelected,
         }),
-        [node, contentDOMWrapper]
+        [node, contentDOMWrapper, contentDOMParent]
       );
-
       return (
-        <ReactComponent
-          getPos={getPos}
-          node={node}
-          decorations={decorations}
-          isSelected={isSelected}
-        >
-          {childPortals}
-          {ContentDOMWrapper && (
-            <ContentDOMWrapper
-              style={{ display: "contents" }}
-              ref={(nextContentDOMWrapper) => {
-                setContentDOMWrapper(nextContentDOMWrapper);
-              }}
-            />
-          )}
-        </ReactComponent>
+        <NodePosProvider nodeKey={nodeKey}>
+          <ReactComponent
+            node={node}
+            decorations={decorations}
+            isSelected={isSelected}
+          >
+            {childPortals}
+            {ContentDOMWrapper && (
+              <ContentDOMWrapper
+                style={{ display: "contents" }}
+                ref={(nextContentDOMWrapper) => {
+                  setContentDOMWrapper(nextContentDOMWrapper);
+                  // we preserve a reference to the contentDOMWrapper'
+                  // parent so that later we can reassemble the DOM hierarchy
+                  // React expects when cleaning up the ContentDOMWrapper element
+                  if (nextContentDOMWrapper?.parentNode) {
+                    setContentDOMParent(
+                      nextContentDOMWrapper.parentNode as HTMLElement
+                    );
+                  }
+                }}
+              />
+            )}
+          </ReactComponent>
+        </NodePosProvider>
       );
     });
 
@@ -250,8 +257,6 @@ export function createReactNodeViewConstructor(
     const element = (
       <NodeViewWrapper
         initialState={{ node, decorations, isSelected: false }}
-        editorView={editorView}
-        getPos={getPos}
         ref={(c) => {
           componentRef = c;
 
@@ -331,6 +336,14 @@ export function createReactNodeViewConstructor(
         return false;
       },
       destroy() {
+        // React expects the contentDOMParent to be a child of the
+        // DOM element where the portal was mounted, but in some situations
+        // contenteditable may have already detached the contentDOMParent
+        // from the DOM. Here we attempt to reassemble the DOM that React
+        // expects when cleaning up the portal.
+        if (componentRef?.contentDOMParent) {
+          this.dom.appendChild(componentRef.contentDOMParent);
+        }
         unregisterPortal();
         reactNodeView.destroy?.();
       },
