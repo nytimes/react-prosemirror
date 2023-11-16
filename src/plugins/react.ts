@@ -4,7 +4,7 @@ import { Plugin, PluginKey } from "prosemirror-state";
  * This is a stand-in for the doc node itself, which doesn't have a
  * unique position to map to.
  */
-export const ROOT_NODE_KEY = Symbol("portal registry root key");
+export const ROOT_NODE_KEY = Symbol("@nytimes/react-prosemirror/root-node-key");
 
 export type NodeKey = string | typeof ROOT_NODE_KEY;
 
@@ -18,7 +18,14 @@ export function createNodeKey() {
   return Math.floor(Math.random() * 0xffffff).toString(16);
 }
 
-export const reactPluginKey = new PluginKey("@nytimes/react-prosemirror/react");
+export type ReactPluginState = {
+  posToKey: Map<number, string>;
+  keyToPos: Map<NodeKey, number>;
+};
+
+export const reactPluginKey = new PluginKey<ReactPluginState>(
+  "@nytimes/react-prosemirror/react"
+);
 
 /**
  * Tracks a unique key for each (non-text) node in the
@@ -28,7 +35,7 @@ export const reactPluginKey = new PluginKey("@nytimes/react-prosemirror/react");
  * current position in the document, and vice versa.
  */
 export function react() {
-  return new Plugin({
+  return new Plugin<ReactPluginState>({
     key: reactPluginKey,
     state: {
       init(_, state) {

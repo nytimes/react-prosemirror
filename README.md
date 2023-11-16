@@ -45,6 +45,7 @@ yarn add @nytimes/react-prosemirror
   - [`useEditorEffect`](#useeditoreffect-1)
   - [`useNodePos`](#usenodepos)
   - [`useNodeViews`](#usenodeviews)
+  - [`react`](#react)
 
 <!-- tocstop -->
 
@@ -99,7 +100,7 @@ export function ProseMirrorEditor() {
   // It's important that mount is stored as state,
   // rather than a ref, so that the ProseMirror component
   // is re-rendered when it's set
-  const [mount, setMount] = useState();
+  const [mount, setMount] = useState<HTMLElement | null>(null);
 
   return (
     <ProseMirror mount={mount} defaultState={EditorState.create({ schema })}>
@@ -118,7 +119,7 @@ import { schema } from "prosemirror-schema-basic";
 import { ProseMirror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
-  const [mount, setMount] = useState();
+  const [mount, setMount] = useState<HTMLElement | null>(null);
   const [editorState, setEditorState] = useState(
     EditorState.create({ schema })
   );
@@ -190,7 +191,7 @@ import { schema } from "prosemirror-schema-basic";
 import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
-  const [mount, setMount] = useState()
+  const [mount, setMount] = useState<HTMLElement | null>(null);
   const [editorState, setEditorState] = useState(EditorState.create({ schema }))
 
   return (
@@ -231,6 +232,7 @@ import { useEditorEventCallback } from "@nytimes/react-prosemirror";
 
 export function BoldButton() {
   const onClick = useEditorEventCallback((view) => {
+    if (!view) return;
     const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
     toggleBoldMark(view.state, view.dispatch, view);
   });
@@ -245,7 +247,7 @@ import { schema } from "prosemirror-schema-basic";
 import { BoldButton } from "./BoldButton.tsx";
 
 export function ProseMirrorEditor() {
-  const [mount, setMount] = useState();
+  const [mount, setMount] = useState<HTMLElement | null>(null);
   const [editorState, setEditorState] = useState(
     EditorState.create({ schema })
   );
@@ -333,7 +335,8 @@ EditorView and EditorState.
 The other way to integrate React and ProseMirror is to have ProseMirror render
 NodeViews using React components. This is somewhat more complex than the
 previous section. This library provides a `useNodeViews` hook, a factory for
-augmenting NodeView constructors with React components.
+augmenting NodeView constructors with React components, and `react`, a
+ProseMirror Plugin for maintaining the React component hierarchy.
 
 `useNodeViews` takes a map from node name to an extended NodeView constructor.
 The NodeView constructor must return at least a `dom` attribute and a
@@ -345,6 +348,7 @@ import {
   useNodeViews,
   useEditorEventCallback,
   NodeViewComponentProps,
+  react,
 } from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
@@ -375,17 +379,19 @@ const reactNodeViews = {
   }),
 };
 
+const editorState = EditorState.create({
+  schema,
+  // You must add the react if you use
+  // the useNodeViews or useNodePos hook.
+  plugins: [react()],
+});
+
 function ProseMirrorEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-
-  const [mount, setMount] = useState();
+  const [mount, setMount] = useState<HTMLElement | null>(null);
 
   return (
-    <ProseMirror
-      mount={mount}
-      defaultState={EditorState.create({ schema })}
-      nodeViews={nodeViews}
-    >
+    <ProseMirror mount={mount} defaultState={editorState} nodeViews={nodeViews}>
       <div ref={setMount} />
       {renderNodeViews()}
     </ProseMirror>
@@ -646,16 +652,29 @@ type useNodeViews = (nodeViews: Record<string, ReactNodeViewConstructor>) => {
 ```
 
 Hook for creating and rendering NodeViewConstructors that are powered by React
-components.
+components. To use this hook, you must also include
+[`react`](#reactnodeviewplugin) in your `EditorState`.
 
 `component` can be any React component that takes `NodeViewComponentProps`. It
 will be passed as props all of the arguments to the `nodeViewConstructor` except
 for `editorView`. NodeView components that need access directly to the
-EditorView should use the `useEditorEventCallback` and `useEditorEffect` hooks
-to ensure safe access.
+EditorView should use the `useEditorEventCallback`, `useEditorEventListener` and
+`useEditorEffect` hooks to ensure safe access.
 
 For contentful Nodes, the NodeView component will also be passed a `children`
 prop containing an empty element. ProseMirror will render content nodes into
 this element. Like in ProseMirror, the existence of a `contentDOM` attribute
 determines whether a NodeView is contentful (i.e. the NodeView has editable
 content that should be managed by ProseMirror).
+
+### `react`
+
+```tsx
+type react = Plugin<Map<number, string>>;
+```
+
+A ProseMirror Plugin that assists in maintaining the correct hierarchy for React
+node views.
+
+If you use `useNodeViews` or `useNodePos`, you _must_ include this plugin in
+your `EditorState`.

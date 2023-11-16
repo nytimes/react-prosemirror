@@ -8,16 +8,25 @@ import type {
 } from "prosemirror-view";
 import React, {
   Dispatch,
+  ReactPortal,
   SetStateAction,
   forwardRef,
+  useContext,
   useImperativeHandle,
   useState,
 } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { PortalRegistryContext } from "../contexts/PortalRegistryContext.js";
+import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { NodePosProvider } from "../hooks/useNodePos.js";
-import { createNodeKey, reactPluginKey } from "../plugins/react.js";
+import {
+  NodeKey,
+  ROOT_NODE_KEY,
+  createNodeKey,
+  reactPluginKey,
+} from "../plugins/react.js";
 
 import { phrasingContentTags } from "./phrasingContentTags.js";
 
@@ -49,8 +58,10 @@ interface NodeViewWrapperRef {
 
 export type UnregisterElement = () => void;
 
-export type RegisterElement = (
-  ...args: Parameters<typeof createPortal>
+export type RegisterPortal = (
+  view: EditorView,
+  getPos: () => number,
+  portal: ReactPortal
 ) => UnregisterElement;
 
 type _ReactNodeView = NodeView & {
@@ -70,6 +81,42 @@ export type ReactNodeViewConstructor = (
 ) => ReactNodeView;
 
 /**
+ * Identifies a node view constructor as having been created
+ * by @nytimes/react-prosemirror
+ */
+export const REACT_NODE_VIEW = Symbol("react node view");
+
+/**
+ * Searches upward for the nearest node with a node key,
+ * returning the first node key it finds associated with
+ * a React node view.
+ *
+ * Returns the root key if no ancestor nodes have node keys.
+ */
+export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
+  const pluginState = reactPluginKey.getState(editorView.state);
+  if (!pluginState) return ROOT_NODE_KEY;
+
+  const $pos = editorView.state.doc.resolve(pos);
+
+  for (let d = $pos.depth; d > 0; d--) {
+    const ancestorNodeTypeName = $pos.node(d).type.name;
+    const ancestorNodeView = editorView.props.nodeViews?.[
+      ancestorNodeTypeName
+    ] as (NodeViewConstructor & { [REACT_NODE_VIEW]?: true }) | undefined;
+
+    if (!ancestorNodeView?.[REACT_NODE_VIEW]) continue;
+
+    const ancestorPos = $pos.before(d);
+    const ancestorKey = pluginState.posToKey.get(ancestorPos);
+
+    if (ancestorKey) return ancestorKey;
+  }
+
+  return ROOT_NODE_KEY;
+}
+
+/**
  * Factory function for creating nodeViewConstructors that
  * render as React components.
  *
@@ -87,7 +134,7 @@ export type ReactNodeViewConstructor = (
  */
 export function createReactNodeViewConstructor(
   reactNodeViewConstructor: ReactNodeViewConstructor,
-  registerElement: RegisterElement
+  registerPortal: RegisterPortal
 ) {
   function nodeViewConstructor(
     node: Node,
@@ -119,9 +166,12 @@ export function createReactNodeViewConstructor(
         ? "span"
         : "div");
 
-    const nodeKey =
-      reactPluginKey.getState(editorView.state)?.posToKey.get(getPos()) ??
-      createNodeKey();
+    const reactPluginState = reactPluginKey.getState(editorView.state);
+    if (!reactPluginState)
+      throw new Error(
+        "Can't find the react() ProseMirror plugin, required for useNodeViews(). Was it added to the EditorState.plugins?"
+      );
+    const nodeKey = reactPluginState.posToKey.get(getPos()) ?? createNodeKey();
 
     /**
      * Wrapper component to provide some imperative handles for updating
@@ -139,6 +189,23 @@ export function createReactNodeViewConstructor(
       const [isSelected, setIsSelected] = useState<boolean>(
         initialState.isSelected
       );
+
+      const portalRegistry = useContext(PortalRegistryContext);
+      const childRegisteredPortals = portalRegistry[nodeKey];
+      const [childPortals, setChildPortals] = useState(
+        childRegisteredPortals?.map(({ portal }) => portal)
+      );
+
+      // `getPos` is technically derived from the EditorView
+      // state, so it's not safe to call until after the EditorView
+      // has been updated
+      useEditorEffect(() => {
+        setChildPortals(
+          childRegisteredPortals
+            ?.sort((a, b) => a.getPos() - b.getPos())
+            .map(({ portal }) => portal)
+        );
+      }, [childRegisteredPortals]);
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -165,6 +232,7 @@ export function createReactNodeViewConstructor(
             decorations={decorations}
             isSelected={isSelected}
           >
+            {childPortals}
             {ContentDOMWrapper && (
               <ContentDOMWrapper
                 style={{ display: "contents" }}
@@ -227,11 +295,9 @@ export function createReactNodeViewConstructor(
       />
     );
 
-    const unregisterElement = registerElement(
-      element,
-      dom as HTMLElement,
-      Math.floor(Math.random() * 0xffffff).toString(16)
-    );
+    const portal = createPortal(element, dom as HTMLElement, nodeKey);
+
+    const unregisterPortal = registerPortal(editorView, getPos, portal);
 
     return {
       ignoreMutation(record: MutationRecord) {
@@ -251,6 +317,16 @@ export function createReactNodeViewConstructor(
         decorations: readonly Decoration[],
         innerDecorations: DecorationSource
       ) {
+        // If this node view's parent has been removed from the registry, we
+        // need to rebuild it and its children with new registry keys
+        const positionRegistry = reactPluginKey.getState(editorView.state);
+        if (
+          positionRegistry &&
+          nodeKey !== positionRegistry.posToKey.get(getPos())
+        ) {
+          return false;
+        }
+
         if (
           reactNodeView.update?.(node, decorations, innerDecorations) === false
         ) {
@@ -272,11 +348,11 @@ export function createReactNodeViewConstructor(
         if (componentRef?.contentDOMParent) {
           this.dom.appendChild(componentRef.contentDOMParent);
         }
-        unregisterElement();
+        unregisterPortal();
         reactNodeView.destroy?.();
       },
     };
   }
 
-  return nodeViewConstructor;
+  return Object.assign(nodeViewConstructor, { [REACT_NODE_VIEW]: true });
 }

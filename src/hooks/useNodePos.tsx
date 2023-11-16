@@ -15,8 +15,9 @@ export function NodePosProvider({ nodeKey, children }: Props) {
   const editorState = useEditorState();
   if (!editorState) return <>{children}</>;
   const pluginState = reactPluginKey.getState(editorState);
+  if (!pluginState) return <>{children}</>;
   return (
-    <NodePosContext.Provider value={pluginState?.keyToPos.get(nodeKey) ?? 0}>
+    <NodePosContext.Provider value={pluginState.keyToPos.get(nodeKey) ?? 0}>
       {children}
     </NodePosContext.Provider>
   );
