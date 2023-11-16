@@ -11,12 +11,15 @@ import { Schema } from "prosemirror-model";
 import { liftListItem, splitListItem } from "prosemirror-schema-list";
 import { EditorState, Transaction } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
-import React, { useCallback, useState } from "react";
+import React, { ChangeEvent, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
 import {
   NodeViewComponentProps,
   ProseMirror,
+  useEditorEventCallback,
+  useNodePos,
   useNodeViews,
 } from "../src/index.js";
 import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
@@ -31,6 +34,15 @@ const schema = new Schema({
     list: { group: "block", content: "list_item+" },
     list_item: { content: "paragraph+", toDOM: () => ["li", 0] },
     text: { group: "inline" },
+    image: {
+      group: "block",
+      attrs: {
+        src: {
+          default:
+            "https://static01.nyt.com/images/2023/11/16/multimedia/16uaw-gm-vcpb/16uaw-gm-vcpb-threeByTwoSmallAt2X.jpg",
+        },
+      },
+    },
   },
 });
 
@@ -40,6 +52,8 @@ const editorState = EditorState.create({
     schema.nodes.paragraph.createAndFill()!,
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     schema.nodes.list.createAndFill()!,
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    schema.nodes.image.createAndFill()!,
   ]),
   schema,
   plugins: [
@@ -71,6 +85,38 @@ function ListItem({ children }: NodeViewComponentProps) {
   return <li>{children}</li>;
 }
 
+function Image({ node }: NodeViewComponentProps) {
+  const pos = useNodePos();
+  const imageOnChange = useEditorEventCallback<
+    [ChangeEvent<HTMLInputElement>],
+    void
+  >((view, event) => {
+    if (view) {
+      view.dispatch(
+        view.state.tr.setNodeAttribute(pos, "src", event.target.value)
+      );
+    }
+  });
+  return (
+    <div>
+      {node.attrs["src"] ? (
+        <img style={{ maxWidth: "100%" }} src={node.attrs["src"]} />
+      ) : null}
+      {createPortal(
+        <fieldset>
+          <label>Edit image url:</label>&nbsp;
+          <input
+            type="text"
+            onChange={imageOnChange}
+            value={node.attrs["src"]}
+          />
+        </fieldset>,
+        document.querySelector("#portal")!
+      )}
+    </div>
+  );
+}
+
 const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
   paragraph: () => ({
     component: Paragraph,
@@ -86,6 +132,10 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
     component: ListItem,
     dom: document.createElement("div"),
     contentDOM: document.createElement("div"),
+  }),
+  image: () => ({
+    component: Image,
+    dom: document.createElement("div"),
   }),
 };
 
