@@ -166,9 +166,12 @@ export function createReactNodeViewConstructor(
         ? "span"
         : "div");
 
-    const nodeKey =
-      reactPluginKey.getState(editorView.state)?.posToKey.get(getPos()) ??
-      createNodeKey();
+    const reactPluginState = reactPluginKey.getState(editorView.state);
+    if (!reactPluginState)
+      throw new Error(
+        "Can't find the react() ProseMirror plugin, required for useNodeViews(). Was it added to the EditorState.plugins?"
+      );
+    const nodeKey = reactPluginState.posToKey.get(getPos()) ?? createNodeKey();
 
     /**
      * Wrapper component to provide some imperative handles for updating

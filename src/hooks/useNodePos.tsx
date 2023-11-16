@@ -15,10 +15,7 @@ export function NodePosProvider({ nodeKey, children }: Props) {
   const editorState = useEditorState();
   if (!editorState) return <>{children}</>;
   const pluginState = reactPluginKey.getState(editorState);
-  if (!pluginState)
-    throw new Error(
-      "Can't find the react() ProseMirror plugin. Was it added to the EditorState.plugins?"
-    );
+  if (!pluginState) return <>{children}</>;
   return (
     <NodePosContext.Provider value={pluginState.keyToPos.get(nodeKey) ?? 0}>
       {children}
