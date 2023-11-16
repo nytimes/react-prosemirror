@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import {
   baseKeymap,
   chainCommands,
@@ -7,11 +8,18 @@ import {
   splitBlock,
 } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
-import { Schema } from "prosemirror-model";
+import { Node, Schema } from "prosemirror-model";
 import { liftListItem, splitListItem } from "prosemirror-schema-list";
 import { EditorState, Transaction } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
-import React, { ChangeEvent, useCallback, useState } from "react";
+import React, {
+  ChangeEvent,
+  ChangeEventHandler,
+  memo,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 
@@ -85,6 +93,22 @@ function ListItem({ children }: NodeViewComponentProps) {
   return <li>{children}</li>;
 }
 
+const EditImageUrl = memo(function EditImageUrl({
+  node,
+  onChange,
+}: {
+  node: Node;
+  onChange: ChangeEventHandler;
+}) {
+  return createPortal(
+    <fieldset contentEditable={false}>
+      <label>Edit image url:</label>&nbsp;
+      <input type="text" onChange={onChange} value={node.attrs["src"]} />
+    </fieldset>,
+    document.getElementById("portal")!
+  );
+});
+
 function Image({ node }: NodeViewComponentProps) {
   const pos = useNodePos();
   const imageOnChange = useEditorEventCallback<
@@ -102,17 +126,7 @@ function Image({ node }: NodeViewComponentProps) {
       {node.attrs["src"] ? (
         <img style={{ maxWidth: "100%" }} src={node.attrs["src"]} />
       ) : null}
-      {createPortal(
-        <fieldset>
-          <label>Edit image url:</label>&nbsp;
-          <input
-            type="text"
-            onChange={imageOnChange}
-            value={node.attrs["src"]}
-          />
-        </fieldset>,
-        document.querySelector("#portal")!
-      )}
+      <EditImageUrl node={node} onChange={imageOnChange} />
     </div>
   );
 }
@@ -144,10 +158,9 @@ function DemoEditor() {
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
   const [state, setState] = useState(editorState);
 
-  const dispatchTransaction = useCallback(
-    (tr: Transaction) => setState((oldState) => oldState.apply(tr)),
-    []
-  );
+  const dispatchTransaction = useCallback((tr: Transaction) => {
+    setState((oldState) => oldState.apply(tr));
+  }, []);
 
   return (
     <main>
