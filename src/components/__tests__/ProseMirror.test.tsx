@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 
 import { useNodeViews } from "../../hooks/useNodeViews.js";
 import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
+import { react } from "../../plugins/react.js";
 import {
   setupProseMirrorView,
   teardownProseMirrorView,
@@ -90,7 +91,7 @@ describe("ProseMirror", () => {
         doc: { content: "paragraph+" },
       },
     });
-    const editorState = EditorState.create({ schema });
+    const editorState = EditorState.create({ schema, plugins: [react()] });
 
     function Paragraph({ children }: NodeViewComponentProps) {
       return <p data-testid="paragraph">{children}</p>;
