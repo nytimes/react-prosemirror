@@ -1,7 +1,7 @@
 # React ProseMirror
 
 <p align="center">
-  <img src="react-prosemirror-logo.png" alt="React ProseMirror Logo" width="120px" height="120px"/>
+  <img src="https://github.com/nytimes/react-prosemirror/raw/main/react-prosemirror-logo.png" alt="React ProseMirror Logo" width="120px" height="120px"/>
   <br>
   <em>A fully featured library for safely integrating ProseMirror and React.</em>
   <br>
