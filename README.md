@@ -381,7 +381,7 @@ const reactNodeViews = {
 
 const editorState = EditorState.create({
   schema,
-  // You must add the react if you use
+  // You must add the react plugin if you use
   // the useNodeViews or useNodePos hook.
   plugins: [react()],
 });
