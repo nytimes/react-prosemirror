@@ -143,7 +143,10 @@ export class ViewDesc {
         }
         while (
           domBefore &&
-          !((desc = domBefore.pmViewDesc) && desc.parent == this)
+          !(
+            (desc = domBefore.pmViewDesc as ViewDesc | undefined) &&
+            desc.parent == this
+          )
         )
           domBefore = domBefore.previousSibling;
         return domBefore
@@ -159,7 +162,10 @@ export class ViewDesc {
         }
         while (
           domAfter &&
-          !((desc = domAfter.pmViewDesc) && desc.parent == this)
+          !(
+            (desc = domAfter.pmViewDesc as ViewDesc | undefined) &&
+            desc.parent == this
+          )
         )
           domAfter = domAfter.nextSibling;
 
@@ -224,14 +230,14 @@ export class ViewDesc {
             : nodeDOM == dom)
         )
           first = false;
-        else return desc;
+        else return desc as ViewDesc | NodeViewDesc | undefined;
       }
     }
     return;
   }
 
   getDesc(dom: DOMNode) {
-    const desc = dom.pmViewDesc;
+    const desc = dom.pmViewDesc as ViewDesc | undefined;
     for (let cur: ViewDesc | undefined = desc; cur; cur = cur.parent)
       if (cur == this) return desc;
     return;
@@ -743,6 +749,10 @@ export class NodeViewDesc extends ViewDesc {
     public nodeDOM: DOMNode
   ) {
     super(parent, children, dom, contentDOM);
+  }
+
+  updateOuterDeco() {
+    // pass
   }
 
   parseRule(): ParseRule | null {

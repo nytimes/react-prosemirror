@@ -1,5 +1,5 @@
 import { Mark, Node } from "prosemirror-model";
-import { Plugin, Selection } from "prosemirror-state";
+import { Plugin } from "prosemirror-state";
 import { Decoration, EditorView } from "prosemirror-view";
 
 import { CursorWrapper } from "../components/CursorWrapper.js";
@@ -109,13 +109,16 @@ export function beforeInputPlugin(
 ) {
   let compositionText: string | null = null;
   let compositionMarks: readonly Mark[] | null = null;
-  let compositionSelection: Selection | null = null;
   return new Plugin({
     props: {
       handleDOMEvents: {
         compositionstart(view) {
           const { state } = view;
+
+          view.dispatch(state.tr.deleteSelection());
+
           const $pos = state.selection.$from;
+
           if (
             state.selection.empty &&
             (state.storedMarks ||
@@ -126,14 +129,13 @@ export function beforeInputPlugin(
                 )))
           ) {
             setCursorWrapper(
-              widget(view.state.selection.from, CursorWrapper, {
+              widget(state.selection.from, CursorWrapper, {
                 key: "cursor-wrapper",
                 marks: state.storedMarks ?? $pos.marks(),
               })
             );
           }
-          compositionMarks = view.state.storedMarks ?? $pos.marks();
-          compositionSelection = view.state.selection;
+          compositionMarks = state.storedMarks ?? $pos.marks();
 
           // @ts-expect-error Internal property - input
           view.input.composing = true;
@@ -158,13 +160,10 @@ export function beforeInputPlugin(
             // any remounts
             bust: true,
             marks: compositionMarks,
-            from: compositionSelection?.from,
-            to: compositionSelection?.to,
           });
 
           compositionText = null;
           compositionMarks = null;
-          compositionSelection = null;
           setCursorWrapper(null);
           return true;
         },

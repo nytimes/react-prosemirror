@@ -214,6 +214,7 @@ export class SelectionDOMObserver {
 
   onSelectionChange() {
     if (!hasFocusAndSelection(this.view)) return;
+    if (this.view.composing) return;
     if (this.suppressingSelectionUpdates) return selectionToDOM(this.view);
     // Deletions on IE11 fire their events in the wrong order, giving
     // us a selection change event before the DOM changes are

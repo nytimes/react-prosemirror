@@ -103,10 +103,20 @@ component. The `<ProseMirror />` component can be used controlled (via the
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMirror } from "@nytimes/react-prosemirror";
+import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
-  return <ProseMirror defaultState={EditorState.create({ schema })} />;
+  return (
+    <ProseMirror
+      defaultState={EditorState.create({
+        schema,
+        plugins: [
+          // The reactKeys plugin is required for the ProseMirror component to work!
+          reactKeys(),
+        ],
+      })}
+    />
+  );
 }
 ```
 
@@ -116,11 +126,11 @@ passed as a prop.
 ```tsx
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
-import { ProseMirror } from "@nytimes/react-prosemirror";
+import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   const [editorState, setEditorState] = useState(
-    EditorState.create({ schema })
+    EditorState.create({ schema, plugins: [reactKeys()] })
   );
 
   return (
@@ -151,17 +161,17 @@ use `useEditorEffect`.
 
 ```tsx
 // SelectionWidget.tsx
-import { useRef } from "react"
-import { useEditorEffect } from "@nytimes/react-prosemirror"
+import { useRef } from "react";
+import { useEditorEffect } from "@nytimes/react-prosemirror";
 
 export function SelectionWidget() {
-  const ref = useRef()
+  const ref = useRef();
 
   useEditorEffect((view) => {
-    if (!view || !ref.current) return
+    if (!view || !ref.current) return;
 
-    const viewClientRect = view.dom.getBoundingClientRect()
-    const coords = view.coordsAtPos(view.state.selection.anchor))
+    const viewClientRect = view.dom.getBoundingClientRect();
+    const coords = view.coordsAtPos(view.state.selection.anchor));
 
     ref.current.style.top = coords.top - viewClientRect.top;
     ref.current.style.left = coords.left - viewClientRect.left;
@@ -174,17 +184,20 @@ export function SelectionWidget() {
         position: "absolute"
       }}
     />
-  )
+  );
 }
 
 // ProseMirrorEditor.tsx
+import { ProseMirror, reactKeys } from '@nytimes/react-prosemirror';
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
 
 import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
-  const [editorState, setEditorState] = useState(EditorState.create({ schema }))
+  const [editorState, setEditorState] = useState(
+    EditorState.create({ schema, plugins: [reactKeys()] })
+  );
 
   return (
     <ProseMirror
@@ -199,7 +212,7 @@ export function ProseMirrorEditor() {
       */}
       <SelectionWidget />
     </ProseMirror>
-  )
+  );
 }
 ```
 
@@ -231,6 +244,7 @@ export function BoldButton() {
 }
 
 // ProseMirrorEditor.tsx
+import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
 
@@ -238,7 +252,7 @@ import { BoldButton } from "./BoldButton.tsx";
 
 export function ProseMirrorEditor() {
   const [editorState, setEditorState] = useState(
-    EditorState.create({ schema })
+    EditorState.create({ schema, plugins: [reactKeys()] })
   );
 
   return (
@@ -284,30 +298,31 @@ import {
   NodeViewComponentProps,
 } from "@nytimes/react-prosemirror";
 
-const Paragraph = forwardRef(function Paragraph(
-  { node, pos, children, ...props }: NodeViewComponentProps,
-  ref: Ref<HTMLParagraphElement>
-) {
-  useEditorEventListener("keydown", (view, event) => {
-    if (event.code !== "ArrowDown") {
-      return false;
-    }
-    const nodeEnd = pos + node.nodeSize;
-    const { selection } = view.state;
-    if (selection.anchor < pos || selection.anchor > nodeEnd) {
-      return false;
-    }
-    event.preventDefault();
-    alert("No down keys allowed!");
-    return true;
-  });
+const Paragraph = forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+  function Paragraph({ children, nodeProps, ...props }, ref) {
+    useEditorEventListener("keydown", (view, event) => {
+      const { pos, node } = nodeProps;
 
-  return (
-    <p ref={ref} {...props}>
-      {children}
-    </p>
-  );
-});
+      if (event.code !== "ArrowDown") {
+        return false;
+      }
+      const nodeEnd = pos + node.nodeSize;
+      const { selection } = view.state;
+      if (selection.anchor < pos || selection.anchor > nodeEnd) {
+        return false;
+      }
+      event.preventDefault();
+      alert("No down keys allowed!");
+      return true;
+    });
+
+    return (
+      <p ref={ref} {...props}>
+        {children}
+      </p>
+    );
+  }
+);
 ```
 
 ### Building node views with React
@@ -323,7 +338,7 @@ import { forwardRef, Ref } from "react";
 import {
   useEditorEventCallback,
   NodeViewComponentProps,
-  react,
+  reactKeys,
 } from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
@@ -333,39 +348,27 @@ import { schema } from "prosemirror-schema-basic";
 // DOM elements. All node view components _should_ spread all of the props that they
 // receive onto their top-level DOM elements; this is required for node Decorations
 // that apply attributes rather than wrapping nodes in an additional element.
-const Paragraph = forwardRef(function Paragraph(
-  { children, ...props }: NodeViewComponentProps,
-  ref: Ref<HTMLParagraphElement>
-) {
-  const onClick = useEditorEventCallback((view) => view.dispatch(whatever));
-  return (
-    <p ref={ref} {...props} onClick={onClick}>
-      {children}
-    </p>
-  );
-});
+const Paragraph = forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+  function Paragraph({ children, nodeProps, ...props }, ref) {
+    const onClick = useEditorEventCallback((view) =>
+      view.dispatch(view.state.tr.deleteSelection())
+    );
 
-// Make sure that your ReactNodeViews are defined outside of
-// your component, or are properly memoized. ProseMirror will
-// teardown and rebuild all NodeViews if the nodeView prop is
-// updated, leading to unbounded recursion if this object doesn't
-// have a stable reference.
-const nodeViews = {
-  paragraph: Paragraph,
-};
-
-const editorState = EditorState.create({
-  schema,
-  // You must add the react plugin if you use
-  // the useNodeViews or useNodePos hook.
-  plugins: [react()],
-});
+    return (
+      <p ref={ref} {...props} onClick={onClick}>
+        {children}
+      </p>
+    );
+  }
+);
 
 function ProseMirrorEditor() {
   return (
     <ProseMirror
-      defaultState={EditorState.create({ schema })}
-      nodeViews={nodeViews}
+      defaultState={EditorState.create({ schema, plugins: [reactKeys()] })}
+      nodeViews={{
+        paragraph: Paragraph,
+      }}
     />
   );
 }
@@ -391,10 +394,14 @@ Example usage:
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMirror } from "@nytimes/react-prosemirror";
+import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
-  return <ProseMirror defaultState={EditorState.create({ schema })} />;
+  return (
+    <ProseMirror
+      defaultState={EditorState.create({ schema, plugins: [reactKeys()] })}
+    />
+  );
 }
 ```
 
