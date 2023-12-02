@@ -191,7 +191,7 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function B(props, ref) {
+            forwardRef<HTMLSpanElement>(function B(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   B
@@ -202,7 +202,7 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef(function A(props, ref) {
+            forwardRef<HTMLSpanElement>(function A(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   A
@@ -213,7 +213,7 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef(function C(props, ref) {
+            forwardRef<HTMLSpanElement>(function C(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   C
@@ -629,10 +629,8 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function Img(props, ref) {
-              return (
-                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
-              );
+            forwardRef<HTMLImageElement>(function Img(props, ref) {
+              return <img {...props} ref={ref} />;
             }),
             {
               marks: [schema.mark("em")],
@@ -652,10 +650,8 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function Img(props, ref) {
-              return (
-                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
-              );
+            forwardRef<HTMLImageElement>(function Img(props, ref) {
+              return <img {...props} ref={ref} />;
             }),
             { side: -1, key: "img-widget" }
           ),
@@ -663,8 +659,8 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function BR(props, ref) {
-              return <br {...props} ref={ref as LegacyRef<HTMLBRElement>} />;
+            forwardRef<HTMLBRElement>(function BR(props, ref) {
+              return <br {...props} ref={ref} />;
             }),
             { key: "br-widget" }
           ),
@@ -672,7 +668,7 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             7,
-            forwardRef(function Span(props, ref) {
+            forwardRef<HTMLSpanElement>(function Span(props, ref) {
               return <span {...props} ref={ref} />;
             }),
             { side: 1, key: "span-widget" }
@@ -706,10 +702,8 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             2,
-            forwardRef(function Img(props, ref) {
-              return (
-                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
-              );
+            forwardRef<HTMLImageElement>(function Img(props, ref) {
+              return <img {...props} ref={ref} />;
             }),
             { key: "img-widget" }
           ),
@@ -726,7 +720,7 @@ describe("Decoration drawing", () => {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef(function Span(props, ref) {
+            forwardRef<HTMLSpanElement>(function Span(props, ref) {
               useEditorEffect((view) => {
                 expect(view?.state).toBe(state);
               });
@@ -751,17 +745,16 @@ describe("Decoration drawing", () => {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef(function Widget(
-              { pos, ...props }: WidgetViewComponentProps,
-              ref
-            ) {
-              expect(pos).toBe(3);
-              return (
-                <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
-                  ω
-                </button>
-              );
-            }),
+            forwardRef<HTMLButtonElement, WidgetViewComponentProps>(
+              function Widget({ pos, ...props }, ref) {
+                expect(pos).toBe(3);
+                return (
+                  <button ref={ref} {...props}>
+                    ω
+                  </button>
+                );
+              }
+            ),
             { key: "button-widget" }
           ),
         ]);

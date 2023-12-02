@@ -1,10 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { expect } from "@jest/globals";
-import { act } from "@testing-library/react";
-import { doc, em, p, strong } from "prosemirror-test-builder";
-// @ts-expect-error This is an internal export
-import { EditorView, __endComposition } from "prosemirror-view";
+import { act, fireEvent } from "@testing-library/react";
+import { EditorState, Plugin } from "prosemirror-state";
+import { doc, em, p, schema, strong } from "prosemirror-test-builder";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  // @ts-expect-error This is an internal export
+  __endComposition,
+} from "prosemirror-view";
 
 import {
   findTextNode,
@@ -77,24 +83,24 @@ function compose(
   expect(hasCompositionNode(pm)).toBeFalsy();
 }
 
-// function wordDeco(state: EditorState) {
-//   const re = /\w+/g,
-//     deco: Decoration[] = [];
-//   state.doc.descendants((node, pos) => {
-//     if (node.isText)
-//       for (let m; (m = re.exec(node.text!)); )
-//         deco.push(
-//           Decoration.inline(pos + m.index, pos + m.index + m[0].length, {
-//             class: "word",
-//           })
-//         );
-//   });
-//   return DecorationSet.create(state.doc, deco);
-// }
+function wordDeco(state: EditorState) {
+  const re = /[^\s]+/g,
+    deco: Decoration[] = [];
+  state.doc.descendants((node, pos) => {
+    if (node.isText)
+      for (let m; (m = re.exec(node.text!)); )
+        deco.push(
+          Decoration.inline(pos + m.index, pos + m.index + m[0].length, {
+            class: "word",
+          })
+        );
+  });
+  return DecorationSet.create(state.doc, deco);
+}
 
-// const wordHighlighter = new Plugin({
-//   props: { decorations: wordDeco },
-// });
+const wordHighlighter = new Plugin({
+  props: { decorations: wordDeco },
+});
 
 // const Widget = forwardRef(function Widget(
 //   { widget, pos, ...props }: WidgetViewComponentProps,
@@ -128,69 +134,77 @@ function compose(
 //   });
 // }
 
+function insertComposition(dom: Element) {
+  fireEvent.keyDown(dom, { key: "Dead", code: "Quote" });
+  fireEvent.compositionStart(dom);
+  fireEvent.compositionUpdate(dom, { data: "´" });
+  fireEvent(
+    dom,
+    new InputEvent("beforeinput", {
+      isComposing: true,
+      inputType: "insertCompositionText",
+      data: "´",
+    })
+  );
+  fireEvent.input(dom, {
+    isComposing: true,
+    inputType: "insertCompositionText",
+    data: "´",
+  });
+  fireEvent.keyUp(dom, { key: "´", code: "Quote", isComposing: true });
+
+  fireEvent.keyDown(dom, { key: "é", code: "KeyE", isComposing: true });
+  fireEvent.compositionUpdate(dom, { data: "é" });
+  fireEvent(
+    dom,
+    new InputEvent("beforeinput", {
+      isComposing: true,
+      inputType: "insertCompositionText",
+      data: "é",
+    })
+  );
+  fireEvent.compositionEnd(dom, {
+    inputType: "insertCompositionText",
+    data: "é",
+  });
+  fireEvent.input(dom, {
+    isComposing: true,
+    inputType: "insertCompositionText",
+    data: "é",
+  });
+  fireEvent.keyUp(dom, { key: "e", code: "KeyE" });
+}
+
 describe("EditorView composition", () => {
   beforeAll(() => {
     setupProseMirrorView();
   });
 
   it("supports composition in an empty block", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("<a>")) });
-    compose(
-      pm,
-      () => edit(pm.dom.firstChild!.appendChild(document.createTextNode("a"))),
-      [(n) => edit(n, "b"), (n) => edit(n, "c")],
-      { node: true }
-    );
-    expect(pm.state.doc).toEqualNode(doc(p("abc")));
+    const { view } = tempEditor({ doc: doc(p("<a>")) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("é")));
   });
 
   it("supports composition at end of block", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("foo")) });
-    compose(pm, () => edit(findTextNode(pm.dom, "foo")!), [
-      (n) => edit(n, "!"),
-      (n) => edit(n, "?"),
-    ]);
-    expect(pm.state.doc).toEqualNode(doc(p("foo!?")));
-  });
-
-  it("supports composition at end of block in a new node", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("foo")) });
-    compose(
-      pm,
-      () => edit(pm.dom.firstChild!.appendChild(document.createTextNode("!"))),
-      [(n) => edit(n, "?")],
-      // $$FORK: We don't use composition view descriptors except for in initially empty nodes
-      { node: false }
-    );
-    expect(pm.state.doc).toEqualNode(doc(p("foo!?")));
+    const { view } = tempEditor({ doc: doc(p("foo<a>")) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("fooé")));
   });
 
   it("supports composition at start of block in a new node", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("foo")) });
-    compose(
-      pm,
-      () => {
-        const p = pm.dom.firstChild!;
-        return edit(p.insertBefore(document.createTextNode("!"), p.firstChild));
-      },
-      [(n) => edit(n, "?")],
-      // $$FORK: We don't use composition view descriptors except for in initially empty nodes
-      { node: false }
-    );
-    expect(pm.state.doc).toEqualNode(doc(p("!?foo")));
+    const { view } = tempEditor({ doc: doc(p("<a>foo")) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("éfoo")));
   });
 
   it("supports composition inside existing text", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("foo")) });
-    compose(pm, () => edit(findTextNode(pm.dom, "foo")!), [
-      (n) => edit(n, "x", 1),
-      (n) => edit(n, "y", 2),
-      (n) => edit(n, "z", 3),
-    ]);
-    expect(pm.state.doc).toEqualNode(doc(p("fxyzoo")));
+    const { view } = tempEditor({ doc: doc(p("f<a>oo")) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("féoo")));
   });
 
-  // TODO: Offset out of bound
+  // TODO: Deal with Android style compositions
   // eslint-disable-next-line jest/no-disabled-tests
   it.skip("can deal with Android-style newline-after-composition", () => {
     const { view: pm } = tempEditor({ doc: doc(p("abcdef")) });
@@ -211,49 +225,35 @@ describe("EditorView composition", () => {
   });
 
   it("handles replacement of existing words", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("one two three")) });
-    compose(
-      pm,
-      () => edit(findTextNode(pm.dom, "one two three")!, "five", 4, 7),
-      [(n) => edit(n, "seven", 4, 8), (n) => edit(n, "zero", 4, 9)]
-    );
-    expect(pm.state.doc).toEqualNode(doc(p("one zero three")));
+    const { view } = tempEditor({ doc: doc(p("one <a>two<b> three")) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("one é three")));
   });
 
   it("handles composition inside marks", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("one ", em("two"))) });
-    compose(pm, () => edit(findTextNode(pm.dom, "two")!, "o"), [
-      (n) => edit(n, "o"),
-      (n) => edit(n, "w"),
-    ]);
-    expect(pm.state.doc).toEqualNode(doc(p("one ", em("twooow"))));
+    const { view } = tempEditor({ doc: doc(p("one ", em("two<a>"))) });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("one ", em("twoé"))));
   });
 
-  it.skip("handles composition in a mark that has multiple children", () => {
-    const { view: pm } = tempEditor({
-      doc: doc(p("one ", em("two", strong(" three")))),
+  it("handles composition in a mark that has multiple children", () => {
+    const { view } = tempEditor({
+      doc: doc(p("one ", em("two<a>", strong(" three")))),
     });
-    compose(pm, () => edit(findTextNode(pm.dom, "two")!, "o"), [
-      (n) => edit(n, "o"),
-      (n) => edit(n, "w"),
-    ]);
-    expect(pm.state.doc).toEqualNode(
-      doc(p("one ", em("twooow", strong(" three"))))
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(
+      doc(p("one ", em("twoé", strong(" three"))))
     );
   });
 
-  // it("supports composition in a cursor wrapper", () => {
-  //   const { view: pm } = tempEditor({ doc: doc(p("<a>")) });
-  //   pm.dispatch(pm.state.tr.addStoredMark(schema.marks.em.create()));
-  //   compose(
-  //     pm,
-  //     () =>
-  //       edit(pm.dom.firstChild!.appendChild(document.createTextNode("")), "a"),
-  //     [(n) => edit(n, "b"), (n) => edit(n, "c")],
-  //     { node: true }
-  //   );
-  //   ist(pm.state.doc, doc(p(em("abc"))), eq);
-  // });
+  // This passes, but I think it shouldn't; it doesn't seem to work
+  // in the demo
+  it.skip("supports composition in a cursor wrapper", () => {
+    const { view } = tempEditor({ doc: doc(p("<a>")) });
+    view.dispatch(view.state.tr.addStoredMark(schema.marks.em!.create()));
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p(em("é"))));
+  });
 
   // it("handles composition in a multi-child mark with a cursor wrapper", () => {
   //   const { view: pm } = requireFocus(
@@ -281,15 +281,16 @@ describe("EditorView composition", () => {
   //   );
   // });
 
-  // it("doesn't get interrupted by changes in decorations", () => {
-  //   const { view: pm } = requireFocus(
-  //     tempEditor({ doc: doc(p("foo ...")), plugins: [wordHighlighter] })
-  //   );
-  //   compose(pm, () => edit(findTextNode(pm.dom, " ...")!), [
-  //     (n) => edit(n, "hi", 1, 4),
-  //   ]);
-  //   ist(pm.state.doc, doc(p("foo hi")), eq);
-  // });
+  // TODO: This also passes but does not actually work in the
+  // demo :(
+  it.skip("doesn't get interrupted by changes in decorations", () => {
+    const { view } = tempEditor({
+      doc: doc(p("foo <a>...<b>")),
+      plugins: [wordHighlighter],
+    });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("foo é")));
+  });
 
   // it("works inside highlighted text", () => {
   //   const { view: pm } = requireFocus(

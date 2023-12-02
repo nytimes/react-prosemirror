@@ -1,5 +1,6 @@
 import { Command, EditorState, Transaction } from "prosemirror-state";
 import {
+  Decoration,
   DecorationSet,
   DecorationSet as DecorationSetInternal,
   DirectEditorProps,
@@ -11,22 +12,22 @@ import React, {
   ReactElement,
   ReactNode,
   RefAttributes,
-  useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 
 import { EditorContext } from "../contexts/EditorContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
-import { useBeforeInput } from "../hooks/useBeforeInput.js";
 import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
-import { useEditorView } from "../hooks/useEditorView.js";
-import { usePluginViews } from "../hooks/usePluginViews.js";
-import { useSyncSelection } from "../hooks/useSyncSelection.js";
+import { ReactEditorView, useEditorView } from "../hooks/useEditorView.js";
+import { usePendingViewEffects } from "../hooks/usePendingViewEffects.js";
+import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { DocNodeView } from "./DocNodeView.js";
@@ -79,6 +80,13 @@ export function ProseMirror({
   ...props
 }: Props) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
+  const [cursorWrapper, _setCursorWrapper] = useState<Decoration | null>(null);
+
+  const setCursorWrapper = useCallback((deco: Decoration | null) => {
+    flushSync(() => {
+      _setCursorWrapper(deco);
+    });
+  }, []);
 
   const {
     componentEventListenersPlugin,
@@ -87,8 +95,12 @@ export function ProseMirror({
   } = useComponentEventListeners();
 
   const plugins = useMemo(
-    () => [...(props.plugins ?? []), componentEventListenersPlugin],
-    [props.plugins, componentEventListenersPlugin]
+    () => [
+      ...(props.plugins ?? []),
+      componentEventListenersPlugin,
+      beforeInputPlugin(setCursorWrapper),
+    ],
+    [props.plugins, componentEventListenersPlugin, setCursorWrapper]
   );
 
   const initialEditorState = (
@@ -128,22 +140,10 @@ export function ProseMirror({
     [editorState, editorView, registerEventListener, unregisterEventListener]
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (editorView as any | null)?.domObserver.stop();
-
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (editorView as any | null)?.domObserver.start();
-  });
-
-  const viewPlugins = useMemo(() => props.plugins ?? [], [props.plugins]);
-
-  useBeforeInput(editorView);
-  useSyncSelection(editorView);
-  usePluginViews(editorView, editorState, viewPlugins);
+  usePendingViewEffects(editorView as ReactEditorView | null);
 
   const innerDecos = editorView
-    ? viewDecorations(editorView)
+    ? viewDecorations(editorView, cursorWrapper)
     : (DecorationSetInternal.empty as unknown as DecorationSet);
 
   const outerDecos = editorView ? computeDocDeco(editorView) : [];

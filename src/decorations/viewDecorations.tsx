@@ -173,7 +173,10 @@ function insertAhead(array: Decoration[], i: number, deco: Decoration) {
   array.splice(i, 0, deco);
 }
 
-export function viewDecorations(view: EditorView): DecorationSource {
+export function viewDecorations(
+  view: EditorView,
+  cursorWrapper: Decoration | null
+): DecorationSource {
   const found: DecorationSource[] = [];
   view.someProp("decorations", (f) => {
     const result = f(view.state);
@@ -181,10 +184,11 @@ export function viewDecorations(view: EditorView): DecorationSource {
   });
   // We don't have access to types for view.cursorWrapper here
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((view as any).cursorWrapper)
+  if (cursorWrapper) {
     found.push(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      DecorationSet.create(view.state.doc, [(view as any).cursorWrapper.deco])
+      DecorationSet.create(view.state.doc, [cursorWrapper])
     );
+  }
   return DecorationGroup.from(found);
 }

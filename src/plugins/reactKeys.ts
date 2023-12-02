@@ -1,11 +1,7 @@
-import { Node } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
 
-export function createNodeKey(node: Node) {
+export function createNodeKey() {
   const key = Math.floor(Math.random() * 0xffffff).toString(16);
-  if (node.isTextblock && node.textContent === "") {
-    return `${key}-empty`;
-  }
   return key;
 }
 
@@ -31,8 +27,8 @@ export function reactKeys() {
           posToKey: new Map<number, string>(),
           keyToPos: new Map<string, number>(),
         };
-        state.doc.descendants((node, pos) => {
-          const key = createNodeKey(node);
+        state.doc.descendants((_, pos) => {
+          const key = createNodeKey();
 
           next.posToKey.set(pos, key);
           next.keyToPos.set(key, pos);
@@ -49,29 +45,31 @@ export function reactKeys() {
        */
       apply(tr, value, _, newState) {
         if (!tr.docChanged || composing) return value;
+        const meta = tr.getMeta(reactKeysPluginKey);
+        const keyToBust = meta?.type === "bustKey" && meta.payload.key;
 
         const next = {
           posToKey: new Map<number, string>(),
           keyToPos: new Map<string, number>(),
         };
         const nextKeys = new Set<string>();
-        newState.doc.descendants((node, pos) => {
+        newState.doc.descendants((_, pos) => {
           const prevPos = tr.mapping.invert().map(pos);
-          const prevKey = value.posToKey.get(prevPos) ?? createNodeKey(node);
-          // If this transaction adds a new node, there will be multiple
-          // nodes that map back to the same initial position. In this case,
-          // create new keys for new nodes.
-          let key = nextKeys.has(prevKey) ? createNodeKey(node) : prevKey;
-          if (
-            (key.endsWith("-empty") &&
-              node.isTextblock &&
-              node.textContent !== "") ||
-            (!key.endsWith("-empty") &&
-              node.isTextblock &&
-              node.textContent === "")
-          ) {
-            key = createNodeKey(node);
-          }
+          const prevKey = value.posToKey.get(prevPos) ?? createNodeKey();
+          const key =
+            // If this transaction adds a new node, there will be multiple
+            // nodes that map back to the same initial position. In this case,
+            // create new keys for new nodes.
+            nextKeys.has(prevKey) ||
+            // After IME compositions, we specifically bust the parent's key
+            // so that we ensure that we blow away the temporary text node
+            // used for the composition
+            //
+            // TODO: This is a pretty blunt tool; could we more precisely
+            // remove the temporary composition text node instead?
+            keyToBust === prevKey
+              ? createNodeKey()
+              : prevKey;
           next.posToKey.set(pos, key);
           next.keyToPos.set(key, pos);
           nextKeys.add(key);
