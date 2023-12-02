@@ -90,10 +90,10 @@ export class ReactWidgetType implements DecorationType {
   }
 }
 
-export function widget(
+export function widget<E extends HTMLElement>(
   pos: number,
   component: ForwardRefExoticComponent<
-    RefAttributes<HTMLElement> & WidgetViewComponentProps
+    RefAttributes<E> & WidgetViewComponentProps
   >,
   spec?: ReactWidgetSpec
 ) {

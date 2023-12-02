@@ -1,6 +1,8 @@
-import { Node } from "prosemirror-model";
+import { Mark, Node } from "prosemirror-model";
 import { EditorView } from "prosemirror-view";
 import { useEffect, useRef } from "react";
+
+import { reactKeysPluginKey } from "../plugins/reactKeys.js";
 
 const SPACE = /\s/;
 const PUNCTUATION =
@@ -37,24 +39,39 @@ const isWordCharacter = (doc: Node, pos: number, checkDir = -1): boolean => {
 function insertText(
   view: EditorView,
   eventData: string | null,
-  from?: number,
-  to?: number
+  options: {
+    from?: number;
+    to?: number;
+    bust?: boolean;
+    marks?: readonly Mark[] | null;
+  } = {}
 ) {
   if (eventData === null) return false;
 
-  if (
-    view.someProp("handleTextInput")?.(
-      view,
-      view.state.selection.from,
-      view.state.selection.to,
-      eventData
-    )
-  ) {
+  const from = view.state.selection.from ?? options.from;
+  const to = view.state.selection.to ?? options.to;
+
+  if (view.someProp("handleTextInput")?.(view, from, to, eventData)) {
     return true;
   }
 
   const { tr } = view.state;
   tr.insertText(eventData, from, to);
+  for (const mark of view.state.storedMarks ?? []) {
+    tr.addMark(from, to, mark);
+  }
+
+  if (options.bust) {
+    const parentPos = view.state.doc.resolve(from).before();
+    const parentKey = reactKeysPluginKey
+      .getState(view.state)
+      ?.posToKey.get(parentPos);
+    tr.setMeta(reactKeysPluginKey, {
+      type: "bustKey",
+      payload: { key: parentKey },
+    });
+  }
+
   view.dispatch(tr);
   return true;
 }
@@ -83,21 +100,24 @@ function findWordBoundaryForward(doc: Node, start: number) {
 
 export function useBeforeInput(view: EditorView | null) {
   const compositionTextRef = useRef<string | null>(null);
+  const compositionMarks = useRef<readonly Mark[] | null>(null);
   useEffect(() => {
     if (!view) return;
 
     function onCompositionStart() {
       // @ts-expect-error Internal property (domObserver)
       view?.domObserver.stop();
+      compositionMarks.current = view?.state.storedMarks ?? null;
     }
 
-    function onCompositionEnd(event: CompositionEvent) {
+    function onCompositionEnd() {
       if (!view) return;
       if (compositionTextRef.current === null) return;
 
-      if (insertText(view, compositionTextRef.current)) {
-        event.preventDefault();
-      }
+      insertText(view, compositionTextRef.current, {
+        bust: true,
+        marks: compositionMarks.current,
+      });
       // @ts-expect-error Internal property (domObserver)
       view.domObserver.start();
 
@@ -131,7 +151,7 @@ export function useBeforeInput(view: EditorView | null) {
                 range.endOffset,
                 1
               );
-              insertText(view, data, from, to);
+              insertText(view, data, { from, to });
             }
           });
           // We have to unilaterally prevent default here, because there's no way

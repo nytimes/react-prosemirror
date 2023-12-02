@@ -1,19 +1,26 @@
 import { EditorState, Transaction } from "prosemirror-state";
 import { DirectEditorProps, EditorView } from "prosemirror-view";
 import { useLayoutEffect, useState } from "react";
-import { flushSync } from "react-dom";
+import { unstable_batchedUpdates as batch } from "react-dom";
 
+import { DOMNode } from "../dom.js";
 import { SelectionDOMObserver } from "../selection/SelectionDOMObserver.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { useForceUpdate } from "./useForceUpdate.js";
 
 // @ts-expect-error We're making use of knowledge of internal methods here
-class ReactEditorView extends EditorView {
+export class ReactEditorView extends EditorView {
+  private shouldUpdatePluginViews = false;
+
+  private oldProps: DirectEditorProps;
+
+  private _props: DirectEditorProps;
+
   constructor(
     place:
       | null
-      | Node
+      | DOMNode
       | ((editor: HTMLElement) => void)
       | { mount: HTMLElement },
     props: DirectEditorProps & { docView: NodeViewDesc }
@@ -29,8 +36,10 @@ class ReactEditorView extends EditorView {
       plugins: props.plugins,
     });
 
-    // @ts-expect-error We're making use of knowledge of internal attributes here
+    this.shouldUpdatePluginViews = true;
+
     this._props = props;
+    this.oldProps = { state: props.state };
     this.state = props.state;
 
     // @ts-expect-error We're making use of knowledge of internal attributes here
@@ -51,8 +60,42 @@ class ReactEditorView extends EditorView {
     this.docView = props.docView;
   }
 
+  /**
+   * Like setProps, but without executing any side effects.
+   * Safe to use in a component render method.
+   */
+  pureSetProps(props: Partial<DirectEditorProps>) {
+    // this.oldProps = this.props;
+    this._props = {
+      ...this._props,
+      ...props,
+    };
+    this.state = this._props.state;
+  }
+
+  /**
+   * Triggers any side effects that have been queued by previous
+   * calls to pureSetProps.
+   */
+  runPendingEffects() {
+    const newProps = this.props;
+    this._props = this.oldProps;
+    this.state = this._props.state;
+    this.update(newProps);
+  }
+
+  update(props: DirectEditorProps) {
+    super.update(props);
+    // Ensure that side effects aren't re-triggered until
+    // pureSetProps is called again
+    this.oldProps = props;
+  }
+
   updatePluginViews() {
-    // We handle this in usePluginViews
+    if (this.shouldUpdatePluginViews) {
+      // @ts-expect-error We're making use of knowledge of internal methods here
+      super.updatePluginViews();
+    }
   }
 }
 
@@ -60,14 +103,15 @@ function withFlushedUpdates<This, T extends unknown[]>(
   fn: (this: This, ...args: T) => void
 ): (...args: T) => void {
   return function (this: This, ...args: T) {
-    flushSync(() => {
+    batch(() => {
       fn.call(this, ...args);
     });
   };
 }
 
 function defaultDispatchTransaction(this: EditorView, tr: Transaction) {
-  this.updateState(this.state.apply(tr));
+  // HACK
+  this.state = this.state.apply(tr);
 }
 
 type EditorStateProps =
@@ -167,10 +211,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
   }, [editorProps, forceUpdate, mount, state, view]);
 
-  view?.setProps({
-    ...editorProps,
-    ...("state" in editorProps && { state: editorProps.state }),
-  });
+  view?.pureSetProps(editorProps);
 
   return view as unknown as EditorView;
 }
