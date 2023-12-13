@@ -46,8 +46,8 @@ describe("reactNodeViewPlugin", () => {
     );
     const nextPluginState = reactPluginKey.getState(nextEditorState)!;
 
-    expect(Array.from(initialPluginState.keyToPos.keys())).toEqual(
-      Array.from(nextPluginState.keyToPos.keys())
+    expect(Array.from(nextPluginState.keyToPos.keys())).toEqual(
+      Array.from(initialPluginState.keyToPos.keys())
     );
   });
 
