@@ -9,7 +9,6 @@ import {
 } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
-  ReactElement,
   ReactNode,
   RefAttributes,
   useCallback,
@@ -30,8 +29,8 @@ import { usePendingViewEffects } from "../hooks/usePendingViewEffects.js";
 import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
-import { DocNodeView } from "./DocNodeView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
+import { DocNodeViewContext } from "./ProseMirrorDoc.js";
 
 type EditorStateProps =
   | {
@@ -68,7 +67,6 @@ export type EditorProps = Omit<
 export type Props = EditorProps & {
   className?: string;
   children?: ReactNode;
-  as?: ReactElement;
 };
 
 export function ProseMirror({
@@ -76,7 +74,6 @@ export function ProseMirror({
   children,
   nodeViews = {},
   customNodeViews = {},
-  as,
   ...props
 }: Props) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
@@ -156,18 +153,18 @@ export function ProseMirror({
             nodeViews,
           }}
         >
-          <>
-            <DocNodeView
-              className={className}
-              ref={setMount}
-              node={editorView?.state.doc}
-              innerDeco={innerDecos as unknown as DecorationSetInternal}
-              outerDeco={outerDecos}
-              as={as}
-              viewDesc={docViewDescRef.current}
-            />
+          <DocNodeViewContext.Provider
+            value={{
+              className: className,
+              setMount: setMount,
+              node: editorView?.state.doc,
+              innerDeco: innerDecos as unknown as DecorationSetInternal,
+              outerDeco: outerDecos,
+              viewDesc: docViewDescRef.current,
+            }}
+          >
             {children}
-          </>
+          </DocNodeViewContext.Provider>
         </NodeViewContext.Provider>
       </EditorContext.Provider>
     </LayoutGroup>

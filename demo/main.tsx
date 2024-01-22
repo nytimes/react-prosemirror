@@ -15,6 +15,7 @@ import { createRoot } from "react-dom/client";
 import {
   NodeViewComponentProps,
   ProseMirror,
+  ProseMirrorDoc,
   WidgetViewComponentProps,
   reactKeys,
   widget,
@@ -239,7 +240,6 @@ function DemoEditor() {
           : "React node views (requires reload)"}
       </button>
       <ProseMirror
-        as={<article />}
         key={`${showReactNodeViews}`}
         className="ProseMirror"
         state={state}
@@ -249,7 +249,9 @@ function DemoEditor() {
         plugins={plugins}
         nodeViews={showReactNodeViews ? { paragraph: Paragraph } : undefined}
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}
-      />
+      >
+        <ProseMirrorDoc as={<article />} />
+      </ProseMirror>
     </main>
   );
 }
