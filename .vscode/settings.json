@@ -8,20 +8,14 @@
   "prettier.prettierPath": ".yarn/sdks/prettier/index.js",
   "eslint.nodePath": ".yarn/sdks",
   "editor.formatOnSave": true,
-  "[javascript]": {
+  "[javascript][typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-      "source.fixAll": true
+      "source.fixAll": "explicit"
     }
   },
   "javascript.preferences.importModuleSpecifierEnding": "js",
   "typescript.preferences.importModuleSpecifierEnding": "js",
-  "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.codeActionsOnSave": {
-      "source.fixAll": true
-    }
-  },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
