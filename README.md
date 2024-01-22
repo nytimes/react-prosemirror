@@ -34,6 +34,7 @@ yarn add @nytimes/react-prosemirror
   - [Building node views with React](#building-node-views-with-react)
 - [API](#api)
   - [`ProseMirror`](#prosemirror)
+  - [`ProseMirrorDoc`](#prosemirrordoc)
   - [`useEditorState`](#useeditorstate)
   - [`useEditorEventCallback`](#useeditoreventcallback-1)
   - [`useEditorEventListener`](#useeditoreventlistener-1)
@@ -103,7 +104,11 @@ component. The `<ProseMirror />` component can be used controlled (via the
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys,
+} from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   return (
@@ -115,7 +120,9 @@ export function ProseMirrorEditor() {
           reactKeys(),
         ],
       })}
-    />
+    >
+      <ProseMirrorDoc />
+    </ProseMirror>
   );
 }
 ```
@@ -126,7 +133,11 @@ passed as a prop.
 ```tsx
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
-import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys,
+} from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   const [editorState, setEditorState] = useState(
@@ -139,7 +150,9 @@ export function ProseMirrorEditor() {
       dispatchTransaction={(tr) => {
         setEditorState((s) => s.apply(tr));
       }}
-    />
+    >
+      <ProseMirrorDoc />
+    </ProseMirror>
   );
 }
 ```
@@ -188,7 +201,11 @@ export function SelectionWidget() {
 }
 
 // ProseMirrorEditor.tsx
-import { ProseMirror, reactKeys } from '@nytimes/react-prosemirror';
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys
+} from '@nytimes/react-prosemirror';
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
 
@@ -206,6 +223,7 @@ export function ProseMirrorEditor() {
         setEditorState(s => s.apply(tr))
       }}
     >
+      <ProseMirrorDoc />
       {/*
         We have to mount all components that need to access the
         EditorView as children of the ProseMirror component
@@ -244,7 +262,11 @@ export function BoldButton() {
 }
 
 // ProseMirrorEditor.tsx
-import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys,
+} from "@nytimes/react-prosemirror";
 import { EditorState } from "prosemirror-state";
 import { schema } from "prosemirror-schema-basic";
 
@@ -262,6 +284,7 @@ export function ProseMirrorEditor() {
         setEditorState((s) => s.apply(tr));
       }}
     >
+      <ProseMirrorDoc />
       {/*
         We have to mount all components that need to access the
         EditorView as children of the ProseMirror component
@@ -336,6 +359,8 @@ special other than fulfill the
 ```tsx
 import { forwardRef, Ref } from "react";
 import {
+  ProseMirror,
+  ProseMirrorDoc,
   useEditorEventCallback,
   NodeViewComponentProps,
   reactKeys,
@@ -369,7 +394,9 @@ function ProseMirrorEditor() {
       nodeViews={{
         paragraph: Paragraph,
       }}
-    />
+    >
+      <ProseMirrorDoc />
+    </ProseMirror>
   );
 }
 ```
@@ -380,27 +407,77 @@ function ProseMirrorEditor() {
 
 ```tsx
 type ProseMirror = (
-  props: {
-    mount: HTMLElement;
-    children: ReactNode;
-  } & DirectEditorProps &
-    ({ defaultState: EditorState } | { state: EditorState })
+  props: DirectEditorProps &
+    ({ defaultState: EditorState } | { state: EditorState }) & {
+      children: ReactNode;
+      nodeViews?: {
+        [nodeType: string]: ForwardRefExoticComponent<
+          NodeViewComponentProps & RefAttributes<any>
+        >;
+      };
+      customNodeViews?: {
+        [nodeType: string]: NodeViewConstructor;
+      };
+    }
 ) => JSX.Element;
 ```
 
-Renders the ProseMirror document.
+Renders the ProseMirror editor.
 
 Example usage:
 
 ```tsx
 import { EditorState } from "prosemirror-state";
-import { ProseMirror, reactKeys } from "@nytimes/react-prosemirror";
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys,
+} from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   return (
     <ProseMirror
       defaultState={EditorState.create({ schema, plugins: [reactKeys()] })}
-    />
+    >
+      <ProseMirrorDoc />
+    </ProseMirror>
+  );
+}
+```
+
+### `ProseMirrorDoc`
+
+```tsx
+type ProseMirrorDoc = (props: { as?: ReactElement }) => JSX.Element;
+```
+
+Renders the actual editable ProseMirror document.
+
+This **must** be passed as a child to the `ProseMirror` component. It may be
+wrapped in any other components, and other children may be passed before or
+after
+
+Example usage:
+
+```tsx
+import { EditorState } from "prosemirror-state";
+import {
+  ProseMirror,
+  ProseMirrorDoc,
+  reactKeys,
+} from "@nytimes/react-prosemirror";
+
+export function ProseMirrorEditor() {
+  return (
+    <ProseMirror
+      defaultState={EditorState.create({ schema, plugins: [reactKeys()] })}
+    >
+      <ToolBar />
+      <SomeWrapper>
+        <ProseMirrorDoc as={<article />} />
+      </SomeWrapper>
+      <Footnotes />
+    </ProseMirror>
   );
 }
 ```

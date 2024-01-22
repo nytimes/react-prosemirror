@@ -19,7 +19,7 @@ import { NodeViewDesc } from "../viewdesc.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 
-type Props = {
+export type DocNodeViewProps = {
   className?: string;
   node: Node | undefined;
   innerDeco: DecorationSource;
@@ -29,7 +29,7 @@ type Props = {
 };
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { className, node, innerDeco, outerDeco, as, viewDesc }: Props,
+  { className, node, innerDeco, outerDeco, as, viewDesc }: DocNodeViewProps,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);

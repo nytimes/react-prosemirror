@@ -1,6 +1,7 @@
 "use client";
 
 export { ProseMirror } from "./components/ProseMirror.js";
+export { ProseMirrorDoc } from "./components/ProseMirrorDoc.js";
 export { EditorProvider } from "./contexts/EditorContext.js";
 export { LayoutGroup, useLayoutGroupEffect } from "./contexts/LayoutGroup.js";
 export { useEditorEffect } from "./hooks/useEditorEffect.js";
