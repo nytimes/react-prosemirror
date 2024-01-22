@@ -9,6 +9,7 @@ import { EditorView as EditorViewT } from "prosemirror-view";
 import React from "react";
 
 import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
+import { ProseMirrorDoc } from "../components/ProseMirrorDoc.js";
 import { DOMNode } from "../dom.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
@@ -86,6 +87,7 @@ export function tempEditor({
       {...props}
     >
       <Test></Test>
+      <ProseMirrorDoc />
     </ProseMirror>
   );
 
@@ -101,6 +103,7 @@ export function tempEditor({
         {...{ ...props, ...newProps }}
       >
         <Test></Test>
+        <ProseMirrorDoc />
       </ProseMirror>
     );
   }
