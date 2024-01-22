@@ -381,8 +381,8 @@ function ProseMirrorEditor() {
 ```tsx
 type ProseMirror = (
   props: {
-    mount: HTMLElement;
-    children: ReactNode;
+    slotBefore: ReactNode;
+    slotAfter: ReactNode;
   } & DirectEditorProps &
     ({ defaultState: EditorState } | { state: EditorState })
 ) => JSX.Element;

@@ -67,15 +67,17 @@ export type EditorProps = Omit<
 
 export type Props = EditorProps & {
   className?: string;
-  children?: ReactNode;
+  slotBefore?: ReactNode;
+  slotAfter?: ReactNode;
   as?: ReactElement;
 };
 
 export function ProseMirror({
   className,
-  children,
   nodeViews = {},
   customNodeViews = {},
+  slotAfter,
+  slotBefore,
   as,
   ...props
 }: Props) {
@@ -157,6 +159,7 @@ export function ProseMirror({
           }}
         >
           <>
+            {slotBefore}
             <DocNodeView
               className={className}
               ref={setMount}
@@ -166,7 +169,7 @@ export function ProseMirror({
               as={as}
               viewDesc={docViewDescRef.current}
             />
-            {children}
+            {slotAfter}
           </>
         </NodeViewContext.Provider>
       </EditorContext.Provider>
