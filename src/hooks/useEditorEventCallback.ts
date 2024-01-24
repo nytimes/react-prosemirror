@@ -14,7 +14,7 @@ import { useEditorEffect } from "./useEditorEffect.js";
  *
  * This hook is dependent on both the
  * `EditorViewContext.Provider` and the
- * `DeferredLayoutEffectProvider`. It can only be used in a
+ * `LayoutGroup` provider. It can only be used in a
  * component that is mounted as a child of both of these
  * providers.
  */
