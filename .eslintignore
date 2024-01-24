@@ -2,3 +2,5 @@
 .yarn/
 .yarnrc.yml
 .pnp.*
+
+/docs/

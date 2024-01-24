@@ -43,7 +43,8 @@
       }
     ],
     "no-inner-declarations": "off",
-    "import/no-unresolved": "off" // Typescript does this better!
+    "import/no-unresolved": "off", // Typescript does this better!
+    "@typescript-eslint/no-unused-vars": "off" // Let the TS compiler do this, too
   },
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx"],

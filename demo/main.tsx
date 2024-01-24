@@ -1,115 +1,256 @@
-import {
-  baseKeymap,
-  chainCommands,
-  createParagraphNear,
-  liftEmptyBlock,
-  newlineInCode,
-  splitBlock,
-} from "prosemirror-commands";
+import { baseKeymap, toggleMark } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
-import { liftListItem, splitListItem } from "prosemirror-schema-list";
-import { EditorState, Transaction } from "prosemirror-state";
+import { EditorState, Plugin } from "prosemirror-state";
+import {
+  Decoration,
+  DecorationSet,
+  EditorView,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
-import React, { useCallback, useState } from "react";
+import React, { ForwardedRef, Ref, forwardRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import {
   NodeViewComponentProps,
   ProseMirror,
-  useNodeViews,
+  ProseMirrorDoc,
+  WidgetViewComponentProps,
+  reactKeys,
+  widget,
 } from "../src/index.js";
-import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
-import { react } from "../src/plugins/react.js";
 
 import "./main.css";
 
 const schema = new Schema({
   nodes: {
     doc: { content: "block+" },
-    paragraph: { group: "block", content: "inline*" },
-    list: { group: "block", content: "list_item+" },
-    list_item: { content: "paragraph+", toDOM: () => ["li", 0] },
+    paragraph: {
+      group: "block",
+      content: "inline*",
+      toDOM() {
+        return ["p", 0];
+      },
+    },
+    img: {
+      group: "inline",
+      inline: true,
+      attrs: {
+        src: { default: "" },
+      },
+      toDOM(node) {
+        return [
+          "img",
+          {
+            src: node.attrs.src,
+          },
+        ];
+      },
+    },
+    list: {
+      group: "block",
+      content: "list_item+",
+      toDOM() {
+        return ["ul", 0];
+      },
+    },
+    list_item: {
+      content: "paragraph+",
+      toDOM() {
+        return ["li", 0];
+      },
+    },
     text: { group: "inline" },
+  },
+  marks: {
+    em: {
+      toDOM() {
+        return ["em", 0];
+      },
+    },
+    strong: {
+      toDOM() {
+        return ["strong", 0];
+      },
+    },
   },
 });
 
 const editorState = EditorState.create({
-  doc: schema.topNodeType.create(null, [
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    schema.nodes.paragraph.createAndFill()!,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    schema.nodes.list.createAndFill()!,
-  ]),
   schema,
-  plugins: [
-    keymap({
-      ...baseKeymap,
-      Enter: chainCommands(
-        newlineInCode,
-        createParagraphNear,
-        liftEmptyBlock,
-        splitListItem(schema.nodes.list_item),
-        splitBlock
-      ),
-      "Shift-Enter": baseKeymap.Enter,
-      "Shift-Tab": liftListItem(schema.nodes.list_item),
-    }),
-    react(),
-  ],
+  doc: schema.nodes.doc.create({}, [
+    schema.nodes.paragraph.create({}, [
+      schema.text("This ", [schema.marks.em.create()]),
+      schema.text("is", [
+        schema.marks.em.create(),
+        schema.marks.strong.create(),
+      ]),
+      schema.nodes.img.create({
+        src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
+      }),
+      schema.text(" the first paragraph"),
+    ]),
+    schema.nodes.paragraph.create(
+      {},
+      schema.text("This is the second paragraph")
+    ),
+    schema.nodes.paragraph.create(),
+    schema.nodes.paragraph.create(
+      {},
+      schema.text("This is the third paragraph")
+    ),
+  ]),
+  plugins: [reactKeys()],
 });
 
-function Paragraph({ children }: NodeViewComponentProps) {
-  return <p>{children}</p>;
-}
+const Paragraph = forwardRef(function Paragraph(
+  { children, nodeProps, ...props }: NodeViewComponentProps,
+  ref: Ref<HTMLParagraphElement>
+) {
+  return (
+    <p ref={ref} {...props}>
+      {children}
+    </p>
+  );
+});
 
-function List({ children }: NodeViewComponentProps) {
-  return <ul>{children}</ul>;
-}
+const TestWidget = forwardRef(function TestWidget(
+  { widget, pos, ...props }: WidgetViewComponentProps,
+  ref: ForwardedRef<HTMLSpanElement>
+) {
+  return (
+    <span
+      {...props}
+      ref={ref}
+      style={{
+        display: "block",
+        backgroundColor: "blue",
+        width: "4px",
+        height: "4px",
+        position: "absolute",
+        transform: "translateX(-2px)",
+      }}
+    >
+      Widget
+    </span>
+  );
+});
 
-function ListItem({ children }: NodeViewComponentProps) {
-  return <li>{children}</li>;
-}
+const viewPlugin = new Plugin({
+  view(view) {
+    const coords = view.coordsAtPos(view.state.selection.from);
+    const dom = document.createElement("div");
+    dom.style.width = "4px";
+    dom.style.height = "4px";
+    dom.style.position = "absolute";
+    dom.style.top = `${coords.top - 2}px`;
+    dom.style.left = `${coords.left - 2}px`;
+    dom.style.backgroundColor = "blue";
+    document.body.appendChild(dom);
+    return {
+      update(view) {
+        const coords = view.coordsAtPos(view.state.selection.from);
+        dom.style.top = `${coords.top - 2}px`;
+        dom.style.left = `${coords.left - 2}px`;
+      },
+      destroy() {
+        document.body.removeChild(dom);
+      },
+    };
+  },
+});
 
-const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
-  paragraph: () => ({
-    component: Paragraph,
-    dom: document.createElement("div"),
-    contentDOM: document.createElement("span"),
+// Need to handle widgets from plugins
+// in ReactEditorView; current call to super
+// breaks for React widgets
+const widgetPlugin = new Plugin({
+  props: {
+    decorations(state) {
+      return DecorationSet.create(state.doc, [
+        widget(state.selection.from, TestWidget, {
+          side: 0,
+          key: "widget-plugin-widget",
+        }),
+      ]);
+    },
+  },
+  view(view) {
+    const coords = view.coordsAtPos(view.state.selection.from);
+    const dom = document.createElement("div");
+    dom.style.width = "4px";
+    dom.style.height = "4px";
+    dom.style.position = "absolute";
+    dom.style.top = `${coords.top - 2}px`;
+    dom.style.left = `${coords.left - 2}px`;
+    dom.style.backgroundColor = "blue";
+    document.body.appendChild(dom);
+    return {
+      update(view) {
+        const coords = view.coordsAtPos(view.state.selection.from);
+        dom.style.top = `${coords.top - 2}px`;
+        dom.style.left = `${coords.left - 2}px`;
+      },
+      destroy() {
+        document.body.removeChild(dom);
+      },
+    };
+  },
+});
+
+const plugins = [
+  keymap({
+    ...baseKeymap,
+    "Mod-i": toggleMark(schema.marks.em),
+    "Mod-b": toggleMark(schema.marks.strong),
   }),
-  list: () => ({
-    component: List,
-    dom: document.createElement("div"),
-    contentDOM: document.createElement("div"),
-  }),
-  list_item: () => ({
-    component: ListItem,
-    dom: document.createElement("div"),
-    contentDOM: document.createElement("div"),
-  }),
+  viewPlugin,
+  // widgetPlugin,
+];
+
+const customNodeViews: Record<string, NodeViewConstructor> = {
+  paragraph: () => {
+    const dom = document.createElement("p");
+    return {
+      dom,
+      contentDOM: dom,
+    };
+  },
 };
 
 function DemoEditor() {
-  const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-  const [mount, setMount] = useState<HTMLDivElement | null>(null);
   const [state, setState] = useState(editorState);
-
-  const dispatchTransaction = useCallback(
-    (tr: Transaction) => setState((oldState) => oldState.apply(tr)),
-    []
-  );
+  const [showReactNodeViews, setShowReactNodeViews] = useState(true);
 
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
-      <ProseMirror
-        mount={mount}
-        state={state}
-        nodeViews={nodeViews}
-        dispatchTransaction={dispatchTransaction}
+      <button
+        onClick={() => {
+          if (showReactNodeViews) {
+            setShowReactNodeViews((prev) => !prev);
+          } else {
+            window.location.reload();
+          }
+        }}
       >
-        <div ref={setMount} />
-        {renderNodeViews()}
+        Switch to{" "}
+        {showReactNodeViews
+          ? "ProseMirror node views"
+          : "React node views (requires reload)"}
+      </button>
+      <ProseMirror
+        key={`${showReactNodeViews}`}
+        className="ProseMirror"
+        state={state}
+        dispatchTransaction={function (tr) {
+          setState((prev) => prev.apply(tr));
+        }}
+        plugins={plugins}
+        nodeViews={showReactNodeViews ? { paragraph: Paragraph } : undefined}
+        customNodeViews={showReactNodeViews ? undefined : customNodeViews}
+      >
+        <ProseMirrorDoc as={<article />} />
       </ProseMirror>
     </main>
   );
