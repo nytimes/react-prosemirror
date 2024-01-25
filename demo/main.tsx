@@ -119,13 +119,13 @@ function DemoEditor() {
 
   return (
     <main>
-      <Menu state={state} dispatchTransaction={dispatchTransaction} />
       <ProseMirror
         mount={mount}
         state={state}
         nodeViews={nodeViews}
         dispatchTransaction={dispatchTransaction}
       >
+        <Menu />
         <div ref={setMount} />
         {renderNodeViews()}
       </ProseMirror>
