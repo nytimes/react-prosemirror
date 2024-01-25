@@ -19,6 +19,7 @@ export function Button(props: {
   children?: ReactNode;
   isActive: boolean;
   className?: string;
+  title?: string;
   onClick: () => void;
 }) {
   function handleMouseDown(e: React.MouseEvent) {
@@ -27,6 +28,7 @@ export function Button(props: {
   }
   return (
     <button
+      title={props.title}
       className={`button ${props.className} ${props.isActive ? "active" : ""}`}
       onMouseDown={handleMouseDown}
     >
@@ -37,6 +39,7 @@ export function Button(props: {
 
 export default function Menu() {
   const state = useEditorState();
+
   const { marks } = state.schema;
 
   const toggleBold = useEditorEventCallback((view) => {
@@ -55,6 +58,7 @@ export default function Menu() {
     <div className="menu">
       <Button
         className="bold"
+        title="Bold (⌘b)"
         isActive={isMarkActive(marks["strong"], state)}
         onClick={toggleBold}
       >
@@ -62,6 +66,7 @@ export default function Menu() {
       </Button>
       <Button
         className="italic"
+        title="Italic (⌘i)"
         isActive={isMarkActive(marks["em"], state)}
         onClick={toggleItalic}
       >
