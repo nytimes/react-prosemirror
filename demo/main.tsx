@@ -5,6 +5,7 @@ import {
   liftEmptyBlock,
   newlineInCode,
   splitBlock,
+  toggleMark,
 } from "prosemirror-commands";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
@@ -13,6 +14,7 @@ import { EditorState, Transaction } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
+import Menu from "./Menu.js";
 
 import {
   NodeViewComponentProps,
@@ -31,6 +33,20 @@ const schema = new Schema({
     list: { group: "block", content: "list_item+" },
     list_item: { content: "paragraph+", toDOM: () => ["li", 0] },
     text: { group: "inline" },
+  },
+  marks: {
+    em: {
+      parseDOM: [{ tag: "em" }],
+      toDOM() {
+        return ["em", 0];
+      },
+    },
+    strong: {
+      parseDOM: [{ tag: "strong" }],
+      toDOM() {
+        return ["strong", 0];
+      },
+    },
   },
 });
 
@@ -54,6 +70,8 @@ const editorState = EditorState.create({
       ),
       "Shift-Enter": baseKeymap.Enter,
       "Shift-Tab": liftListItem(schema.nodes.list_item),
+      "Mod-b": toggleMark(schema.marks["strong"]),
+      "Mod-i": toggleMark(schema.marks["em"]),
     }),
     react(),
   ],
@@ -101,7 +119,7 @@ function DemoEditor() {
 
   return (
     <main>
-      <h1>React ProseMirror Demo</h1>
+      <Menu state={state} dispatchTransaction={dispatchTransaction} />
       <ProseMirror
         mount={mount}
         state={state}

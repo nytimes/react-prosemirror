@@ -1,5 +1,5 @@
 .ProseMirror {
-  border: thin solid black;
+  border: thin solid #ccc;
   border-radius: 0.25rem;
   padding: 1rem;
   outline: none;
@@ -10,4 +10,37 @@ main {
   margin: auto;
   width: 80%;
   max-width: 700px;
+}
+
+.menu {
+  display: flex;
+  margin-bottom: 5px;
+}
+
+.button {
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  margin-right: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  border: thin solid #ccc;
+  border-radius: 0.25rem;
+  color: black;
+  background-color: white;
+}
+
+.button.bold {
+  font-weight: 700;
+}
+
+.button.italic {
+  font-style: italic;
+}
+
+.button.active {
+  background-color: #DDD;
+  color: blue;
 }
