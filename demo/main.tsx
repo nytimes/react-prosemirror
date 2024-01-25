@@ -15,8 +15,6 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import Menu from "./Menu.js";
-
 import {
   NodeViewComponentProps,
   ProseMirror,
@@ -24,6 +22,7 @@ import {
 } from "../src/index.js";
 import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../src/plugins/react.js";
+import Menu from "./Menu.js";
 
 import "./main.css";
 
