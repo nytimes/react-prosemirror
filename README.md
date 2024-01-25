@@ -232,7 +232,6 @@ import { useEditorEventCallback } from "@nytimes/react-prosemirror";
 
 export function BoldButton() {
   const onClick = useEditorEventCallback((view) => {
-    if (!view) return;
     const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
     toggleBoldMark(view.state, view.dispatch, view);
   });
