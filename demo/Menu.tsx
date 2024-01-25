@@ -40,17 +40,15 @@ export function Button(props: {
 export default function Menu() {
   const state = useEditorState();
 
-  const { marks } = state.schema;
-
   const toggleBold = useEditorEventCallback((view) => {
     if (!view) return;
-    const toggleBoldMark = toggleMark(marks["bold"]);
+    const toggleBoldMark = toggleMark(view.state.schema.marks["bold"]);
     toggleBoldMark(view.state, view.dispatch, view);
   });
 
   const toggleItalic = useEditorEventCallback((view) => {
     if (!view) return;
-    const toggleBoldMark = toggleMark(marks["em"]);
+    const toggleBoldMark = toggleMark(view.state.schema.marks["em"]);
     toggleBoldMark(view.state, view.dispatch, view);
   });
 
@@ -59,7 +57,7 @@ export default function Menu() {
       <Button
         className="bold"
         title="Bold (⌘b)"
-        isActive={isMarkActive(marks["strong"], state)}
+        isActive={!!state && isMarkActive(state.schema.marks["strong"], state)}
         onClick={toggleBold}
       >
         B
@@ -67,7 +65,7 @@ export default function Menu() {
       <Button
         className="italic"
         title="Italic (⌘i)"
-        isActive={isMarkActive(marks["em"], state)}
+        isActive={!!state && isMarkActive(state.schema.marks["em"], state)}
         onClick={toggleItalic}
       >
         I
