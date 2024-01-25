@@ -22,8 +22,8 @@ import {
 } from "../src/index.js";
 import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../src/plugins/react.js";
-import Menu from "./Menu.js";
 
+import Menu from "./Menu.js";
 import "./main.css";
 
 const schema = new Schema({

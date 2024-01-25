@@ -41,6 +41,6 @@ main {
 }
 
 .button.active {
-  background-color: #DDD;
+  background-color: #ddd;
   color: blue;
 }
