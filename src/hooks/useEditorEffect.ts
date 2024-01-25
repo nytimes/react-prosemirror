@@ -20,7 +20,7 @@ import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
  * EditorView lives in an ancestor component.
  */
 export function useEditorEffect(
-  effect: (editorView: EditorView | null) => void | (() => void),
+  effect: (editorView: EditorView) => void | (() => void),
   dependencies?: DependencyList
 ) {
   const { editorView } = useContext(EditorContext);
@@ -33,7 +33,11 @@ export function useEditorEffect(
   // every time it changes, because it will most likely
   // be defined inline and run on every re-render.
   useLayoutGroupEffect(
-    () => effect(editorView),
+    () => {
+      if (editorView) {
+        effect(editorView);
+      }
+    },
     // The rules of hooks want to be able to statically
     // verify the dependencies for the effect, but this will
     // have already happened at the call-site.

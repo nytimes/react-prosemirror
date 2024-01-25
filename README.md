@@ -165,7 +165,7 @@ export function SelectionWidget() {
   const ref = useRef()
 
   useEditorEffect((view) => {
-    if (!view || !ref.current) return
+    if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
     const coords = view.coordsAtPos(view.state.selection.anchor))
@@ -576,7 +576,7 @@ export function SelectionWidget() {
   const ref = useRef()
 
   useEditorEffect((view) => {
-    if (!view || !ref.current) return
+    if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
     const coords = view.coordsAtPos(view.state.selection.anchor))
