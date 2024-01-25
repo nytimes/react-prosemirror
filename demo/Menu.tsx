@@ -5,6 +5,8 @@ import React, { ReactNode } from "react";
 
 import { useEditorEventCallback, useEditorState } from "../src/index.js";
 
+// lifted from:
+// https://github.com/ProseMirror/prosemirror-example-setup/blob/master/src/menu.ts#L58
 function isMarkActive(mark: MarkType, state: EditorState): boolean {
   if (!state.selection) return false;
   const { from, $from, to, empty } = state.selection;
