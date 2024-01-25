@@ -42,7 +42,7 @@ export default function Menu() {
 
   const toggleBold = useEditorEventCallback((view) => {
     if (!view) return;
-    const toggleBoldMark = toggleMark(view.state.schema.marks["bold"]);
+    const toggleBoldMark = toggleMark(view.state.schema.marks["strong"]);
     toggleBoldMark(view.state, view.dispatch, view);
   });
 
