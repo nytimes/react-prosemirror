@@ -1,7 +1,7 @@
-import React, { ReactNode } from "react";
+import { toggleMark } from "prosemirror-commands";
 import type { MarkType } from "prosemirror-model";
 import type { EditorState, Transaction } from "prosemirror-state";
-import { toggleMark } from "prosemirror-commands";
+import React, { ReactNode } from "react";
 
 function isMarkActive(mark: MarkType, state: EditorState): boolean {
   if (!state.selection) return false;
