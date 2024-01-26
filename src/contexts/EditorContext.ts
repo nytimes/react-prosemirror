@@ -6,7 +6,7 @@ import type { EventHandler } from "../plugins/componentEventListeners";
 
 interface EditorContextValue {
   editorView: EditorView | null;
-  editorState: EditorState | null;
+  editorState: EditorState;
   registerEventListener<EventType extends keyof DOMEventMap>(
     eventType: EventType,
     handler: EventHandler<EventType>

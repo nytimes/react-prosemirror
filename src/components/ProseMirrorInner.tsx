@@ -53,7 +53,9 @@ export function ProseMirrorInner({
   });
 
   const editorState =
-    "state" in editorProps ? editorProps.state : editorView?.state ?? null;
+    "defaultState" in editorProps
+      ? editorProps.defaultState
+      : editorProps.state;
 
   const editorContextValue = useMemo(
     () => ({
