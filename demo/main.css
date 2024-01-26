@@ -30,6 +30,11 @@ main {
   border-radius: 0.25rem;
   color: black;
   background-color: white;
+
+  &[aria-pressed='true'] {
+    background-color: #ddd;
+    color: blue;
+  }
 }
 
 .button.bold {
@@ -40,7 +45,12 @@ main {
   font-style: italic;
 }
 
-.button.active {
-  background-color: #ddd;
-  color: blue;
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }

@@ -15,23 +15,23 @@ function isMarkActive(mark: MarkType, state: EditorState): boolean {
 }
 
 export function Button(props: {
+  className?: string;
   children?: ReactNode;
   isActive: boolean;
-  className?: string;
-  title?: string;
+  title: string;
   onClick: () => void;
 }) {
-  function handleMouseDown(e: React.MouseEvent) {
-    e.preventDefault();
-    props.onClick();
-  }
+
   return (
     <button
+      type="button"
       title={props.title}
-      className={`button ${props.className} ${props.isActive ? "active" : ""}`}
-      onMouseDown={handleMouseDown}
+      aria-pressed={props.isActive}
+      className={`button ${props.className}`}
+      onClick={props.onClick}
     >
-      {props.children}
+      <span className="visually-hidden">{props.title}</span>
+      <span aria-hidden>{props.children}</span>
     </button>
   );
 }
