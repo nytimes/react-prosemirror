@@ -1,2 +1,2 @@
-undecided:
-  - "@nytimes/react-prosemirror"
+releases:
+  "@nytimes/react-prosemirror": minor
