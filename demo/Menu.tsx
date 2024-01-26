@@ -48,8 +48,8 @@ export default function Menu() {
 
   const toggleItalic = useEditorEventCallback((view) => {
     if (!view) return;
-    const toggleBoldMark = toggleMark(view.state.schema.marks["em"]);
-    toggleBoldMark(view.state, view.dispatch, view);
+    const toggleItalicMark = toggleMark(view.state.schema.marks["em"]);
+    toggleItalicMark(view.state, view.dispatch, view);
   });
 
   return (
