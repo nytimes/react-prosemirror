@@ -31,7 +31,7 @@ main {
   color: black;
   background-color: white;
 
-  &[aria-pressed='true'] {
+  &[aria-pressed="true"] {
     background-color: #ddd;
     color: blue;
   }

@@ -21,7 +21,6 @@ export function Button(props: {
   title: string;
   onClick: () => void;
 }) {
-
   return (
     <button
       type="button"
