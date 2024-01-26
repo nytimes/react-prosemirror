@@ -493,7 +493,7 @@ Note that components that use this hook must be descendants of the
 ### `useEditorState`
 
 ```tsx
-type useEditorState = () => EditorState | null;
+type useEditorState = () => EditorState;
 ```
 
 Provides access to the current EditorState value.
