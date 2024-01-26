@@ -1,2 +1,2 @@
 releases:
-  "@nytimes/react-prosemirror": patch
+  "@nytimes/react-prosemirror": minor
