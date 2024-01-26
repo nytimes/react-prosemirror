@@ -54,7 +54,8 @@ export function ProseMirrorInner({
 
   const editorState =
     "defaultState" in editorProps
-      ? editorProps.defaultState
+      ? // Only use the default state as a fallback for the first render where `editorView` isn't initialized yet
+        editorView?.state ?? editorProps.defaultState
       : editorProps.state;
 
   const editorContextValue = useMemo(
