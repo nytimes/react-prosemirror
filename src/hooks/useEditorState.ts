@@ -6,7 +6,7 @@ import { EditorContext } from "../contexts/EditorContext.js";
 /**
  * Provides access to the current EditorState value.
  */
-export function useEditorState(): EditorState | null {
+export function useEditorState(): EditorState {
   const { editorState } = useContext(EditorContext);
 
   return editorState;

@@ -13,7 +13,6 @@ const NodePosContext = createContext<number>(null as unknown as number);
 
 export function NodePosProvider({ nodeKey, children }: Props) {
   const editorState = useEditorState();
-  if (!editorState) return <>{children}</>;
   const pluginState = reactPluginKey.getState(editorState);
   if (!pluginState) return <>{children}</>;
   return (
