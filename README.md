@@ -94,6 +94,7 @@ ProseMirror EditorView should be mounted on.
 
 ```tsx
 import { EditorState } from "prosemirror-state";
+import { schema } from "prosemirror-schema-basic";
 import { ProseMirror } from "@nytimes/react-prosemirror";
 
 const defaultState = EditorState.create({ schema });
