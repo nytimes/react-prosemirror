@@ -94,8 +94,10 @@ ProseMirror EditorView should be mounted on.
 
 ```tsx
 import { EditorState } from "prosemirror-state";
+import { schema } from "prosemirror-schema-basic";
 import { ProseMirror } from "@nytimes/react-prosemirror";
 
+const defaultState = EditorState.create({ schema });
 export function ProseMirrorEditor() {
   // It's important that mount is stored as state,
   // rather than a ref, so that the ProseMirror component
@@ -103,7 +105,7 @@ export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   return (
-    <ProseMirror mount={mount} defaultState={EditorState.create({ schema })}>
+    <ProseMirror mount={mount} defaultState={defaultState}>
       <div ref={setMount} />
     </ProseMirror>
   );
