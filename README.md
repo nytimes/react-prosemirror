@@ -165,7 +165,7 @@ export function SelectionWidget() {
   const ref = useRef()
 
   useEditorEffect((view) => {
-    if (!view || !ref.current) return
+    if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
     const coords = view.coordsAtPos(view.state.selection.anchor))
@@ -232,7 +232,6 @@ import { useEditorEventCallback } from "@nytimes/react-prosemirror";
 
 export function BoldButton() {
   const onClick = useEditorEventCallback((view) => {
-    if (!view) return;
     const toggleBoldMark = toggleMark(view.state.schema.marks.bold);
     toggleBoldMark(view.state, view.dispatch, view);
   });
@@ -577,7 +576,7 @@ export function SelectionWidget() {
   const ref = useRef()
 
   useEditorEffect((view) => {
-    if (!view || !ref.current) return
+    if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
     const coords = view.coordsAtPos(view.state.selection.anchor))
