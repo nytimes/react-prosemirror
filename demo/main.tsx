@@ -1,4 +1,5 @@
 import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { inputRules, wrappingInputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
@@ -101,7 +102,12 @@ const editorState = EditorState.create({
       schema.text("This is the third paragraph")
     ),
   ]),
-  plugins: [reactKeys()],
+  plugins: [
+    reactKeys(),
+    inputRules({
+      rules: [wrappingInputRule(/^\s*([-+*])\s$/, schema.nodes.list)],
+    }),
+  ],
 });
 
 const Paragraph = forwardRef(function Paragraph(
@@ -112,6 +118,28 @@ const Paragraph = forwardRef(function Paragraph(
     <p ref={ref} {...props}>
       {children}
     </p>
+  );
+});
+
+const List = forwardRef(function List(
+  { children, nodeProps, ...props }: NodeViewComponentProps,
+  ref: Ref<HTMLUListElement>
+) {
+  return (
+    <ul ref={ref} {...props}>
+      {children}
+    </ul>
+  );
+});
+
+const ListItem = forwardRef(function ListItem(
+  { children, nodeProps, ...props }: NodeViewComponentProps,
+  ref: Ref<HTMLLIElement>
+) {
+  return (
+    <li ref={ref} {...props}>
+      {children}
+    </li>
   );
 });
 
@@ -247,7 +275,11 @@ function DemoEditor() {
           setState((prev) => prev.apply(tr));
         }}
         plugins={plugins}
-        nodeViews={showReactNodeViews ? { paragraph: Paragraph } : undefined}
+        nodeViews={
+          showReactNodeViews
+            ? { paragraph: Paragraph, list: List, list_item: ListItem }
+            : undefined
+        }
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}
       >
         <ProseMirrorDoc as={<article />} />
