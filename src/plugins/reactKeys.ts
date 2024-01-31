@@ -1,3 +1,4 @@
+import { Node } from "prosemirror-model";
 import { Plugin, PluginKey } from "prosemirror-state";
 
 export function createNodeKey() {
@@ -8,6 +9,7 @@ export function createNodeKey() {
 export const reactKeysPluginKey = new PluginKey<{
   posToKey: Map<number, string>;
   keyToPos: Map<string, number>;
+  posToNode: Map<number, Node>;
 }>("@nytimes/react-prosemirror/reactKeys");
 
 /**
@@ -52,27 +54,28 @@ export function reactKeys() {
           posToKey: new Map<number, string>(),
           keyToPos: new Map<string, number>(),
         };
-        const nextKeys = new Set<string>();
+        const posToKeyEntries = Array.from(value.posToKey.entries()).sort(
+          ([a], [b]) => a - b
+        );
+        for (const [pos, key] of posToKeyEntries) {
+          const { pos: newPos, deleted } = tr.mapping.mapResult(pos);
+          if (deleted) continue;
+
+          let newKey = key;
+
+          if (keyToBust === key) {
+            newKey = createNodeKey();
+          }
+
+          next.posToKey.set(newPos, newKey);
+          next.keyToPos.set(newKey, newPos);
+        }
         newState.doc.descendants((_, pos) => {
-          const prevPos = tr.mapping.invert().map(pos);
-          const prevKey = value.posToKey.get(prevPos) ?? createNodeKey();
-          const key =
-            // If this transaction adds a new node, there will be multiple
-            // nodes that map back to the same initial position. In this case,
-            // create new keys for new nodes.
-            nextKeys.has(prevKey) ||
-            // After IME compositions, we specifically bust the parent's key
-            // so that we ensure that we blow away the temporary text node
-            // used for the composition
-            //
-            // TODO: This is a pretty blunt tool; could we more precisely
-            // remove the temporary composition text node instead?
-            keyToBust === prevKey
-              ? createNodeKey()
-              : prevKey;
+          if (next.posToKey.has(pos)) return true;
+
+          const key = createNodeKey();
           next.posToKey.set(pos, key);
           next.keyToPos.set(key, pos);
-          nextKeys.add(key);
           return true;
         });
         return next;
