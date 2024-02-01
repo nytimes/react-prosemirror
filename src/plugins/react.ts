@@ -8,12 +8,6 @@ export const ROOT_NODE_KEY = Symbol("@nytimes/react-prosemirror/root-node-key");
 
 export type NodeKey = string | typeof ROOT_NODE_KEY;
 
-/**
- * Identifies a node view constructor as having been created
- * by @nytimes/react-prosemirror
- */
-export const REACT_NODE_VIEW = Symbol("react node view");
-
 export function createNodeKey() {
   return Math.floor(Math.random() * 0xffffff).toString(16);
 }
@@ -68,19 +62,20 @@ export function react() {
           posToKey: new Map<number, string>(),
           keyToPos: new Map<string, number>(),
         };
-        const nextKeys = new Set<string>();
+        for (const [pos, key] of value.posToKey.entries()) {
+          const { pos: newPos, deleted } = tr.mapping.mapResult(pos);
+          if (deleted) continue;
+
+          next.posToKey.set(newPos, key);
+          next.keyToPos.set(key, newPos);
+        }
         newState.doc.descendants((node, pos) => {
           if (node.isText) return false;
+          if (next.posToKey.has(pos)) return true;
 
-          const prevPos = tr.mapping.invert().map(pos);
-          const prevKey = value.posToKey.get(prevPos) ?? createNodeKey();
-          // If this transaction adds a new node, there will be multiple
-          // nodes that map back to the same initial position. In this case,
-          // create new keys for new nodes.
-          const key = nextKeys.has(prevKey) ? createNodeKey() : prevKey;
+          const key = createNodeKey();
           next.posToKey.set(pos, key);
           next.keyToPos.set(key, pos);
-          nextKeys.add(key);
           return true;
         });
         return next;
