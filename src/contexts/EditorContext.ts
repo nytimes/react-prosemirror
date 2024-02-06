@@ -4,7 +4,7 @@ import { createContext } from "react";
 
 import type { EventHandler } from "../plugins/componentEventListeners";
 
-interface EditorContextValue {
+export interface EditorContextValue {
   editorView: EditorView | null;
   editorState: EditorState;
   registerEventListener<EventType extends keyof DOMEventMap>(

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import React, { createContext, useContext, useState } from "react";
@@ -7,6 +7,12 @@ import { ProseMirror } from "../../components/ProseMirror.js";
 import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
 import { useNodeViews } from "../useNodeViews.js";
+
+// Mock `ReactDOM.flushSync` to call `act` to flush updates from DOM mutations.
+jest.mock("react-dom", () => ({
+  ...jest.requireActual("react-dom"),
+  flushSync: (fn: () => void) => act(fn),
+}));
 
 const schema = new Schema({
   nodes: {
@@ -17,7 +23,7 @@ const schema = new Schema({
   },
 });
 
-const editorState = EditorState.create({
+const state = EditorState.create({
   doc: schema.topNodeType.create(null, schema.nodes.list.createAndFill()),
   schema,
   plugins: [react()],
@@ -61,7 +67,7 @@ describe("useNodeViews", () => {
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
-        <ProseMirror mount={mount} state={editorState} nodeViews={nodeViews}>
+        <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
           <div ref={setMount} />
           {renderNodeViews()}
         </ProseMirror>
@@ -114,7 +120,7 @@ describe("useNodeViews", () => {
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
-        <ProseMirror mount={mount} state={editorState} nodeViews={nodeViews}>
+        <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
           <div ref={setMount} />
           {renderNodeViews()}
         </ProseMirror>
