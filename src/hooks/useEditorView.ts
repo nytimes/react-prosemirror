@@ -51,7 +51,7 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
       console.error(
         "A component contains a ProseMirror editor with both value and defaultValue props. " +
           "ProseMirror editors must be either controlled or uncontrolled " +
-          "(specify either the value prop, or the defaultValue prop, but not both). " +
+          "(specify either the state prop, or the defaultState prop, but not both). " +
           "Decide between using a controlled or uncontrolled ProseMirror editor " +
           "and remove one of these props. More info: " +
           "https://reactjs.org/link/controlled-components"
