@@ -122,16 +122,14 @@ import { ProseMirror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [editorState, setEditorState] = useState(
-    EditorState.create({ schema })
-  );
+  const [state, setState] = useState(EditorState.create({ schema }));
 
   return (
     <ProseMirror
       mount={mount}
-      state={editorState}
+      state={state}
       dispatchTransaction={(tr) => {
-        setEditorState((s) => s.apply(tr));
+        setState((s) => s.apply(tr));
       }}
     >
       <div ref={setMount} />
@@ -194,14 +192,14 @@ import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [editorState, setEditorState] = useState(EditorState.create({ schema }))
+  const [state, setState] = useState(EditorState.create({ schema }))
 
   return (
     <ProseMirror
       mount={mount}
-      state={editorState}
+      state={state}
       dispatchTransaction={(tr) => {
-        setEditorState(s => s.apply(tr))
+        setState(s => s.apply(tr))
       }}
     >
       {/*
@@ -249,14 +247,12 @@ import { BoldButton } from "./BoldButton.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [editorState, setEditorState] = useState(
-    EditorState.create({ schema })
-  );
+  const [state, setState] = useState(EditorState.create({ schema }));
 
   return (
     <ProseMirror
       mount={mount}
-      state={editorState}
+      state={state}
       dispatchTransaction={(tr) => {
         setEditorState((s) => s.apply(tr));
       }}
@@ -380,7 +376,7 @@ const reactNodeViews = {
   }),
 };
 
-const editorState = EditorState.create({
+const state = EditorState.create({
   schema,
   // You must add the react plugin if you use
   // the useNodeViews or useNodePos hook.
@@ -392,7 +388,7 @@ function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
   return (
-    <ProseMirror mount={mount} defaultState={editorState} nodeViews={nodeViews}>
+    <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
       <div ref={setMount} />
       {renderNodeViews()}
     </ProseMirror>
@@ -406,11 +402,14 @@ function ProseMirrorEditor() {
 
 ```tsx
 type ProseMirror = (
-  props: {
-    mount: HTMLElement;
-    children: ReactNode;
-  } & DirectEditorProps &
-    ({ defaultState: EditorState } | { state: EditorState })
+  props: EditorProps & {
+    mount: HTMLElement | null;
+    children?: ReactNode | null;
+    defaultState?: EditorState;
+    state?: EditorState;
+    plugins?: readonly Plugin[];
+    dispatchTransaction?(this: EditorView, tr: Transaction): void;
+  }
 ) => JSX.Element;
 ```
 

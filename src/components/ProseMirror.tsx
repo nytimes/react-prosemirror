@@ -1,8 +1,25 @@
+import type { EditorState, Plugin, Transaction } from "prosemirror-state";
+import type { EditorProps, EditorView } from "prosemirror-view";
 import React from "react";
+import type { ReactNode } from "react";
 
+import { EditorProvider } from "../contexts/EditorContext.js";
 import { LayoutGroup } from "../contexts/LayoutGroup.js";
+import { useEditorView } from "../hooks/useEditorView.js";
 
-import { ProseMirrorInner, ProseMirrorProps } from "./ProseMirrorInner.js";
+interface Props extends EditorProps {
+  mount: HTMLElement | null;
+  children?: ReactNode | null;
+  defaultState?: EditorState;
+  state?: EditorState;
+  plugins?: readonly Plugin[];
+  dispatchTransaction?(this: EditorView, tr: Transaction): void;
+}
+
+function Editor({ mount, children, ...props }: Props) {
+  const value = useEditorView(mount, props);
+  return <EditorProvider value={value}>{children}</EditorProvider>;
+}
 
 /**
  * Renders the ProseMirror View onto a DOM mount.
@@ -25,10 +42,10 @@ import { ProseMirrorInner, ProseMirrorProps } from "./ProseMirrorInner.js";
  * }
  * ```
  */
-export function ProseMirror(props: ProseMirrorProps) {
+export function ProseMirror(props: Props) {
   return (
     <LayoutGroup>
-      <ProseMirrorInner {...props} />
+      <Editor {...props} />
     </LayoutGroup>
   );
 }

@@ -1,56 +1,33 @@
-import type { EditorState, Transaction } from "prosemirror-state";
+import { Schema } from "prosemirror-model";
+import { EditorState } from "prosemirror-state";
+import type { Plugin, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import type { DirectEditorProps } from "prosemirror-view";
-import { useLayoutEffect, useState } from "react";
+import type { EditorProps } from "prosemirror-view";
+import { useLayoutEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { useForceUpdate } from "./useForceUpdate.js";
+import type { EditorContextValue } from "../contexts/EditorContext.js";
 
-function withFlushedUpdates<This, T extends unknown[]>(
-  fn: (this: This, ...args: T) => void
-): (...args: T) => void {
-  return function (this: This, ...args: T) {
-    flushSync(() => {
-      fn.call(this, ...args);
-    });
-  };
-}
+import { useComponentEventListeners } from "./useComponentEventListeners.js";
 
-function defaultDispatchTransaction(this: EditorView, tr: Transaction) {
-  this.updateState(this.state.apply(tr));
-}
+const EMPTY_SCHEMA = new Schema({
+  nodes: {
+    doc: { content: "text*" },
+    text: { inline: true },
+  },
+});
 
-type EditorStateProps =
-  | {
-      state: EditorState;
-    }
-  | {
-      defaultState: EditorState;
-    };
+const EMPTY_STATE = EditorState.create({
+  schema: EMPTY_SCHEMA,
+});
 
-export type EditorProps = Omit<DirectEditorProps, "state"> & EditorStateProps;
+let didWarnValueDefaultValue = false;
 
-function withFlushedDispatch(
-  props: EditorProps,
-  forceUpdate: () => void
-): EditorProps & {
-  dispatchTransaction: EditorView["dispatch"];
-} {
-  return {
-    ...props,
-    ...{
-      dispatchTransaction: function dispatchTransaction(
-        this: EditorView,
-        tr: Transaction
-      ) {
-        const flushedDispatch = withFlushedUpdates(
-          props.dispatchTransaction ?? defaultDispatchTransaction
-        );
-        flushedDispatch.call(this, tr);
-        if (!("state" in props)) forceUpdate();
-      },
-    },
-  };
+interface Props extends EditorProps {
+  defaultState?: EditorState;
+  state?: EditorState;
+  plugins?: readonly Plugin[];
+  dispatchTransaction?(this: EditorView, tr: Transaction): void;
 }
 
 /**
@@ -59,30 +36,65 @@ function withFlushedDispatch(
  * All state and props updates are executed in a layout effect.
  * To ensure that the EditorState and EditorView are never out of
  * sync, it's important that the EditorView produced by this hook
- * is only accessed through the `useEditorViewEvent` and
- * `useEditorViewLayoutEffect` hooks.
+ * is only accessed through the provided hooks.
  */
 export function useEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
-  props: EditorProps
-): EditorView | null {
-  const [view, setView] = useState<EditorView | null>(null);
-  const forceUpdate = useForceUpdate();
+  props: Props
+): EditorContextValue {
+  if (process.env.NODE_ENV !== "production") {
+    if (
+      props.defaultState !== undefined &&
+      props.state !== undefined &&
+      !didWarnValueDefaultValue
+    ) {
+      console.error(
+        "A component contains a ProseMirror editor with both value and defaultValue props. " +
+          "ProseMirror editors must be either controlled or uncontrolled " +
+          "(specify either the state prop, or the defaultState prop, but not both). " +
+          "Decide between using a controlled or uncontrolled ProseMirror editor " +
+          "and remove one of these props. More info: " +
+          "https://reactjs.org/link/controlled-components"
+      );
+      didWarnValueDefaultValue = true;
+    }
+  }
 
-  const editorProps = withFlushedDispatch(props, forceUpdate);
+  const defaultState = props.defaultState ?? EMPTY_STATE;
+  const [_state, setState] = useState<EditorState>(defaultState);
+  const state = props.state ?? _state;
 
-  const stateProp = "state" in editorProps ? editorProps.state : undefined;
+  const {
+    componentEventListenersPlugin,
+    registerEventListener,
+    unregisterEventListener,
+  } = useComponentEventListeners();
 
-  const state =
-    "defaultState" in editorProps
-      ? editorProps.defaultState
-      : editorProps.state;
-
-  const nonStateProps = Object.fromEntries(
-    Object.entries(editorProps).filter(
-      ([propName]) => propName !== "state" && propName !== "defaultState"
-    )
+  const plugins = useMemo(
+    () => [...(props.plugins ?? []), componentEventListenersPlugin],
+    [props.plugins, componentEventListenersPlugin]
   );
+
+  function dispatchTransaction(this: EditorView, tr: Transaction) {
+    flushSync(() => {
+      if (!props.state) {
+        setState((s) => s.apply(tr));
+      }
+
+      if (props.dispatchTransaction) {
+        props.dispatchTransaction.call(this, tr);
+      }
+    });
+  }
+
+  const directEditorProps = {
+    ...props,
+    state,
+    plugins,
+    dispatchTransaction,
+  };
+
+  const [view, setView] = useState<EditorView | null>(null);
 
   useLayoutEffect(() => {
     return () => {
@@ -92,37 +104,27 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     };
   }, [view]);
 
+  // This effect runs on every render and handles the view lifecycle.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    if (view && view.dom !== mount) {
-      setView(null);
-      return;
+    if (view) {
+      if (view.dom === mount) {
+        view.setProps(directEditorProps);
+      } else {
+        setView(null);
+      }
+    } else if (mount) {
+      setView(new EditorView({ mount }, directEditorProps));
     }
+  });
 
-    if (!mount) {
-      return;
-    }
-
-    if (!view) {
-      setView(
-        new EditorView(
-          { mount },
-          {
-            ...editorProps,
-            state,
-          }
-        )
-      );
-      return;
-    }
-  }, [editorProps, mount, state, view]);
-
-  useLayoutEffect(() => {
-    view?.setProps(nonStateProps);
-  }, [view, nonStateProps]);
-
-  useLayoutEffect(() => {
-    if (stateProp) view?.setProps({ state: stateProp });
-  }, [view, stateProp]);
-
-  return view;
+  return useMemo(
+    () => ({
+      editorState: state,
+      editorView: view,
+      registerEventListener,
+      unregisterEventListener,
+    }),
+    [state, view, registerEventListener, unregisterEventListener]
+  );
 }

@@ -50,7 +50,7 @@ const schema = new Schema({
   },
 });
 
-const editorState = EditorState.create({
+const defaultState = EditorState.create({
   doc: schema.topNodeType.create(null, [
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     schema.nodes.paragraph.createAndFill()!,
@@ -110,7 +110,7 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
 function DemoEditor() {
   const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
-  const [state, setState] = useState(editorState);
+  const [state, setState] = useState(defaultState);
 
   const dispatchTransaction = useCallback(
     (tr: Transaction) => setState((oldState) => oldState.apply(tr)),
