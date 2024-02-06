@@ -77,10 +77,12 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
 
   function dispatchTransaction(this: EditorView, tr: Transaction) {
     flushSync(() => {
+      if (!props.state) {
+        setState((s) => s.apply(tr));
+      }
+
       if (props.dispatchTransaction) {
         props.dispatchTransaction.call(this, tr);
-      } else {
-        setState((s) => s.apply(tr));
       }
     });
   }

@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
+import type { Transaction } from "prosemirror-state";
 import React, { useEffect, useState } from "react";
 
 import { useNodeViews } from "../../hooks/useNodeViews.js";
@@ -51,6 +52,41 @@ describe("ProseMirror", () => {
     await user.type(editor, "Hello, world!");
 
     expect(editor.textContent).toBe("Hello, world!");
+  });
+
+  it("supports observing transaction dispatch", async () => {
+    const schema = new Schema({
+      nodes: {
+        text: {},
+        doc: { content: "text*" },
+      },
+    });
+
+    const defaultState = EditorState.create({ schema });
+    const dispatchTransaction = jest.fn<void, [Transaction]>();
+
+    function TestEditor() {
+      const [mount, setMount] = useState<HTMLDivElement | null>(null);
+
+      return (
+        <ProseMirror
+          mount={mount}
+          defaultState={defaultState}
+          dispatchTransaction={dispatchTransaction}
+        >
+          <div data-testid="editor" ref={setMount} />
+        </ProseMirror>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<TestEditor />);
+
+    const editor = screen.getByTestId("editor");
+    await user.type(editor, "Hello, world!");
+
+    expect(editor.textContent).toBe("Hello, world!");
+    expect(dispatchTransaction).toHaveBeenCalledTimes(13);
   });
 
   it("supports controlling the editor state", async () => {
