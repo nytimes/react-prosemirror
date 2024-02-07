@@ -2,8 +2,8 @@ import type { EditorView } from "prosemirror-view";
 import { useContext } from "react";
 import type { DependencyList } from "react";
 
-import { EditorContext } from "../contexts/EditorContext.js";
-import { useLayoutGroupEffect } from "../contexts/LayoutGroup.js";
+import { EditorContext } from "../components/EditorContext.js";
+import { useLayoutGroupEffect } from "../hooks/useLayoutGroupEffect.js";
 
 /**
  * Registers a layout effect to run after the EditorView has

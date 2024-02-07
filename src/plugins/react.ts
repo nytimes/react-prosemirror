@@ -6,7 +6,7 @@ import { Plugin, PluginKey } from "prosemirror-state";
  */
 export const ROOT_NODE_KEY = Symbol("@nytimes/react-prosemirror/root-node-key");
 
-export type NodeKey = string | typeof ROOT_NODE_KEY;
+export type NodeKey = string | symbol;
 
 export function createNodeKey() {
   return Math.floor(Math.random() * 0xffffff).toString(16);
