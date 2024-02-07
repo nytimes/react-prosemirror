@@ -1246,7 +1246,7 @@ __metadata:
     jest-environment-jsdom: ^29.4.1
     lint-staged: ^13.1.0
     markdown-toc: ^1.2.0
-    prettier: ^2.8.3
+    prettier: ^3.2.5
     prosemirror-commands: ^1.5.0
     prosemirror-keymap: ^1.2.1
     prosemirror-model: ^1.18.3
@@ -6865,12 +6865,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^2.8.3":
-  version: 2.8.3
-  resolution: "prettier@npm:2.8.3"
+"prettier@npm:^3.2.5":
+  version: 3.2.5
+  resolution: "prettier@npm:3.2.5"
   bin:
-    prettier: bin-prettier.js
-  checksum: 92f2ceb522d454370e02082aa74ad27388672f7cee8975028b59517c069fe643bdc73e322675c8faf2ff173d7a626d1a6389f26b474000308e793aa25fff46e5
+    prettier: bin/prettier.cjs
+  checksum: 2ee4e1417572372afb7a13bb446b34f20f1bf1747db77cf6ccaf57a9be005f2f15c40f903d41a6b79eec3f57fff14d32a20fb6dee1f126da48908926fe43c311
   languageName: node
   linkType: hard
 
