@@ -31,15 +31,11 @@ yarn add @nytimes/react-prosemirror
     - [`useEditorEffect`](#useeditoreffect)
     - [`useEditorEventCallback`](#useeditoreventcallback)
     - [`useEditorEventListener`](#useeditoreventlistener)
-    - [`useEditorView`, `EditorProvider` and `LayoutGroup`](#useeditorview-editorprovider-and-layoutgroup)
   - [Building NodeViews with React](#building-nodeviews-with-react)
 - [API](#api)
   - [`ProseMirror`](#prosemirror)
   - [`EditorProvider`](#editorprovider)
-  - [`LayoutGroup`](#layoutgroup)
-  - [`useLayoutGroupEffect`](#uselayoutgroupeffect)
   - [`useEditorState`](#useeditorstate)
-  - [`useEditorView`](#useeditorview)
   - [`useEditorEventCallback`](#useeditoreventcallback-1)
   - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
@@ -311,22 +307,6 @@ function Paragraph({ node, children }) {
 }
 ```
 
-#### `useEditorView`, `EditorProvider` and `LayoutGroup`
-
-Under the hood, the `ProseMirror` component essentially just composes three
-separate tools: `useEditorView`, `EditorProvider`, and `LayoutGroup`. If you
-find yourself in need of more control over these, they can also be used
-independently.
-
-`useEditorView` is a relatively simple hook that takes a mount point and
-`EditorProps` as arguments and returns an EditorView instance.
-
-`EditorProvider` is a simple React context, which should be provided the current
-EditorView and EditorState.
-
-`LayoutGroup` _must_ be rendered as a parent of the component using
-`useEditorView`.
-
 ### Building NodeViews with React
 
 The other way to integrate React and ProseMirror is to have ProseMirror render
@@ -432,64 +412,6 @@ function MyProseMirrorField() {
 }
 ```
 
-### `EditorProvider`
-
-```tsx
-type EditorProvider = React.Provider<{
-  editorView: EditorView | null;
-  editorState: EditorState | null;
-  registerEventListener<EventType extends keyof DOMEventMap>(
-    eventType: EventType,
-    handler: EventHandler<EventType>
-  ): void;
-  unregisterEventListener<EventType extends keyof DOMEventMap>(
-    eventType: EventType,
-    handler: EventHandler<EventType>
-  ): void;
-}>;
-```
-
-Provides the EditorView, as well as the current EditorState. Should not be
-consumed directly; instead see [`useEditorState`](#useeditorstate),
-[`useEditorEventCallback`](#useeditorevent), and
-[`useEditorEffect`](#useeditoreffect-1).
-
-See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
-usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
-you don't need to use this provider directly.
-
-### `LayoutGroup`
-
-```tsx
-type LayoutGroup = (props: { children: React.ReactNode }) => JSX.Element;
-```
-
-Provides a deferral point for grouped layout effects. All effects registered
-with `useLayoutGroupEffect` by children of this provider will execute _after_
-all effects registered by `useLayoutEffect` by children of this provider.
-
-See [ProseMirror.tsx](./src/components/ProseMirror.tsx) for example usage. Note
-that if you are using the [`ProseMirror`](#prosemirror) component, you don't
-need to use this context directly.
-
-### `useLayoutGroupEffect`
-
-```tsx
-type useLayoutGroupEffect = (
-  effect: React.EffectCallback,
-  deps?: React.DependencyList
-) => void;
-```
-
-Like `useLayoutEffect`, but all effect executions are run _after_ the
-`LayoutGroup` layout effects phase.
-
-This hook allows child components to enqueue layout effects that won't be safe
-to run until after a parent component's layout effects have run.
-
-Note that components that use this hook must be descendants of the
-[`LayoutGroup`](#layoutgroup) component.
-
 ### `useEditorState`
 
 ```tsx
@@ -497,26 +419,6 @@ type useEditorState = () => EditorState;
 ```
 
 Provides access to the current EditorState value.
-
-### `useEditorView`
-
-```tsx
-type useEditorView = <T extends HTMLElement = HTMLElement>(
-  mount: T | null,
-  props: DirectEditorProps
-) => EditorView | null;
-```
-
-Creates, mounts, and manages a ProseMirror `EditorView`.
-
-All state and props updates are executed in a layout effect. To ensure that the
-EditorState and EditorView are never out of sync, it's important that the
-EditorView produced by this hook is only accessed through the hooks exposed by
-this library.
-
-See [ProseMirrorInner.tsx](./src/components/ProseMirrorInner.tsx) for example
-usage. Note that if you are using the [`ProseMirror`](#prosemirror) component,
-you don't need to use this hook directly.
 
 ### `useEditorEventCallback`
 
