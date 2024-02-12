@@ -1,9 +1,8 @@
 import React, { useCallback, useLayoutEffect, useRef } from "react";
 import type { EffectCallback } from "react";
 
+import { LayoutGroupContext } from "../contexts/LayoutGroupContext.js";
 import { useForceUpdate } from "../hooks/useForceUpdate.js";
-
-import { LayoutGroupContext } from "./LayoutGroupContext.js";
 
 export interface LayoutGroupProps {
   children: React.ReactNode;

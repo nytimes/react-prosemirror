@@ -1,11 +1,10 @@
 import React, { useState } from "react";
 import type { ReactPortal } from "react";
 
+import { NodeViewsContext } from "../contexts/NodeViewsContext.js";
+import type { NodeViewsContextValue } from "../contexts/NodeViewsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { ROOT_NODE_KEY } from "../plugins/react.js";
-
-import { NodeViewsContext } from "./NodeViewsContext.js";
-import type { NodeViewsContextValue } from "./NodeViewsContext.js";
 
 type NodeViewsProps = {
   portals: NodeViewsContextValue;

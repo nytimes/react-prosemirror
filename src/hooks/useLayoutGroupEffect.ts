@@ -1,7 +1,7 @@
 import { useContext, useLayoutEffect } from "react";
 import type { DependencyList, EffectCallback } from "react";
 
-import { LayoutGroupContext } from "../components/LayoutGroupContext.js";
+import { LayoutGroupContext } from "../contexts/LayoutGroupContext.js";
 
 /** Registers a layout effect to run at the nearest `LayoutGroup` boundary. */
 export function useLayoutGroupEffect(

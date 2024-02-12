@@ -1,10 +1,9 @@
 import React from "react";
 import type { ReactNode } from "react";
 
+import { EditorContext } from "../contexts/EditorContext.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 import type { UseEditorViewOptions } from "../hooks/useEditorView.js";
-
-import { EditorContext } from "./EditorContext.js";
 
 export interface EditorProps extends UseEditorViewOptions {
   mount: HTMLElement | null;

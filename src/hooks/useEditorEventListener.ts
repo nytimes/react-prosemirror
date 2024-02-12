@@ -2,7 +2,7 @@ import type { Plugin } from "prosemirror-state";
 import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { useCallback, useContext, useRef } from "react";
 
-import { EditorContext } from "../components/EditorContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import type { EventHandler } from "../plugins/componentEventListeners.js";
 
 import { useEditorEffect } from "./useEditorEffect.js";

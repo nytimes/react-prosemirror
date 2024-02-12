@@ -2,7 +2,7 @@ import type { EditorView } from "prosemirror-view";
 import { useContext } from "react";
 import type { DependencyList } from "react";
 
-import { EditorContext } from "../components/EditorContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 import { useLayoutGroupEffect } from "../hooks/useLayoutGroupEffect.js";
 
 /**

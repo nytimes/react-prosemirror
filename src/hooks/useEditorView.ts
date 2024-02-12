@@ -6,7 +6,7 @@ import type { EditorProps } from "prosemirror-view";
 import { useLayoutEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 
-import type { EditorContextValue } from "../components/EditorContext.js";
+import type { EditorContextValue } from "../contexts/EditorContext.js";
 
 import { useComponentEventListeners } from "./useComponentEventListeners.js";
 

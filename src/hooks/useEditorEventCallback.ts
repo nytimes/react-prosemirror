@@ -1,7 +1,7 @@
 import type { EditorView } from "prosemirror-view";
 import { useCallback, useContext, useRef } from "react";
 
-import { EditorContext } from "../components/EditorContext.js";
+import { EditorContext } from "../contexts/EditorContext.js";
 
 import { useEditorEffect } from "./useEditorEffect.js";
 

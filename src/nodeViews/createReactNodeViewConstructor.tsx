@@ -18,7 +18,7 @@ import React, {
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { NodeViewsContext } from "../components/NodeViewsContext.js";
+import { NodeViewsContext } from "../contexts/NodeViewsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { NodePosProvider } from "../hooks/useNodePos.js";
 import {

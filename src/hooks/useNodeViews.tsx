@@ -2,7 +2,7 @@ import { EditorView } from "prosemirror-view";
 import React, { ReactPortal, useCallback, useMemo, useState } from "react";
 
 import { NodeViews } from "../components/NodeViews.js";
-import type { NodeViewsContextValue } from "../components/NodeViewsContext.js";
+import type { NodeViewsContextValue } from "../contexts/NodeViewsContext.js";
 import {
   ReactNodeViewConstructor,
   RegisterPortal,
