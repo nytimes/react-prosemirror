@@ -18,7 +18,7 @@ import React, {
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { PortalRegistryContext } from "../contexts/PortalRegistryContext.js";
+import { NodeViewsContext } from "../contexts/NodeViewsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { NodePosProvider } from "../hooks/useNodePos.js";
 import {
@@ -190,22 +190,22 @@ export function createReactNodeViewConstructor(
         initialState.isSelected
       );
 
-      const portalRegistry = useContext(PortalRegistryContext);
-      const childRegisteredPortals = portalRegistry[nodeKey];
-      const [childPortals, setChildPortals] = useState(
-        childRegisteredPortals?.map(({ portal }) => portal)
+      const nodeViews = useContext(NodeViewsContext);
+      const childNodeViews = nodeViews[nodeKey];
+      const [childNodeViewPortals, setChildNodeViewPortals] = useState(
+        childNodeViews?.map(({ portal }) => portal)
       );
 
       // `getPos` is technically derived from the EditorView
       // state, so it's not safe to call until after the EditorView
       // has been updated
       useEditorEffect(() => {
-        setChildPortals(
-          childRegisteredPortals
+        setChildNodeViewPortals(
+          childNodeViews
             ?.sort((a, b) => a.getPos() - b.getPos())
             .map(({ portal }) => portal)
         );
-      }, [childRegisteredPortals]);
+      }, [childNodeViews]);
 
       const [contentDOMWrapper, setContentDOMWrapper] =
         useState<HTMLElement | null>(null);
@@ -232,7 +232,7 @@ export function createReactNodeViewConstructor(
             decorations={decorations}
             isSelected={isSelected}
           >
-            {childPortals}
+            {childNodeViewPortals}
             {ContentDOMWrapper && (
               <ContentDOMWrapper
                 style={{ display: "contents" }}

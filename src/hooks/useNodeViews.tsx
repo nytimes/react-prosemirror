@@ -1,52 +1,19 @@
 import { EditorView } from "prosemirror-view";
 import React, { ReactPortal, useCallback, useMemo, useState } from "react";
 
-import {
-  PortalRegistry,
-  PortalRegistryContext,
-} from "../contexts/PortalRegistryContext.js";
+import { NodeViews } from "../components/NodeViews.js";
+import type { NodeViewsContextValue } from "../contexts/NodeViewsContext.js";
 import {
   ReactNodeViewConstructor,
   RegisterPortal,
   createReactNodeViewConstructor,
   findNodeKeyUp,
 } from "../nodeViews/createReactNodeViewConstructor.js";
-import { ROOT_NODE_KEY } from "../plugins/react.js";
-
-import { useEditorEffect } from "./useEditorEffect.js";
-
-type Props = {
-  portals: PortalRegistry;
-};
-
-function NodeViews({ portals }: Props) {
-  const rootRegisteredPortals = portals[ROOT_NODE_KEY];
-  const [rootPortals, setRootPortals] = useState<ReactPortal[]>(
-    rootRegisteredPortals?.map(({ portal }) => portal)
-  );
-
-  // `getPos` is technically derived from the EditorView
-  // state, so it's not safe to call until after the EditorView
-  // has been updated
-  useEditorEffect(() => {
-    setRootPortals(
-      rootRegisteredPortals
-        ?.sort((a, b) => a.getPos() - b.getPos())
-        .map(({ portal }) => portal)
-    );
-  }, [rootRegisteredPortals]);
-
-  return (
-    <PortalRegistryContext.Provider value={portals}>
-      {rootPortals}
-    </PortalRegistryContext.Provider>
-  );
-}
 
 export function useNodeViews(
   nodeViews: Record<string, ReactNodeViewConstructor>
 ) {
-  const [portals, setPortals] = useState({} as PortalRegistry);
+  const [portals, setPortals] = useState({} as NodeViewsContextValue);
 
   const registerPortal: RegisterPortal = useCallback(
     (view: EditorView, getPos: () => number, portal: ReactPortal) => {

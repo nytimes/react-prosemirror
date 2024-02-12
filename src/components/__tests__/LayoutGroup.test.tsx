@@ -1,9 +1,10 @@
 import { act, render, screen } from "@testing-library/react";
 import React, { useLayoutEffect, useState } from "react";
 
-import { LayoutGroup, useLayoutGroupEffect } from "../LayoutGroup.js";
+import { useLayoutGroupEffect } from "../../hooks/useLayoutGroupEffect.js";
+import { LayoutGroup } from "../LayoutGroup.js";
 
-describe("DeferredLayoutEffects", () => {
+describe("LayoutGroup", () => {
   jest.useFakeTimers("modern");
 
   it("registers multiple effects and runs them", () => {

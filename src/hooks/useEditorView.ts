@@ -23,10 +23,10 @@ const EMPTY_STATE = EditorState.create({
 
 let didWarnValueDefaultValue = false;
 
-interface Props extends EditorProps {
+export interface UseEditorViewOptions extends EditorProps {
   defaultState?: EditorState;
   state?: EditorState;
-  plugins?: readonly Plugin[];
+  plugins?: Plugin[];
   dispatchTransaction?(this: EditorView, tr: Transaction): void;
 }
 
@@ -40,12 +40,12 @@ interface Props extends EditorProps {
  */
 export function useEditorView<T extends HTMLElement = HTMLElement>(
   mount: T | null,
-  props: Props
+  options: UseEditorViewOptions
 ): EditorContextValue {
   if (process.env.NODE_ENV !== "production") {
     if (
-      props.defaultState !== undefined &&
-      props.state !== undefined &&
+      options.defaultState !== undefined &&
+      options.state !== undefined &&
       !didWarnValueDefaultValue
     ) {
       console.error(
@@ -60,9 +60,9 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     }
   }
 
-  const defaultState = props.defaultState ?? EMPTY_STATE;
+  const defaultState = options.defaultState ?? EMPTY_STATE;
   const [_state, setState] = useState<EditorState>(defaultState);
-  const state = props.state ?? _state;
+  const state = options.state ?? _state;
 
   const {
     componentEventListenersPlugin,
@@ -71,24 +71,24 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   } = useComponentEventListeners();
 
   const plugins = useMemo(
-    () => [...(props.plugins ?? []), componentEventListenersPlugin],
-    [props.plugins, componentEventListenersPlugin]
+    () => [...(options.plugins ?? []), componentEventListenersPlugin],
+    [options.plugins, componentEventListenersPlugin]
   );
 
   function dispatchTransaction(this: EditorView, tr: Transaction) {
     flushSync(() => {
-      if (!props.state) {
+      if (!options.state) {
         setState((s) => s.apply(tr));
       }
 
-      if (props.dispatchTransaction) {
-        props.dispatchTransaction.call(this, tr);
+      if (options.dispatchTransaction) {
+        options.dispatchTransaction.call(this, tr);
       }
     });
   }
 
   const directEditorProps = {
-    ...props,
+    ...options,
     state,
     plugins,
     dispatchTransaction,

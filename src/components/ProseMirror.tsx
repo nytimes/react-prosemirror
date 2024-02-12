@@ -1,25 +1,10 @@
-import type { EditorState, Plugin, Transaction } from "prosemirror-state";
-import type { EditorProps, EditorView } from "prosemirror-view";
 import React from "react";
-import type { ReactNode } from "react";
 
-import { EditorProvider } from "../contexts/EditorContext.js";
-import { LayoutGroup } from "../contexts/LayoutGroup.js";
-import { useEditorView } from "../hooks/useEditorView.js";
+import { Editor } from "./Editor.js";
+import type { EditorProps } from "./Editor.js";
+import { LayoutGroup } from "./LayoutGroup.js";
 
-interface Props extends EditorProps {
-  mount: HTMLElement | null;
-  children?: ReactNode | null;
-  defaultState?: EditorState;
-  state?: EditorState;
-  plugins?: readonly Plugin[];
-  dispatchTransaction?(this: EditorView, tr: Transaction): void;
-}
-
-function Editor({ mount, children, ...props }: Props) {
-  const value = useEditorView(mount, props);
-  return <EditorProvider value={value}>{children}</EditorProvider>;
-}
+export type { EditorProps as ProseMirrorProps };
 
 /**
  * Renders the ProseMirror View onto a DOM mount.
@@ -42,7 +27,7 @@ function Editor({ mount, children, ...props }: Props) {
  * }
  * ```
  */
-export function ProseMirror(props: Props) {
+export function ProseMirror(props: EditorProps) {
   return (
     <LayoutGroup>
       <Editor {...props} />
