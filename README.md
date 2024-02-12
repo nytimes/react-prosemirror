@@ -381,22 +381,28 @@ function ProseMirrorEditor() {
 ### `ProseMirror`
 
 ```tsx
-type ProseMirror = (
-  props: EditorProps & {
-    mount: HTMLElement | null;
-    children?: ReactNode | null;
-    defaultState?: EditorState;
-    state?: EditorState;
-    plugins?: readonly Plugin[];
-    dispatchTransaction?(this: EditorView, tr: Transaction): void;
-  }
-) => JSX.Element;
+import type { EditorState, Plugin, Transaction } from "prosemirror-state";
+import type { EditorProps, EditorView, Plugin } from "prosemirror-view";
+import type { ReactNode } from "react";
+
+interface ProseMirrorProps extends EditorProps {
+  mount: HTMLElement | null;
+  children?: ReactNode | null;
+  defaultState?: EditorState;
+  state?: EditorState;
+  plugins?: readonly Plugin[];
+  dispatchTransaction?(this: EditorView, tr: Transaction): void;
+}
+
+type ProseMirror = (props: ProseMirrorProps) => JSX.Element;
 ```
 
-Renders the ProseMirror View onto a DOM mount.
+Renders a ProseMirror View.
 
 The `mount` prop must be an actual HTMLElement instance. The JSX element
 representing the mount should be passed as a child to the ProseMirror component.
+
+Consult the ProseMirror documentation for information about the other props.
 
 Example usage:
 

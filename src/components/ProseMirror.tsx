@@ -4,6 +4,8 @@ import { Editor } from "./Editor.js";
 import type { EditorProps } from "./Editor.js";
 import { LayoutGroup } from "./LayoutGroup.js";
 
+export type { EditorProps as ProseMirrorProps };
+
 /**
  * Renders the ProseMirror View onto a DOM mount.
  *

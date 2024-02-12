@@ -1,6 +1,7 @@
 "use client";
 
 export { ProseMirror } from "./components/ProseMirror.js";
+export type { ProseMirrorProps } from "./components/ProseMirror.js";
 
 export { useEditorEffect } from "./hooks/useEditorEffect.js";
 
