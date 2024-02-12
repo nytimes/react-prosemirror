@@ -1,12 +1,14 @@
 import { ReactPortal, createContext } from "react";
 
+import type { NodeKey } from "../plugins/react";
+
 type NodeViewRegistration = {
   getPos: () => number;
   portal: ReactPortal;
 };
 
 export interface NodeViewsContextValue {
-  [key: symbol | string]: NodeViewRegistration[];
+  [key: NodeKey]: NodeViewRegistration[];
 }
 
 /**
