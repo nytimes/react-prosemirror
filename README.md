@@ -34,7 +34,6 @@ yarn add @nytimes/react-prosemirror
   - [Building NodeViews with React](#building-nodeviews-with-react)
 - [API](#api)
   - [`ProseMirror`](#prosemirror)
-  - [`EditorProvider`](#editorprovider)
   - [`useEditorState`](#useeditorstate)
   - [`useEditorEventCallback`](#useeditoreventcallback-1)
   - [`useEditorEventListener`](#useeditoreventlistener-1)
@@ -437,10 +436,6 @@ type useEditorEventCallback = <T extends unknown[]>(
 Returns a stable function reference to be used as an event handler callback.
 
 The callback will be called with the EditorView instance as its first argument.
-
-This hook is dependent on both the `EditorProvider.Provider` and the
-`LayoutGroup`. It can only be used in a component that is mounted as a child of
-both of these providers.
 
 ### `useEditorEventListener`
 
