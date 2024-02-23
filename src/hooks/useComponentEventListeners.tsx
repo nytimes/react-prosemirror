@@ -15,7 +15,7 @@ import {
  * along with any other plugins.
  *
  * - `registerEventListener` and `unregisterEventListener` should be
- * passed to `EditorProvider`.
+ * passed to `EditorContext.Provider`.
  *
  * @privateRemarks
  *

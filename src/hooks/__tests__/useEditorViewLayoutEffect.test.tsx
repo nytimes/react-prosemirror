@@ -4,8 +4,8 @@ import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
 import React from "react";
 
+import { LayoutGroup } from "../../components/LayoutGroup.js";
 import { EditorContext } from "../../contexts/EditorContext.js";
-import { LayoutGroup } from "../../contexts/LayoutGroup.js";
 import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({
