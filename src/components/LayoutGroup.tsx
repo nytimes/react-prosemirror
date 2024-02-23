@@ -18,6 +18,7 @@ export interface LayoutGroupProps {
 export function LayoutGroup({ children }: LayoutGroupProps) {
   const createQueue = useRef(new Set<() => void>()).current;
   const destroyQueue = useRef(new Set<() => void>()).current;
+  const isMounted = useRef(false);
 
   const forceUpdate = useForceUpdate();
   const isUpdatePending = useRef(true);
@@ -42,8 +43,12 @@ export function LayoutGroup({ children }: LayoutGroupProps) {
       return () => {
         createQueue.delete(create);
         if (destroy) {
-          destroyQueue.add(destroy);
-          ensureFlush();
+          if (isMounted.current) {
+            destroyQueue.add(destroy);
+            ensureFlush();
+          } else {
+            destroy();
+          }
         }
       };
     },
@@ -59,6 +64,13 @@ export function LayoutGroup({ children }: LayoutGroupProps) {
       destroyQueue.clear();
     };
   });
+
+  useLayoutEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   return (
     <LayoutGroupContext.Provider value={register}>
