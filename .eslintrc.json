@@ -17,22 +17,23 @@
   },
   "rules": {
     "no-console": ["error", { "allow": ["error"] }],
-    "react-hooks/exhaustive-deps": [
-      "warn",
-      {
-        "additionalHooks": "(useEditorEffect|useLayoutGroupEffect$)"
-      }
-    ],
+    "no-inner-declarations": "off",
     "import/extensions": ["error", "ignorePackages"],
+    "import/no-unresolved": "off", // Typescript does this better!
     "import/order": [
       "error",
       {
         "alphabetize": {
           "order": "asc"
         },
-        "groups": ["builtin", "external", "parent", "sibling", "index"],
         "newlines-between": "always",
         "warnOnUnassignedImports": true
+      }
+    ],
+    "react-hooks/exhaustive-deps": [
+      "warn",
+      {
+        "additionalHooks": "(useEditorEffect|useLayoutGroupEffect$)"
       }
     ],
     "sort-imports": [
@@ -41,9 +42,7 @@
         "allowSeparatedGroups": true,
         "ignoreDeclarationSort": true
       }
-    ],
-    "no-inner-declarations": "off",
-    "import/no-unresolved": "off" // Typescript does this better!
+    ]
   },
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx"],
