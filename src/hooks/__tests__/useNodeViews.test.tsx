@@ -4,7 +4,7 @@ import { EditorState } from "prosemirror-state";
 import React, { createContext, useContext, useState } from "react";
 
 import { ProseMirror } from "../../components/ProseMirror.js";
-import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
+import type { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
 import { useNodeViews } from "../useNodeViews.js";
 

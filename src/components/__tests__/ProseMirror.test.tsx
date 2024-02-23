@@ -6,7 +6,7 @@ import type { Transaction } from "prosemirror-state";
 import React, { useEffect, useState } from "react";
 
 import { useNodeViews } from "../../hooks/useNodeViews.js";
-import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
+import type { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
 import {
   setupProseMirrorView,

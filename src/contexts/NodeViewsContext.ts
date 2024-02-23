@@ -1,4 +1,5 @@
-import { ReactPortal, createContext } from "react";
+import { createContext } from "react";
+import type { ReactPortal } from "react";
 
 import type { NodeKey } from "../plugins/react";
 

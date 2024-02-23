@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
+
 import { render } from "@testing-library/react";
 import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";

@@ -1,7 +1,8 @@
 import { toggleMark } from "prosemirror-commands";
 import type { MarkType } from "prosemirror-model";
 import type { EditorState } from "prosemirror-state";
-import React, { ReactNode } from "react";
+import React from "react";
+import type { ReactNode } from "react";
 
 import { useEditorEventCallback, useEditorState } from "../src/index.js";
 

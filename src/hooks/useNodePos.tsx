@@ -1,6 +1,8 @@
-import React, { ReactNode, createContext, useContext } from "react";
+import React, { createContext, useContext } from "react";
+import type { ReactNode } from "react";
 
-import { NodeKey, reactPluginKey } from "../plugins/react.js";
+import { reactPluginKey } from "../plugins/react.js";
+import type { NodeKey } from "../plugins/react.js";
 
 import { useEditorState } from "./useEditorState.js";
 

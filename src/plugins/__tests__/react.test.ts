@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
+
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
 import { findWrapping } from "prosemirror-transform";

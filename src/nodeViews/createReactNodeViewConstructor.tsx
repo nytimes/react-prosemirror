@@ -7,26 +7,29 @@ import type {
   NodeViewConstructor,
 } from "prosemirror-view";
 import React, {
-  Dispatch,
-  ReactPortal,
-  SetStateAction,
   forwardRef,
   useContext,
   useImperativeHandle,
   useState,
 } from "react";
-import type { ComponentType, ReactNode } from "react";
+import type {
+  ComponentType,
+  Dispatch,
+  ReactNode,
+  ReactPortal,
+  SetStateAction,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { NodeViewsContext } from "../contexts/NodeViewsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { NodePosProvider } from "../hooks/useNodePos.js";
 import {
-  NodeKey,
   ROOT_NODE_KEY,
   createNodeKey,
   reactPluginKey,
 } from "../plugins/react.js";
+import type { NodeKey } from "../plugins/react.js";
 
 import { phrasingContentTags } from "./phrasingContentTags.js";
 

@@ -1,5 +1,5 @@
 import { Plugin, PluginKey } from "prosemirror-state";
-import { DOMEventMap, EditorView } from "prosemirror-view";
+import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { unstable_batchedUpdates as batch } from "react-dom";
 
 export type EventHandler<

@@ -1,13 +1,16 @@
-import { EditorView } from "prosemirror-view";
-import React, { ReactPortal, useCallback, useMemo, useState } from "react";
+import type { EditorView } from "prosemirror-view";
+import React, { useCallback, useMemo, useState } from "react";
+import type { ReactPortal } from "react";
 
 import { NodeViews } from "../components/NodeViews.js";
 import type { NodeViewsContextValue } from "../contexts/NodeViewsContext.js";
 import {
-  ReactNodeViewConstructor,
-  RegisterPortal,
   createReactNodeViewConstructor,
   findNodeKeyUp,
+} from "../nodeViews/createReactNodeViewConstructor.js";
+import type {
+  ReactNodeViewConstructor,
+  RegisterPortal,
 } from "../nodeViews/createReactNodeViewConstructor.js";
 
 export function useNodeViews(
