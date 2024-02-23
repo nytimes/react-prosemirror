@@ -34,7 +34,9 @@ export function useEditorEffect(
   // be defined inline and run on every re-render.
   useLayoutGroupEffect(
     () => {
-      if (editorView) effect(editorView);
+      if (editorView) {
+        return effect(editorView);
+      }
     },
     // The rules of hooks want to be able to statically
     // verify the dependencies for the effect, but this will
