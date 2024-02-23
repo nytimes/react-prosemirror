@@ -19,7 +19,6 @@ import React, {
 import { flushSync } from "react-dom";
 
 import { EditorContext } from "../contexts/EditorContext.js";
-import { LayoutGroup } from "../contexts/LayoutGroup.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
@@ -29,6 +28,7 @@ import { usePendingViewEffects } from "../hooks/usePendingViewEffects.js";
 import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
+import { LayoutGroup } from "./LayoutGroup.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { DocNodeViewContext } from "./ProseMirrorDoc.js";
 
