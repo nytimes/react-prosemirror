@@ -1,10 +1,8 @@
 import type { DOMEventMap } from "prosemirror-view";
 import { useCallback, useMemo, useState } from "react";
 
-import {
-  EventHandler,
-  componentEventListeners,
-} from "../plugins/componentEventListeners.js";
+import { componentEventListeners } from "../plugins/componentEventListeners.js";
+import type { EventHandler } from "../plugins/componentEventListeners.js";
 
 /**
  * Produces a plugin that can be used with ProseMirror to handle DOM

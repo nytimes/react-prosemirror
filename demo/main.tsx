@@ -10,17 +10,15 @@ import {
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { liftListItem, splitListItem } from "prosemirror-schema-list";
-import { EditorState, Transaction } from "prosemirror-state";
+import { EditorState } from "prosemirror-state";
+import type { Transaction } from "prosemirror-state";
 import "prosemirror-view/style/prosemirror.css";
 import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import {
-  NodeViewComponentProps,
-  ProseMirror,
-  useNodeViews,
-} from "../src/index.js";
-import { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
+import { ProseMirror, useNodeViews } from "../src/index.js";
+import type { NodeViewComponentProps } from "../src/index.js";
+import type { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../src/plugins/react.js";
 
 import Menu from "./Menu.js";

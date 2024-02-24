@@ -16,15 +16,19 @@
     "node": false
   },
   "rules": {
+    "@typescript-eslint/consistent-type-imports": "error",
     "no-console": ["error", { "allow": ["error"] }],
     "no-inner-declarations": "off",
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "import/extensions": ["error", "ignorePackages"],
+    "import/no-duplicates": ["error"],
     "import/no-unresolved": "off", // Typescript does this better!
     "import/order": [
       "error",
       {
         "alphabetize": {
-          "order": "asc"
+          "order": "asc",
+          "orderImportKind": "desc"
         },
         "newlines-between": "always",
         "warnOnUnassignedImports": true
