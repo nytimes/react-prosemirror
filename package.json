@@ -1,6 +1,6 @@
 {
   "name": "@nytimes/react-prosemirror",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/cjs/index.js",
