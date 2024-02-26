@@ -1260,6 +1260,7 @@ __metadata:
     typescript: ^4.9.5
     vite: ^4.1.5
   peerDependencies:
+    prosemirror-model: ^1.0.0
     prosemirror-state: ^1.0.0
     prosemirror-view: ^1.0.0
     react: ">=17"
