@@ -1,6 +1,6 @@
 import { useLayoutEffect } from "react";
 
-import { ReactEditorView } from "./useEditorView.js";
+import { ReactEditorView } from "./useEditor.js";
 
 export function usePendingViewEffects(view: ReactEditorView | null) {
   useLayoutEffect(() => {

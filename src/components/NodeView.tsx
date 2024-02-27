@@ -55,7 +55,7 @@ export function NodeView({
 
   const state = useEditorState();
   const { nodeViews } = useContext(NodeViewContext);
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
 
   let element: JSX.Element | null = null;
 
@@ -67,7 +67,7 @@ export function NodeView({
 
   // TODO: Would be great to pull all of the custom node view stuff into
   // a hook
-  const customNodeView = editorView?.someProp("nodeViews")?.[node.type.name];
+  const customNodeView = view?.someProp("nodeViews")?.[node.type.name];
 
   useLayoutEffect(() => {
     if (!customNodeViewRef.current || !customNodeViewRootRef.current) return;
@@ -98,7 +98,7 @@ export function NodeView({
 
     customNodeViewRef.current = customNodeView(
       initialNode.current,
-      editorView,
+      view,
       () => posRef.current,
       initialOuterDeco.current,
       initialInnerDeco.current
@@ -106,7 +106,7 @@ export function NodeView({
     const { dom } = customNodeViewRef.current;
     nodeDomRef.current = customNodeViewRootRef.current;
     customNodeViewRootRef.current.appendChild(dom);
-  }, [customNodeView, editorView, innerDeco, node, outerDeco]);
+  }, [customNodeView, view, innerDeco, node, outerDeco]);
 
   const childDescriptors = useNodeViewDescriptor(
     node,
@@ -140,7 +140,7 @@ export function NodeView({
     if (!customNodeViewRef.current) {
       customNodeViewRef.current = customNodeView(
         initialNode.current,
-        editorView,
+        view,
         () => posRef.current,
         initialOuterDeco.current,
         initialInnerDeco.current

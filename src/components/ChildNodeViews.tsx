@@ -104,7 +104,7 @@ type SharedMarksProps = {
 };
 
 function InlineView({ innerPos, childViews }: SharedMarksProps) {
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
   const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
@@ -155,7 +155,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
                 <ChildDescriptorsContext.Consumer>
                   {(siblingDescriptors) => (
                     <TextNodeView
-                      view={editorView}
+                      view={view}
                       node={child.node}
                       pos={childPos}
                       siblingDescriptors={siblingDescriptors}

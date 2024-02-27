@@ -8,7 +8,7 @@ import { doc, eq, schema } from "prosemirror-test-builder";
 import { EditorView as EditorViewT } from "prosemirror-view";
 import React from "react";
 
-import { EditorProps, ProseMirror } from "../components/ProseMirror.js";
+import { Props, ProseMirror } from "../components/ProseMirror.js";
 import { ProseMirrorDoc } from "../components/ProseMirrorDoc.js";
 import { DOMNode } from "../dom.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
@@ -50,11 +50,11 @@ export function tempEditor({
   state: stateProp,
   ...props
 }: { doc?: ReturnType<typeof doc>; selection?: Selection } & Omit<
-  EditorProps,
+  Props,
   "defaultState"
 >): {
   view: EditorViewT;
-  rerender: (props: Omit<EditorProps, "plugins">) => void;
+  rerender: (props: Omit<Props, "plugins">) => void;
   unmount: () => void;
 } {
   startDoc = startDoc ?? doc();
@@ -94,7 +94,7 @@ export function tempEditor({
   function rerenderEditor({
     state: newStateProp,
     ...newProps
-  }: Omit<EditorProps, "defaultState" | "plugins">) {
+  }: Omit<Props, "defaultState" | "plugins">) {
     rerender(
       <ProseMirror
         {...(newStateProp && stateProp

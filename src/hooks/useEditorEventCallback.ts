@@ -22,14 +22,11 @@ export function useEditorEventCallback<T extends unknown[], R>(
   callback: (view: EditorView | null, ...args: T) => R
 ) {
   const ref = useRef(callback);
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
 
   useEditorEffect(() => {
     ref.current = callback;
   }, [callback]);
 
-  return useCallback(
-    (...args: T) => ref.current(editorView, ...args),
-    [editorView]
-  );
+  return useCallback((...args: T) => ref.current(view, ...args), [view]);
 }
