@@ -31,8 +31,8 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
+            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
@@ -57,8 +57,8 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
+            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
@@ -72,8 +72,8 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
+            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
@@ -97,8 +97,8 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
+            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
@@ -112,8 +112,8 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
+            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}

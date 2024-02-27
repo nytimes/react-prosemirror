@@ -1,72 +1,42 @@
-import { Command, EditorState, Transaction } from "prosemirror-state";
-import {
-  Decoration,
-  DecorationSet,
-  DecorationSet as DecorationSetInternal,
-  DirectEditorProps,
-  EditorView as EditorViewClass,
-  NodeViewConstructor,
-} from "prosemirror-view";
+import { DecorationSet, NodeViewConstructor } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactNode,
   RefAttributes,
-  useCallback,
-  useMemo,
-  useRef,
   useState,
 } from "react";
-import { flushSync } from "react-dom";
 
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
-import { useComponentEventListeners } from "../hooks/useComponentEventListeners.js";
-import { ReactEditorView, useEditorView } from "../hooks/useEditorView.js";
+import {
+  ReactEditorView,
+  UseEditorOptions,
+  useEditor,
+} from "../hooks/useEditor.js";
 import { usePendingViewEffects } from "../hooks/usePendingViewEffects.js";
-import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
-import { NodeViewDesc } from "../viewdesc.js";
 
 import { LayoutGroup } from "./LayoutGroup.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { DocNodeViewContext } from "./ProseMirrorDoc.js";
 
-type EditorStateProps =
-  | {
-      state: EditorState;
-      defaultState?: never;
-    }
-  | {
-      state?: never;
-      defaultState: EditorState;
-    };
-
-export type EditorProps = Omit<
-  DirectEditorProps,
-  "state" | "nodeViews" | "dispatchTransaction"
-> &
-  EditorStateProps & {
-    keymap?: { [key: string]: Command };
-    nodeViews?: {
-      [nodeType: string]: ForwardRefExoticComponent<
-        // We need to allow refs to any type of HTMLElement, but there's
-        // no way to express that that still allows consumers to correctly
-        // type their own refs. This is sufficient to ensure that there's
-        // a ref of _some_ kind, which is enough.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        NodeViewComponentProps & RefAttributes<any>
-      >;
-    };
-    customNodeViews?: {
-      [nodeType: string]: NodeViewConstructor;
-    };
-    dispatchTransaction?: (this: EditorViewClass, tr: Transaction) => void;
-  };
-
-export type Props = EditorProps & {
+export type Props = Omit<UseEditorOptions, "nodeViews"> & {
   className?: string;
   children?: ReactNode;
+  nodeViews?: {
+    [nodeType: string]: ForwardRefExoticComponent<
+      // We need to allow refs to any type of HTMLElement, but there's
+      // no way to express that that still allows consumers to correctly
+      // type their own refs. This is sufficient to ensure that there's
+      // a ref of _some_ kind, which is enough.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      NodeViewComponentProps & RefAttributes<any>
+    >;
+  };
+  customNodeViews?: {
+    [nodeType: string]: NodeViewConstructor;
+  };
 };
 
 export function ProseMirror({
@@ -77,77 +47,23 @@ export function ProseMirror({
   ...props
 }: Props) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [cursorWrapper, _setCursorWrapper] = useState<Decoration | null>(null);
 
-  const setCursorWrapper = useCallback((deco: Decoration | null) => {
-    flushSync(() => {
-      _setCursorWrapper(deco);
-    });
-  }, []);
-
-  const {
-    componentEventListenersPlugin,
-    registerEventListener,
-    unregisterEventListener,
-  } = useComponentEventListeners();
-
-  const plugins = useMemo(
-    () => [
-      ...(props.plugins ?? []),
-      componentEventListenersPlugin,
-      beforeInputPlugin(setCursorWrapper),
-    ],
-    [props.plugins, componentEventListenersPlugin, setCursorWrapper]
-  );
-
-  const initialEditorState = (
-    "defaultState" in props ? props.defaultState : props.state
-  ) as EditorState;
-  const tempDom = document.createElement("div");
-  const docViewDescRef = useRef<NodeViewDesc>(
-    new NodeViewDesc(
-      undefined,
-      [],
-      initialEditorState.doc,
-      [],
-      DecorationSetInternal.empty,
-      tempDom,
-      null,
-      tempDom
-    )
-  );
-
-  const editorView = useEditorView(mount, {
+  const editor = useEditor(mount, {
     ...props,
-    docView: docViewDescRef.current,
-    plugins,
     nodeViews: customNodeViews,
   });
 
-  const editorState =
-    "state" in props ? props.state ?? null : editorView?.state ?? null;
+  usePendingViewEffects(editor.view as ReactEditorView | null);
 
-  const contextValue = useMemo(
-    () => ({
-      editorView,
-      editorState,
-      registerEventListener,
-      unregisterEventListener,
-    }),
-    [editorState, editorView, registerEventListener, unregisterEventListener]
-  );
+  const innerDecos = editor.view
+    ? viewDecorations(editor.view, editor.cursorWrapper)
+    : (DecorationSet.empty as unknown as DecorationSet);
 
-  usePendingViewEffects(editorView as ReactEditorView | null);
-
-  const innerDecos = editorView
-    ? viewDecorations(editorView, cursorWrapper)
-    : (DecorationSetInternal.empty as unknown as DecorationSet);
-
-  const outerDecos = editorView ? computeDocDeco(editorView) : [];
+  const outerDecos = editor.view ? computeDocDeco(editor.view) : [];
 
   return (
     <LayoutGroup>
-      <EditorContext.Provider value={contextValue}>
+      <EditorContext.Provider value={editor}>
         <NodeViewContext.Provider
           value={{
             nodeViews,
@@ -157,10 +73,10 @@ export function ProseMirror({
             value={{
               className: className,
               setMount: setMount,
-              node: editorView?.state.doc,
-              innerDeco: innerDecos as unknown as DecorationSetInternal,
+              node: editor.view?.state.doc,
+              innerDeco: innerDecos,
               outerDeco: outerDecos,
-              viewDesc: docViewDescRef.current,
+              viewDesc: editor.docViewDescRef.current,
             }}
           >
             {children}

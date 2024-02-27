@@ -21,10 +21,10 @@ import { useLayoutGroupEffect } from "./useLayoutGroupEffect.js";
  * EditorView lives in an ancestor component.
  */
 export function useEditorEffect(
-  effect: (editorView: EditorView | null) => void | (() => void),
+  effect: (editorView: EditorView) => void | (() => void),
   dependencies?: DependencyList
 ) {
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
 
   // The rules of hooks want `effect` to be included in the
   // dependency list, but dependency issues for `effect` will
@@ -34,11 +34,15 @@ export function useEditorEffect(
   // every time it changes, because it will most likely
   // be defined inline and run on every re-render.
   useLayoutGroupEffect(
-    () => effect(editorView),
+    () => {
+      if (view) {
+        return effect(view);
+      }
+    },
     // The rules of hooks want to be able to statically
     // verify the dependencies for the effect, but this will
     // have already happened at the call-site.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    dependencies && [editorView, ...dependencies]
+    dependencies && [view, ...dependencies]
   );
 }
