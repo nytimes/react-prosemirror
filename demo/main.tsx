@@ -5,6 +5,8 @@ import { inputRules, wrappingInputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
+import { columnResizing, tableEditing, tableNodes } from "prosemirror-tables";
+import "prosemirror-tables/style/tables.css";
 import {
   Decoration,
   DecorationSet,
@@ -36,21 +38,11 @@ const schema = new Schema({
         return ["p", 0];
       },
     },
-    img: {
-      group: "inline",
-      inline: true,
-      attrs: {
-        src: { default: "" },
-      },
-      toDOM(node) {
-        return [
-          "img",
-          {
-            src: node.attrs.src,
-          },
-        ];
-      },
-    },
+    ...tableNodes({
+      cellContent: "inline*",
+      cellAttributes: {},
+      tableGroup: "block",
+    }),
     list: {
       group: "block",
       content: "list_item+",
@@ -105,9 +97,6 @@ const editorState = EditorState.create({
         schema.marks.em.create(),
         schema.marks.strong.create(),
       ]),
-      schema.nodes.img.create({
-        src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
-      }),
       schema.text(" the first paragraph"),
     ]),
     schema.nodes.paragraph.create(
@@ -121,12 +110,24 @@ const editorState = EditorState.create({
       {},
       schema.text("This is the third paragraph")
     ),
+    schema.nodes.table.create({}, [
+      schema.nodes.table_row.create({}, [
+        schema.nodes.table_header.create({}, schema.text("h1")),
+        schema.nodes.table_header.create({}, schema.text("h2")),
+      ]),
+      schema.nodes.table_row.create({}, [
+        schema.nodes.table_cell.create({}, schema.text("c1")),
+        schema.nodes.table_cell.create({}, schema.text("c2")),
+      ]),
+    ]),
   ]),
   plugins: [
     reactKeys(),
     inputRules({
       rules: [wrappingInputRule(/^\s*([-+*])\s$/, schema.nodes.list)],
     }),
+    columnResizing(),
+    tableEditing(),
   ],
 });
 
@@ -293,7 +294,9 @@ function DemoEditor() {
         className="ProseMirror"
         state={state}
         dispatchTransaction={function (tr) {
-          setState((prev) => prev.apply(tr));
+          setState((prev) => {
+            return prev.apply(tr);
+          });
         }}
         plugins={plugins}
         nodeViews={

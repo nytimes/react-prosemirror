@@ -1,4 +1,4 @@
-import { Decoration } from "prosemirror-view";
+import { Decoration, EditorView } from "prosemirror-view";
 import React, { useContext, useLayoutEffect, useRef } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
@@ -20,12 +20,11 @@ export function NativeWidgetView({ widget, pos }: Props) {
     if (!rootDomRef.current) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let dom = (widget as any).type.toDOM;
-    if (typeof dom === "function") {
-      dom = dom(view, () => {
-        posRef.current;
-      });
-    }
+    const toDOM = (widget as any).type.toDOM as
+      | HTMLElement
+      | ((view: EditorView, getPos: () => number) => HTMLElement);
+    let dom =
+      typeof toDOM === "function" ? toDOM(view, () => posRef.current) : toDOM;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!(widget as any).type.spec.raw) {
       if (dom.nodeType != 1) {
@@ -48,5 +47,5 @@ export function NativeWidgetView({ widget, pos }: Props) {
     siblingDescriptors.push(desc);
   });
 
-  return <div ref={rootDomRef} />;
+  return <span ref={rootDomRef} />;
 }

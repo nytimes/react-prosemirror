@@ -8,7 +8,7 @@ import {
   EditorView,
 } from "prosemirror-view";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { unstable_batchedUpdates as batch, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 
 import { DOMNode } from "../dom.js";
 import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
@@ -188,7 +188,7 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
   );
 
   function dispatchTransaction(this: EditorView, tr: Transaction) {
-    batch(() => {
+    flushSync(() => {
       if (!options.state) {
         setState((s) => s.apply(tr));
       }
