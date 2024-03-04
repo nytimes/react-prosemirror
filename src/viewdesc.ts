@@ -4,7 +4,6 @@ import { Fragment, Mark, Node, ParseRule } from "prosemirror-model";
 import { Decoration, DecorationSource, EditorView } from "prosemirror-view";
 
 import { browser } from "./browser.js";
-import { ReactWidgetDecoration } from "./decorations/ReactWidgetType.js";
 import { InternalDecorationSource } from "./decorations/internalTypes.js";
 import { DOMNode } from "./dom.js";
 import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
@@ -629,7 +628,7 @@ export class ViewDesc {
 export class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    readonly widget: ReactWidgetDecoration,
+    readonly widget: Decoration,
     dom: DOMNode
   ) {
     super(parent, [], dom, null);
@@ -637,7 +636,10 @@ export class WidgetViewDesc extends ViewDesc {
   }
 
   matchesWidget(widget: Decoration) {
-    return this.dirty == NOT_DIRTY && (widget as any).type.eq(this.widget.type);
+    return (
+      this.dirty == NOT_DIRTY &&
+      (widget as any).type.eq((this.widget as any).type)
+    );
   }
 
   parseRule() {
@@ -660,7 +662,7 @@ export class WidgetViewDesc extends ViewDesc {
   }
 
   get side() {
-    return (this.widget.type as any).side as number;
+    return (this.widget as any).type.side as number;
   }
 }
 

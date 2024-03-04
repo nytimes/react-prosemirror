@@ -1,4 +1,6 @@
 import { baseKeymap, toggleMark } from "prosemirror-commands";
+import { gapCursor } from "prosemirror-gapcursor";
+import "prosemirror-gapcursor/style/gapcursor.css";
 import { inputRules, wrappingInputRule } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
 import { Schema } from "prosemirror-model";
@@ -62,6 +64,22 @@ const schema = new Schema({
         return ["li", 0];
       },
     },
+    image: {
+      group: "block",
+      toDOM() {
+        return [
+          "div",
+          [
+            "img",
+            {
+              src: "https://smoores.gitlab.io/storyteller/img/Storyteller_Logo.png",
+              height: 150,
+              width: 150,
+            },
+          ],
+        ];
+      },
+    },
     text: { group: "inline" },
   },
   marks: {
@@ -97,6 +115,8 @@ const editorState = EditorState.create({
       schema.text("This is the second paragraph")
     ),
     schema.nodes.paragraph.create(),
+    schema.nodes.image.create(),
+    schema.nodes.image.create(),
     schema.nodes.paragraph.create(
       {},
       schema.text("This is the third paragraph")
@@ -233,6 +253,7 @@ const plugins = [
     "Mod-b": toggleMark(schema.marks.strong),
   }),
   viewPlugin,
+  gapCursor(),
   // widgetPlugin,
 ];
 
