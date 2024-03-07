@@ -19,7 +19,7 @@ import { useEditorEffect } from "./useEditorEffect.js";
  * providers.
  */
 export function useEditorEventCallback<T extends unknown[], R>(
-  callback: (view: EditorView | null, ...args: T) => R
+  callback: (view: EditorView, ...args: T) => R
 ) {
   const ref = useRef(callback);
   const { view } = useContext(EditorContext);
@@ -28,5 +28,13 @@ export function useEditorEventCallback<T extends unknown[], R>(
     ref.current = callback;
   }, [callback]);
 
-  return useCallback((...args: T) => ref.current(view, ...args), [view]);
+  return useCallback(
+    (...args: T) => {
+      if (view) {
+        return ref.current(view, ...args);
+      }
+      return;
+    },
+    [view]
+  );
 }
