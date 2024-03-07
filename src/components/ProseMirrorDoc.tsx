@@ -8,6 +8,8 @@ import React, {
   useRef,
 } from "react";
 
+import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+
 import { DocNodeView, DocNodeViewProps } from "./DocNodeView.js";
 
 type DocNodeViewContextValue = Omit<DocNodeViewProps, "as"> & {
@@ -38,14 +40,16 @@ function ProseMirrorDoc(
   );
 
   return (
-    <DocNodeView
-      ref={(el) => {
-        innerRef.current = el;
-        setMount(el);
-      }}
-      {...docProps}
-      as={as}
-    />
+    <ChildDescriptorsContext.Provider value={[]}>
+      <DocNodeView
+        ref={(el) => {
+          innerRef.current = el;
+          setMount(el);
+        }}
+        {...docProps}
+        as={as}
+      />
+    </ChildDescriptorsContext.Provider>
   );
 }
 
