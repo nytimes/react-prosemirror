@@ -16,6 +16,7 @@ import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
 
 import { MarkView } from "./MarkView.js";
+import { NativeWidgetView } from "./NativeWidgetView.js";
 import { NodeView } from "./NodeView.js";
 import { TextNodeView } from "./TextNodeView.js";
 import { TrailingHackView } from "./TrailingHackView.js";
@@ -82,6 +83,14 @@ type ChildWidget = {
   index: number;
 };
 
+type ChildNativeWidget = {
+  type: "native-widget";
+  widget: Decoration;
+  marks: readonly Mark[];
+  offset: number;
+  index: number;
+};
+
 type ChildNode = {
   type: "node";
   node: Node;
@@ -96,7 +105,7 @@ type ChildTrailingHack = {
   offset: 0;
 };
 
-type Child = ChildNode | ChildWidget;
+type Child = ChildNode | ChildWidget | ChildNativeWidget;
 
 type SharedMarksProps = {
   innerPos: number;
@@ -151,6 +160,8 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
                   widget={child.widget as unknown as ReactWidgetDecoration}
                   pos={childPos}
                 />
+              ) : child.type === "native-widget" ? (
+                <NativeWidgetView widget={child.widget} pos={childPos} />
               ) : child.node.isText ? (
                 <ChildDescriptorsContext.Consumer>
                   {(siblingDescriptors) => (
@@ -222,8 +233,11 @@ function createKey(
   const pos = innerPos + child.offset;
   const key = posToKey?.get(pos);
 
-  if (child.type === "widget") {
-    if (child.widget.type.spec.key) return child.widget.type.spec.key;
+  if (child.type === "widget" || child.type === "native-widget") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((child.widget as any).type.spec.key)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (child.widget as any).type.spec.key;
 
     // eslint-disable-next-line no-console
     console.warn(
@@ -282,24 +296,61 @@ export function ChildNodeViews({
   iterDeco(
     node,
     innerDecorations,
-    (widget, offset, index) => {
-      const widgetMarks = widget.type.spec.marks ?? [];
-      queuedChildNodes.push({
-        type: "widget",
-        widget: widget,
-        marks:
-          widget.type.side >= 0
-            ? widgetMarks
-            : widgetMarks.reduce(
-                (acc, mark) => mark.addToSet(acc),
-                queuedChildNodes[0]?.marks ?? []
-              ),
-        offset,
-        index,
-      });
+    (widget, isNative, offset, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const widgetMarks = ((widget as any).type.spec.marks as Mark[]) ?? [];
+      if (isNative) {
+        queuedChildNodes.push({
+          type: "native-widget",
+          widget: widget,
+          marks:
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (widget as any).type.side >= 0
+              ? widgetMarks
+              : widgetMarks.reduce(
+                  (acc, mark) => mark.addToSet(acc),
+                  queuedChildNodes[0]?.marks ?? []
+                ),
+          offset,
+          index,
+        });
+      } else {
+        queuedChildNodes.push({
+          type: "widget",
+          widget: widget as ReactWidgetDecoration,
+          marks:
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (widget as any).type.side >= 0
+              ? widgetMarks
+              : widgetMarks.reduce(
+                  (acc, mark) => mark.addToSet(acc),
+                  queuedChildNodes[0]?.marks ?? []
+                ),
+          offset,
+          index,
+        });
+      }
     },
     (childNode, outerDeco, innerDeco, offset) => {
       if (!childNode.isInline) {
+        if (queuedChildNodes.length) {
+          children.push(
+            <InlineView
+              key={createKey(
+                editorState?.doc,
+                innerPos,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                queuedChildNodes[0]!,
+                reactKeys?.posToKey
+              )}
+              childViews={[...queuedChildNodes]}
+              innerPos={innerPos}
+            ></InlineView>
+          );
+
+          queuedChildNodes.splice(0, queuedChildNodes.length);
+        }
+
         const pos = innerPos + offset;
         const key = reactKeys?.posToKey.get(pos) ?? pos;
 

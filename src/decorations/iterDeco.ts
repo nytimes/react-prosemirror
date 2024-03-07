@@ -2,7 +2,7 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 
-import { ReactWidgetDecoration } from "./ReactWidgetType.js";
+import { ReactWidgetType } from "./ReactWidgetType.js";
 import { InternalDecorationSource } from "./internalTypes.js";
 
 function compareSide(a: Decoration, b: Decoration) {
@@ -21,7 +21,8 @@ export function iterDeco(
   // the offset, so that we can pass the position as
   // a prop to components
   onWidget: (
-    widget: ReactWidgetDecoration,
+    widget: Decoration,
+    isNative: boolean,
     offset: number,
     index: number,
     insideNode: boolean
@@ -65,14 +66,18 @@ export function iterDeco(
         widgets.sort(compareSide);
         for (let i = 0; i < widgets.length; i++)
           onWidget(
-            widgets[i]! as ReactWidgetDecoration,
+            widgets[i]!,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            !((widgets[i]! as any).type instanceof ReactWidgetType),
             offset,
             parentIndex + i,
             !!restNode
           );
       } else {
         onWidget(
-          widget as ReactWidgetDecoration,
+          widget,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          !((widget as any).type instanceof ReactWidgetType),
           offset,
           parentIndex,
           !!restNode

@@ -85,10 +85,12 @@ export function NodeView({
 
     const { destroy, update } = customNodeViewRef.current;
 
-    const updated = update?.(node, outerDeco, innerDeco) ?? true;
+    const updated =
+      update?.call(customNodeViewRef.current, node, outerDeco, innerDeco) ??
+      true;
     if (updated) return;
 
-    destroy?.();
+    destroy?.call(customNodeViewRef.current);
 
     if (!customNodeView || !customNodeViewRootRef.current) return;
 

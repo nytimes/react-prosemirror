@@ -43,7 +43,7 @@ export function ProseMirror({
   className,
   children,
   nodeViews = {},
-  customNodeViews = {},
+  customNodeViews,
   ...props
 }: Props) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
