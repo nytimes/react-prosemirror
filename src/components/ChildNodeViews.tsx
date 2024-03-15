@@ -18,6 +18,7 @@ import { useReactKeys } from "../hooks/useReactKeys.js";
 import { MarkView } from "./MarkView.js";
 import { NativeWidgetView } from "./NativeWidgetView.js";
 import { NodeView } from "./NodeView.js";
+import { SeparatorHackView } from "./SeparatorHackView.js";
 import { TextNodeView } from "./TextNodeView.js";
 import { TrailingHackView } from "./TrailingHackView.js";
 import { WidgetView } from "./WidgetView.js";
@@ -437,8 +438,10 @@ export function ChildNodeViews({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     /\n$/.test(lastChild.node.text!)
   ) {
-    // TODO: ProseMirror also adds an img hack after non-contenteditable views
-    childElements.push(<TrailingHackView key="trailing-hack" />);
+    childElements.push(
+      <SeparatorHackView key="trailing-hack-img" />,
+      <TrailingHackView key="trailing-hack-br" />
+    );
   }
 
   return <>{childElements}</>;

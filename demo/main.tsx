@@ -175,17 +175,17 @@ const ListItem = forwardRef(function ListItem(
 
 const Footnote = forwardRef(function Footnote(
   { nodeProps, ...props }: NodeViewComponentProps,
-  ref: Ref<HTMLButtonElement>
+  ref: Ref<HTMLSpanElement>
 ) {
   return (
-    <button
+    <span
       ref={ref}
       {...props}
       suppressContentEditableWarning
       contentEditable="false"
     >
-      {nodeProps.node.attrs.number}
-    </button>
+      <button>{nodeProps.node.attrs.number}</button>
+    </span>
   );
 });
 

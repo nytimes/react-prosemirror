@@ -5,7 +5,7 @@ import { TrailingHackViewDesc } from "../viewdesc.js";
 
 export function TrailingHackView() {
   const siblingDescriptors = useContext(ChildDescriptorsContext);
-  const ref = useRef<HTMLBRElement | null>(null);
+  const ref = useRef<(HTMLBRElement & HTMLImageElement) | null>(null);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
