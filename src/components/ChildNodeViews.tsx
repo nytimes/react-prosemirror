@@ -427,17 +427,18 @@ export function ChildNodeViews({
     reactKeys?.posToKey
   );
 
-  if (!children.length) {
-    childElements.push(
-      <TrailingHackView
-        key={createKey(
-          editorState?.doc,
-          innerPos,
-          { type: "trailinghack", offset: 0 },
-          reactKeys?.posToKey
-        )}
-      />
-    );
+  const lastChild = children[children.length - 1];
+
+  if (
+    !lastChild ||
+    lastChild.type !== "node" ||
+    (lastChild.node.isInline && !lastChild.node.isText) ||
+    // RegExp.test actually handles undefined just fine
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    /\n$/.test(lastChild.node.text!)
+  ) {
+    // TODO: ProseMirror also adds an img hack after non-contenteditable views
+    childElements.push(<TrailingHackView key="trailing-hack" />);
   }
 
   return <>{childElements}</>;

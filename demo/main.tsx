@@ -43,6 +43,15 @@ const schema = new Schema({
       cellAttributes: {},
       tableGroup: "block",
     }),
+    footnote: {
+      group: "inline",
+      content: "text*",
+      inline: true,
+      // This makes the view treat the node as a leaf, even though it
+      // technically has content
+      atom: true,
+      attrs: { number: { default: 0 } },
+    },
     list: {
       group: "block",
       content: "list_item+",
@@ -99,10 +108,10 @@ const editorState = EditorState.create({
       ]),
       schema.text(" the first paragraph"),
     ]),
-    schema.nodes.paragraph.create(
-      {},
-      schema.text("This is the second paragraph")
-    ),
+    schema.nodes.paragraph.create({}, [
+      schema.text("This is the second paragraph"),
+      schema.nodes.footnote.create({ number: 1 }, schema.text("Footnote")),
+    ]),
     schema.nodes.paragraph.create(),
     schema.nodes.image.create(),
     schema.nodes.image.create(),
@@ -161,6 +170,22 @@ const ListItem = forwardRef(function ListItem(
     <li ref={ref} {...props}>
       {children}
     </li>
+  );
+});
+
+const Footnote = forwardRef(function Footnote(
+  { nodeProps, ...props }: NodeViewComponentProps,
+  ref: Ref<HTMLButtonElement>
+) {
+  return (
+    <button
+      ref={ref}
+      {...props}
+      suppressContentEditableWarning
+      contentEditable="false"
+    >
+      {nodeProps.node.attrs.number}
+    </button>
   );
 });
 
@@ -301,7 +326,12 @@ function DemoEditor() {
         plugins={plugins}
         nodeViews={
           showReactNodeViews
-            ? { paragraph: Paragraph, list: List, list_item: ListItem }
+            ? {
+                paragraph: Paragraph,
+                list: List,
+                list_item: ListItem,
+                footnote: Footnote,
+              }
             : undefined
         }
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}
