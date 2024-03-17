@@ -18,6 +18,7 @@ import { useReactKeys } from "../hooks/useReactKeys.js";
 import { MarkView } from "./MarkView.js";
 import { NativeWidgetView } from "./NativeWidgetView.js";
 import { NodeView } from "./NodeView.js";
+import { SeparatorHackView } from "./SeparatorHackView.js";
 import { TextNodeView } from "./TextNodeView.js";
 import { TrailingHackView } from "./TrailingHackView.js";
 import { WidgetView } from "./WidgetView.js";
@@ -259,20 +260,110 @@ function createKey(
   return pos;
 }
 
-function adjustWidgetMarks(children: Child[]) {
+function adjustWidgetMarksForward(children: Child[]) {
   const lastChild = children[children.length - 1];
-  if (lastChild?.type !== "node") return;
+  if (
+    (lastChild?.type !== "widget" && lastChild?.type !== "native-widget") ||
+    // Using internal Decoration property, "type"
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (lastChild.widget as any).type.side >= 0
+  )
+    return;
+
+  let lastNodeChild: ChildNode | null = null;
+  for (let i = children.length - 2; i >= 0; i--) {
+    const child = children[i];
+    if (child?.type === "node") {
+      lastNodeChild = child;
+      break;
+    }
+  }
+
+  if (!lastNodeChild || !lastNodeChild.node.isInline) return;
+
+  const marksToSpread = lastNodeChild.marks;
+
+  lastChild.marks = lastChild.marks.reduce(
+    (acc, mark) => mark.addToSet(acc),
+    marksToSpread
+  );
+}
+
+function adjustWidgetMarksBack(children: Child[]) {
+  const lastChild = children[children.length - 1];
+  if (lastChild?.type !== "node" || !lastChild.node.isInline) return;
 
   const marksToSpread = lastChild.marks;
   for (let i = children.length - 2; i >= 0; i--) {
     const child = children[i];
-    if (child?.type !== "widget" || child.widget.type.side < 0) break;
+    if (
+      (child?.type !== "widget" && child?.type !== "native-widget") ||
+      // Using internal Decoration property, "type"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (child.widget as any).type.side < 0
+    )
+      break;
 
     child.marks = child.marks.reduce(
       (acc, mark) => mark.addToSet(acc),
       marksToSpread
     );
   }
+}
+
+function createChildElements(
+  children: Child[],
+  innerPos: number,
+  doc: Node | undefined,
+  posToKey: Map<number, string> | undefined
+): ReactNode[] {
+  if (!children.length) return [];
+
+  if (children.every((child) => child.type !== "node" || child.node.isInline)) {
+    return [
+      <InlineView
+        key={createKey(
+          doc,
+          innerPos,
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          children[0]!,
+          posToKey
+        )}
+        childViews={children}
+        innerPos={innerPos}
+      />,
+    ];
+  }
+
+  return children.map((child) => {
+    if (child.type === "node") {
+      const pos = innerPos + child.offset;
+      const key = posToKey?.get(pos) ?? pos;
+      return (
+        <NodeView
+          key={key}
+          outerDeco={child.outerDeco}
+          node={child.node}
+          innerDeco={child.innerDeco}
+          pos={pos}
+        />
+      );
+    } else {
+      return (
+        <InlineView
+          key={createKey(
+            doc,
+            innerPos,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            child,
+            posToKey
+          )}
+          childViews={[child]}
+          innerPos={innerPos}
+        />
+      );
+    }
+  });
 }
 
 export function ChildNodeViews({
@@ -288,10 +379,9 @@ export function ChildNodeViews({
   const reactKeys = useReactKeys();
 
   if (!node) return null;
-  const children: ReactNode[] = [];
   const innerPos = pos + 1;
 
-  const queuedChildNodes: Child[] = [];
+  const children: Child[] = [];
 
   iterDeco(
     node,
@@ -300,72 +390,26 @@ export function ChildNodeViews({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const widgetMarks = ((widget as any).type.spec.marks as Mark[]) ?? [];
       if (isNative) {
-        queuedChildNodes.push({
+        children.push({
           type: "native-widget",
           widget: widget,
-          marks:
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (widget as any).type.side >= 0
-              ? widgetMarks
-              : widgetMarks.reduce(
-                  (acc, mark) => mark.addToSet(acc),
-                  queuedChildNodes[0]?.marks ?? []
-                ),
+          marks: widgetMarks,
           offset,
           index,
         });
       } else {
-        queuedChildNodes.push({
+        children.push({
           type: "widget",
           widget: widget as ReactWidgetDecoration,
-          marks:
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (widget as any).type.side >= 0
-              ? widgetMarks
-              : widgetMarks.reduce(
-                  (acc, mark) => mark.addToSet(acc),
-                  queuedChildNodes[0]?.marks ?? []
-                ),
+          marks: widgetMarks,
           offset,
           index,
         });
       }
+      adjustWidgetMarksForward(children);
     },
     (childNode, outerDeco, innerDeco, offset) => {
-      if (!childNode.isInline) {
-        if (queuedChildNodes.length) {
-          children.push(
-            <InlineView
-              key={createKey(
-                editorState?.doc,
-                innerPos,
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                queuedChildNodes[0]!,
-                reactKeys?.posToKey
-              )}
-              childViews={[...queuedChildNodes]}
-              innerPos={innerPos}
-            ></InlineView>
-          );
-
-          queuedChildNodes.splice(0, queuedChildNodes.length);
-        }
-
-        const pos = innerPos + offset;
-        const key = reactKeys?.posToKey.get(pos) ?? pos;
-
-        children.push(
-          <NodeView
-            key={key}
-            outerDeco={outerDeco}
-            node={childNode}
-            innerDeco={innerDeco}
-            pos={pos}
-          />
-        );
-        return;
-      }
-      queuedChildNodes.push({
+      children.push({
         type: "node",
         node: childNode,
         marks: childNode.marks,
@@ -373,38 +417,32 @@ export function ChildNodeViews({
         outerDeco,
         offset,
       });
-      adjustWidgetMarks(queuedChildNodes);
+      adjustWidgetMarksBack(children);
     }
   );
 
-  if (queuedChildNodes.length) {
-    children.push(
-      <InlineView
-        key={createKey(
-          editorState?.doc,
-          innerPos,
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          queuedChildNodes[0]!,
-          reactKeys?.posToKey
-        )}
-        childViews={queuedChildNodes}
-        innerPos={innerPos}
-      ></InlineView>
+  const childElements = createChildElements(
+    children,
+    innerPos,
+    editorState?.doc,
+    reactKeys?.posToKey
+  );
+
+  const lastChild = children[children.length - 1];
+
+  if (
+    !lastChild ||
+    lastChild.type !== "node" ||
+    (lastChild.node.isInline && !lastChild.node.isText) ||
+    // RegExp.test actually handles undefined just fine
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    /\n$/.test(lastChild.node.text!)
+  ) {
+    childElements.push(
+      <SeparatorHackView key="trailing-hack-img" />,
+      <TrailingHackView key="trailing-hack-br" />
     );
   }
 
-  if (!children.length) {
-    children.push(
-      <TrailingHackView
-        key={createKey(
-          editorState?.doc,
-          innerPos,
-          { type: "trailinghack", offset: 0 },
-          reactKeys?.posToKey
-        )}
-      />
-    );
-  }
-
-  return <>{children}</>;
+  return <>{childElements}</>;
 }
