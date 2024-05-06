@@ -67,7 +67,10 @@ export function NodeView({
 
   // TODO: Would be great to pull all of the custom node view stuff into
   // a hook
-  const customNodeView = view?.someProp("nodeViews")?.[node.type.name];
+  const customNodeView = view?.someProp(
+    "nodeViews",
+    (nodeViews) => nodeViews?.[node.type.name]
+  );
 
   useLayoutEffect(() => {
     if (!customNodeViewRef.current || !customNodeViewRootRef.current) return;
@@ -92,7 +95,7 @@ export function NodeView({
 
     destroy?.call(customNodeViewRef.current);
 
-    if (!customNodeView || !customNodeViewRootRef.current) return;
+    if (!customNodeViewRootRef.current) return;
 
     initialNode.current = node;
     initialOuterDeco.current = outerDeco;
@@ -100,7 +103,10 @@ export function NodeView({
 
     customNodeViewRef.current = customNodeView(
       initialNode.current,
-      view,
+      // customNodeView will only be set if view is set, and we can only reach
+      // this line if customNodeView is set
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      view!,
       () => posRef.current,
       initialOuterDeco.current,
       initialInnerDeco.current
@@ -142,7 +148,10 @@ export function NodeView({
     if (!customNodeViewRef.current) {
       customNodeViewRef.current = customNodeView(
         initialNode.current,
-        view,
+        // customNodeView will only be set if view is set, and we can only reach
+        // this line if customNodeView is set
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        view!,
         () => posRef.current,
         initialOuterDeco.current,
         initialInnerDeco.current
