@@ -4,12 +4,6 @@ import { Decoration, EditorView } from "prosemirror-view";
 
 import { CursorWrapper } from "../components/CursorWrapper.js";
 import { widget } from "../decorations/ReactWidgetType.js";
-import { getEdgeCharacterSize } from "../strings/characters.js";
-import { findDirection } from "../strings/direction.js";
-import {
-  findWordBoundaryBackward,
-  findWordBoundaryForward,
-} from "../strings/words.js";
 
 import { reactKeysPluginKey } from "./reactKeys.js";
 
@@ -132,14 +126,12 @@ export function beforeInputPlugin(
               const ranges = event.getTargetRanges();
               event.dataTransfer?.items[0]?.getAsString((data) => {
                 for (const range of ranges) {
-                  // @ts-expect-error Internal property - docView
-                  const from = view.docView.posFromDOM(
+                  const from = view.posAtDOM(
                     range.startContainer,
                     range.startOffset,
                     1
                   );
-                  // @ts-expect-error Internal property - docView
-                  const to = view.docView.posFromDOM(
+                  const to = view.posAtDOM(
                     range.endContainer,
                     range.endOffset,
                     1
@@ -153,117 +145,27 @@ export function beforeInputPlugin(
               insertText(view, event.data);
               break;
             }
-            case "deleteWordBackward": {
-              const { tr, doc, selection } = view.state;
-              const from = selection.empty
-                ? findWordBoundaryBackward(view.state.doc, selection.from)
-                : selection.from;
-              const to = selection.to;
-              const storedMarks = doc
-                .resolve(from)
-                .marksAcross(doc.resolve(to));
-
-              tr.delete(from, to).setStoredMarks(storedMarks);
-
-              view.dispatch(tr);
-              break;
-            }
-            case "deleteWordForward": {
-              const { tr, doc, selection } = view.state;
-              const from = selection.empty
-                ? findWordBoundaryForward(view.state.doc, selection.from)
-                : selection.from;
-              const to = selection.to;
-              const storedMarks = doc
-                .resolve(from)
-                .marksAcross(doc.resolve(to));
-
-              tr.delete(from, to).setStoredMarks(storedMarks);
-
-              view.dispatch(tr);
-              break;
-            }
-            case "deleteContentBackward": {
-              const { tr, doc, selection } = view.state;
-
-              if (selection.empty) {
-                const textNode = selection.$anchor.nodeBefore;
-                const text = textNode?.text;
-                if (!text) break;
-
-                const characterSize = getEdgeCharacterSize(
-                  text,
-                  "trailing",
-                  findDirection(view, selection.anchor) === "rtl"
-                );
-
-                const to = selection.to;
-                const from = to - characterSize;
-                const storedMarks = doc
-                  .resolve(from)
-                  .marksAcross(doc.resolve(to));
-
-                tr.delete(from, to).setStoredMarks(storedMarks);
-                view.dispatch(tr);
-                break;
-              }
-
-              const from = selection.empty
-                ? selection.from - 1
-                : selection.from;
-              const to = selection.to;
-              const storedMarks = doc
-                .resolve(from)
-                .marksAcross(doc.resolve(to));
-
-              tr.delete(from, to).setStoredMarks(storedMarks);
-
-              view.dispatch(tr);
-              break;
-            }
-            case "deleteContentForward": {
-              const { tr, doc, selection } = view.state;
-              if (selection.empty) {
-                const textNode = selection.$anchor.nodeAfter;
-                const text = textNode?.text;
-                if (!text) break;
-
-                const characterEnd = getEdgeCharacterSize(
-                  text,
-                  "leading",
-                  findDirection(view, selection.anchor) === "rtl"
-                );
-
-                const from = selection.from;
-                const to = from + characterEnd;
-                const storedMarks = doc
-                  .resolve(from)
-                  .marksAcross(doc.resolve(to));
-
-                tr.delete(from, to).setStoredMarks(storedMarks);
-                view.dispatch(tr);
-                break;
-              }
-
-              const from = selection.from;
-              const to = selection.to;
-              const storedMarks = doc
-                .resolve(from)
-                .marksAcross(doc.resolve(to));
-
-              tr.delete(from, to).setStoredMarks(storedMarks);
-              view.dispatch(tr);
-              break;
-            }
+            case "deleteWordBackward":
+            case "deleteContentBackward":
+            case "deleteWordForward":
+            case "deleteContentForward":
             case "deleteContent": {
-              const { tr, doc, selection } = view.state;
-              const storedMarks = doc
-                .resolve(selection.from)
-                .marksAcross(doc.resolve(selection.to));
+              const targetRanges = event.getTargetRanges();
+              const { tr } = view.state;
+              for (const range of targetRanges) {
+                const start = view.posAtDOM(
+                  range.startContainer,
+                  range.startOffset
+                );
+                const end = view.posAtDOM(range.endContainer, range.endOffset);
+                const { doc } = view.state;
 
-              tr.delete(selection.from, selection.to).setStoredMarks(
-                storedMarks
-              );
+                const storedMarks = doc
+                  .resolve(start)
+                  .marksAcross(doc.resolve(end));
+
+                tr.delete(start, end).setStoredMarks(storedMarks);
+              }
               view.dispatch(tr);
               break;
             }
