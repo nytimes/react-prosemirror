@@ -117,7 +117,7 @@ const editorState = EditorState.create({
     schema.nodes.image.create(),
     schema.nodes.paragraph.create(
       {},
-      schema.text("This is the third paragraph")
+      schema.text("This is the third paragraph 🫵")
     ),
     schema.nodes.table.create({}, [
       schema.nodes.table_row.create({}, [
