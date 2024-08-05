@@ -30,7 +30,7 @@ export function useEditorEventCallback<T extends unknown[], R>(
 
   return useCallback(
     (...args: T) => {
-      if (editorView) ref.current(editorView, ...args);
+      if (editorView) return ref.current(editorView, ...args);
     },
     [editorView]
   );
