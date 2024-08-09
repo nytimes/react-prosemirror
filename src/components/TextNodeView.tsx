@@ -53,6 +53,8 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.outerDeco = decorations;
       this.viewDescRef.innerDeco = DecorationSet.empty;
       this.viewDescRef.dom = dom;
+      // @ts-expect-error We have our own ViewDesc implementations
+      this.viewDescRef.dom.pmViewDesc = this.viewDescRef;
       this.viewDescRef.nodeDOM = textNode;
     }
 
