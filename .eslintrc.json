@@ -17,6 +17,7 @@
   },
   "rules": {
     "no-console": ["error", { "allow": ["error"] }],
+    "react/prop-types": "off", // Typescript does this better
     "react-hooks/exhaustive-deps": [
       "warn",
       {
