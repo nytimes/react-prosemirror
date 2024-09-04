@@ -11,17 +11,21 @@ export function kebabCaseToCamelCase(str: string) {
  * `style` prop.
  */
 export function cssToStyles(css: string) {
-  const cssJson = `{"${css
-    .replace(/;? *$/, "")
-    .replace(/;+ */g, '","')
-    .replace(/: */g, '":"')}"}`;
+  const stylesheet = new CSSStyleSheet();
+  stylesheet.insertRule(`* { ${css} }`);
 
-  const obj = JSON.parse(cssJson);
+  const insertedRule = stylesheet.cssRules[0] as CSSStyleRule;
+  const declaration = insertedRule.style;
+  const styles: Record<string, string> = {};
 
-  return Object.keys(obj).reduce((acc, key) => {
-    const camelCased = key.startsWith("--") ? key : kebabCaseToCamelCase(key);
-    return { ...acc, [camelCased]: obj[key] };
-  }, {});
+  for (let i = 0; i < declaration.length; i++) {
+    const property = declaration.item(i);
+    const value = declaration.getPropertyValue(property);
+    const camelCasePropertyName = kebabCaseToCamelCase(property);
+    styles[camelCasePropertyName] = value;
+  }
+
+  return styles;
 }
 
 /**
