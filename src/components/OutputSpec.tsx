@@ -1,13 +1,15 @@
 import { DOMOutputSpec } from "prosemirror-model";
-import React, { ReactNode, createElement, forwardRef } from "react";
+import React, { HTMLProps, ReactNode, createElement, forwardRef } from "react";
 
-type Props = {
+import { htmlAttrsToReactProps, mergeReactProps } from "../props.js";
+
+type Props = HTMLProps<HTMLElement> & {
   outputSpec: DOMOutputSpec;
   children?: ReactNode;
 };
 
-const ForwardedOutputSpec = forwardRef(function OutputSpec(
-  { outputSpec, children, ...initialProps }: Props,
+const ForwardedOutputSpec = forwardRef<HTMLElement, Props>(function OutputSpec(
+  { outputSpec, children, ...propOverrides }: Props,
   ref
 ) {
   if (typeof outputSpec === "string") {
@@ -24,7 +26,10 @@ const ForwardedOutputSpec = forwardRef(function OutputSpec(
   const tagName = tagSpec.replace(" ", ":");
   const attrs = outputSpec[1];
 
-  const props: Record<string, unknown> = { ...initialProps, ref };
+  let props: HTMLProps<HTMLElement> = {
+    ref,
+    ...propOverrides,
+  };
   let start = 1;
   if (
     attrs &&
@@ -33,13 +38,9 @@ const ForwardedOutputSpec = forwardRef(function OutputSpec(
     !Array.isArray(attrs)
   ) {
     start = 2;
-    for (const name in attrs)
-      if (attrs[name] != null) {
-        const attrName =
-          name === "class" ? "className" : name.replace(" ", ":");
-        props[attrName] = attrs[name];
-      }
+    props = mergeReactProps(htmlAttrsToReactProps(attrs), propOverrides);
   }
+
   const content: ReactNode[] = [];
   for (let i = start; i < outputSpec.length; i++) {
     const child = outputSpec[i] as DOMOutputSpec | 0;

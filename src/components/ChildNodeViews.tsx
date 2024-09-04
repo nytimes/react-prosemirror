@@ -1,4 +1,3 @@
-import classnames from "classnames/dedupe";
 import { Mark, Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 import React, {
@@ -14,6 +13,7 @@ import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
 import { iterDeco } from "../decorations/iterDeco.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
+import { htmlAttrsToReactProps, mergeReactProps } from "../props.js";
 
 import { MarkView } from "./MarkView.js";
 import { NativeWidgetView } from "./NativeWidgetView.js";
@@ -23,57 +23,23 @@ import { TextNodeView } from "./TextNodeView.js";
 import { TrailingHackView } from "./TrailingHackView.js";
 import { WidgetView } from "./WidgetView.js";
 
-function cssToStyles(css: string) {
-  const cssJson = `{"${css
-    .replace(/;? *$/, "")
-    .replace(/;+ */g, '","')
-    .replace(/: */g, '":"')}"}`;
-
-  const obj = JSON.parse(cssJson);
-
-  return Object.keys(obj).reduce((acc, key) => {
-    const camelCased = key.startsWith("--")
-      ? key
-      : key.replace(/-[a-z]/g, (g) => g[1]?.toUpperCase() ?? "");
-    return { ...acc, [camelCased]: obj[key] };
-  }, {});
-}
-
 export function wrapInDeco(reactNode: JSX.Element | string, deco: Decoration) {
   const {
     nodeName,
-    class: className,
-    style: css,
-    contenteditable: contentEditable,
-    spellcheck: spellCheck,
     ...attrs
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = (deco as any).type.attrs;
+
+  const props = htmlAttrsToReactProps(attrs);
 
   // We auto-wrap text nodes in spans so that we can apply attributes
   // and styles, but we want to avoid double-wrapping the same
   // text node
   if (nodeName || typeof reactNode === "string") {
-    return createElement(
-      nodeName ?? "span",
-      {
-        className,
-        contentEditable,
-        spellCheck,
-        style: css && cssToStyles(css),
-        ...attrs,
-      },
-      reactNode
-    );
+    return createElement(nodeName ?? "span", props, reactNode);
   }
 
-  return cloneElement(reactNode, {
-    className: classnames(reactNode.props.className, className),
-    contentEditable,
-    spellCheck,
-    style: { ...reactNode.props.style, ...(css && cssToStyles(css)) },
-    ...attrs,
-  });
+  return cloneElement(reactNode, mergeReactProps(reactNode.props, props));
 }
 
 type ChildWidget = {
