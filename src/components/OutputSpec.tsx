@@ -38,7 +38,7 @@ const ForwardedOutputSpec = forwardRef<HTMLElement, Props>(function OutputSpec(
     !Array.isArray(attrs)
   ) {
     start = 2;
-    props = mergeReactProps(htmlAttrsToReactProps(attrs), propOverrides);
+    props = mergeReactProps(htmlAttrsToReactProps(attrs), props);
   }
 
   const content: ReactNode[] = [];
