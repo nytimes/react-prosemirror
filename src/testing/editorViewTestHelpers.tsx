@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render } from "@testing-library/react";
-import { expect, MatcherFunction } from "expect";
+import { MatcherFunction, expect } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
-import { doc, eq, schema } from "prosemirror-test-builder";
+import { doc, eq, p, schema } from "prosemirror-test-builder";
 import { EditorView, EditorView as EditorViewT } from "prosemirror-view";
 import React from "react";
 
@@ -55,7 +55,7 @@ export function tempEditor({
   view: EditorViewT;
   rerender: (props: Omit<Props, "state" | "plugins">) => void;
 } {
-  startDoc = startDoc ?? doc();
+  startDoc = startDoc ?? doc(p());
   const state = EditorState.create({
     doc: startDoc,
     schema,

@@ -21,7 +21,6 @@ import {
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
-import { setupProseMirrorView } from "../../testing/setupProseMirrorView.js";
 
 const img = img_({
   src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
@@ -92,11 +91,7 @@ const LEFT = 37,
   UP = 38,
   DOWN = 40;
 
-describe("EditorView", () => {
-  beforeAll(() => {
-    setupProseMirrorView();
-  });
-
+describe("ProseMirror", () => {
   it("can read the DOM selection", async () => {
     const { view } = tempEditor({
       doc: doc(p("one"), hr(), blockquote(p("two"))),
@@ -105,7 +100,7 @@ describe("EditorView", () => {
       setDOMSel(node, offset);
       view.dom.focus();
       act(() => {
-        view.domObserver.flush();
+        (view as any).domObserver.flush();
       });
       const sel = view.state.selection;
       expect(sel.head == null ? sel.from : sel.head).toBe(expected);
@@ -145,11 +140,7 @@ describe("EditorView", () => {
     test(10, two, 2);
   });
 
-  // Jest-dom doesn't actually provide a working getClientRects
-  // implementation, so this test doesn't work.
-  // TODO: should we consider running these with puppeteer for
-  // better test accuracy?
-  it.skip("returns sensible screen coordinates", async () => {
+  it("returns sensible screen coordinates", async () => {
     const { view } = tempEditor({ doc: doc(p("one"), p("two")) });
 
     const p00 = view.coordsAtPos(1);
@@ -172,7 +163,7 @@ describe("EditorView", () => {
     expect(p13.left).toBeGreaterThan(p10.left);
   });
 
-  it.skip("returns proper coordinates in code blocks", async () => {
+  it("returns proper coordinates in code blocks", async () => {
     const { view } = tempEditor({ doc: doc(code_block("a\nb\n")) }),
       p = [];
     for (let i = 1; i <= 5; i++) p.push(view.coordsAtPos(i));
@@ -189,6 +180,8 @@ describe("EditorView", () => {
     expect(Math.round(p4!.left)).toBe(Math.round(p2!.left));
   });
 
+  // TODO: This test fails on the position between the img and the br (it returns
+  // the position before the img, instead of after).
   it.skip("produces sensible screen coordinates in corner cases", async () => {
     const { view } = tempEditor({
       doc: doc(
@@ -196,7 +189,7 @@ describe("EditorView", () => {
         p()
       ),
     });
-    return new Promise((ok) => {
+    return new Promise<null>((ok) => {
       setTimeout(() => {
         allPositions(view.state.doc).forEach((pos) => {
           const coords = view.coordsAtPos(pos);
@@ -212,13 +205,13 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("doesn't return zero-height rectangles after leaves", async () => {
+  it("doesn't return zero-height rectangles after leaves", async () => {
     const { view } = tempEditor({ doc: doc(p(img)) });
     const coords = view.coordsAtPos(2, 1);
     expect(coords.bottom - coords.top).toBeGreaterThan(5);
   });
 
-  it.skip("produces horizontal rectangles for positions between blocks", async () => {
+  it("produces horizontal rectangles for positions between blocks", async () => {
     const { view } = tempEditor({
       doc: doc(p("ha"), hr(), blockquote(p("ba"))),
     });
@@ -241,7 +234,7 @@ describe("EditorView", () => {
     expect(d.top).toBeLessThan(view.dom.getBoundingClientRect().bottom);
   });
 
-  it.skip("produces sensible screen coordinates around line breaks", async () => {
+  it("produces sensible screen coordinates around line breaks", async () => {
     const { view } = tempEditor({
       doc: doc(p("one two three four five-six-seven-eight")),
     });
@@ -282,7 +275,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("can find coordinates on node boundaries", async () => {
+  it("can find coordinates on node boundaries", async () => {
     const { view } = tempEditor({
       doc: doc(p("one ", em("two"), " ", em(strong("three")))),
     });
@@ -299,7 +292,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("finds proper coordinates in RTL text", async () => {
+  it("finds proper coordinates in RTL text", async () => {
     const { view } = tempEditor({ doc: doc(p("مرآة نثرية")) });
     view.dom.style.direction = "rtl";
     let prev: { left: number; top: number; right: number; bottom: number };
@@ -315,7 +308,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("can go back and forth between screen coordsa and document positions", async () => {
+  it("can go back and forth between screen coordsa and document positions", async () => {
     const { view } = tempEditor({
       doc: doc(p("one"), blockquote(p("two"), p("three"))),
     });
@@ -329,7 +322,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("returns correct screen coordinates for wrapped lines", async () => {
+  it("returns correct screen coordinates for wrapped lines", async () => {
     const { view } = tempEditor({});
     const top = view.coordsAtPos(1);
     let pos = 1,
