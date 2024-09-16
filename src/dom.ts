@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 export type DOMNode = InstanceType<typeof window.Node>;
 export type DOMSelection = InstanceType<typeof window.Selection>;
