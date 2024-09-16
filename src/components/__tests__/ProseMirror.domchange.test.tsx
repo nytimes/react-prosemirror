@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { expect } from "@jest/globals";
-import { act, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { screen } from "@testing-library/react";
 import { EditorState, TextSelection } from "prosemirror-state";
 import {
   a,
@@ -14,59 +12,47 @@ import {
   strong,
 } from "prosemirror-test-builder";
 import { Step } from "prosemirror-transform";
+import { Key } from "webdriverio";
 
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
-import { setupProseMirrorView } from "../../testing/setupProseMirrorView.js";
 
 describe("DOM change", () => {
-  beforeAll(() => {
-    setupProseMirrorView();
-  });
-
   it("notices when text is added", async () => {
     const { view } = tempEditor({ doc: doc(p("he<a>llo")) });
-    const user = userEvent.setup();
 
-    await act(async () => {
-      await user.type(view.dom, "L");
-    });
+    view.focus();
+    await browser.keys([Key.Shift, "l"]);
 
     expect(view.state.doc).toEqualNode(doc(p("heLllo")));
   });
 
-  // JSDOM doesn't seem to implement getTargetRanges on InputEvents, which we use
-  // to implement deletions
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("notices when text is removed", async () => {
+  it("notices when text is removed", async () => {
     const { view } = tempEditor({ doc: doc(p("hell<a>o")) });
-    const user = userEvent.setup();
 
-    await act(async () => {
-      await user.type(view.dom, "[Backspace>2/]");
-    });
+    view.focus();
+    await browser.keys(Key.Backspace);
+    await browser.keys(Key.Backspace);
 
     expect(view.state.doc).toEqualNode(doc(p("heo")));
   });
 
   it("respects stored marks", async () => {
     const { view } = tempEditor({ doc: doc(p("hello<a>")) });
-    const user = userEvent.setup();
-    await act(async () => {
-      view.dispatch(
-        view.state.tr.addStoredMark(view.state.schema.marks.em!.create())
-      );
-      await user.type(view.dom, "o");
-    });
+    view.dispatch(
+      view.state.tr.addStoredMark(view.state.schema.marks.em!.create())
+    );
+    view.focus();
+    await browser.keys("o");
 
     expect(view.state.doc).toEqualNode(doc(p("hello", em("o"))));
   });
 
   it("support inserting repeated text", async () => {
     const { view } = tempEditor({ doc: doc(p("hello")) });
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "hel");
-    });
+    view.focus();
+    await browser.keys("h");
+    await browser.keys("e");
+    await browser.keys("l");
 
     expect(view.state.doc).toEqualNode(doc(p("helhello")));
   });
@@ -81,10 +67,8 @@ describe("DOM change", () => {
       },
     });
 
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "{Enter}");
-    });
+    view.focus();
+    await browser.keys(Key.Enter);
 
     expect(enterPressed).toBeTruthy();
   });
@@ -100,20 +84,16 @@ describe("DOM change", () => {
       },
     });
 
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom.firstElementChild!, "{Backspace}");
-    });
+    view.focus();
+    await browser.keys(Key.Backspace);
 
     expect(backspacePressed).toBeTruthy();
   });
 
   it("correctly adjusts the selection", async () => {
-    const user = userEvent.setup();
     const { view } = tempEditor({ doc: doc(p("abc<a>")) });
-    await act(async () => {
-      await user.type(view.dom, "d");
-    });
+    view.focus();
+    await browser.keys("d");
 
     expect(view.state.doc).toEqualNode(doc(p("abcd")));
     expect(view.state.selection.anchor).toBe(5);
@@ -145,10 +125,8 @@ describe("DOM change", () => {
       childList: true,
     });
 
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "j");
-    });
+    view.focus();
+    await browser.keys("j");
 
     expect(view.state.doc).toEqualNode(doc(p("fojo")));
     expect(mutated).toBeFalsy();
@@ -156,11 +134,9 @@ describe("DOM change", () => {
   });
 
   it("understands text typed into an empty paragraph", async () => {
-    const user = userEvent.setup();
     const { view } = tempEditor({ doc: doc(p("<a>")) });
-    await act(async () => {
-      await user.type(view.dom, "i");
-    });
+    view.focus();
+    await browser.keys("i");
 
     expect(view.state.doc).toEqualNode(doc(p("i")));
   });
@@ -173,53 +149,40 @@ describe("DOM change", () => {
         // intentionally do nothing
       },
     });
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "i");
-    });
+    view.focus();
+    await browser.keys("i");
     expect(view.dom.textContent).toBe("foo");
   });
 
   it("aborts when an incompatible state is set", async () => {
     const { view } = tempEditor({ doc: doc(p("<a>abcde")) });
 
-    const user = userEvent.setup();
-    await act(async () => {
-      view.dispatchEvent({ type: "input" } as Event);
-      await user.type(view.dom, "x");
-    });
+    view.dispatchEvent({ type: "input" } as Event);
+    view.focus();
+    await browser.keys("x");
 
     view.updateState(EditorState.create({ doc: doc(p("uvw")) }));
     expect(view.state.doc).toEqualNode(doc(p("uvw")));
   });
 
-  // JSDOM doesn't seem to implement getTargetRanges on InputEvents, which we use
-  // to implement deletions
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("preserves marks on deletion", async () => {
+  it("preserves marks on deletion", async () => {
     const { view } = tempEditor({ doc: doc(p("one", em("x<a>"))) });
 
-    const user = userEvent.setup();
-
-    await act(async () => {
-      await user.type(view.dom, "[Backspace]");
-      view.dispatchEvent({ type: "input" } as Event);
-      view.dispatch(view.state.tr.insertText("y"));
-    });
+    view.focus();
+    await browser.keys(Key.Backspace);
+    view.dispatchEvent({ type: "input" } as Event);
+    view.dispatch(view.state.tr.insertText("y"));
 
     expect(view.state.doc).toEqualNode(doc(p("one", em("y"))));
   });
 
-  // JSDOM doesn't seem to implement getTargetRanges on InputEvents, which we use
-  // to implement deletions
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("works when a node's contentDOM is deleted", async () => {
+  it("works when a node's contentDOM is deleted", async () => {
     const { view } = tempEditor({ doc: doc(p("one"), pre("two<a>")) });
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "[Backspace>3/]");
-      view.dispatchEvent({ type: "input" } as Event);
-    });
+    view.focus();
+    await browser.keys(Key.Backspace);
+    await browser.keys(Key.Backspace);
+    await browser.keys(Key.Backspace);
+    view.dispatchEvent({ type: "input" } as Event);
     expect(view.state.doc).toEqualNode(doc(p("one"), pre()));
     expect(view.state.selection.head).toBe(6);
   });
@@ -230,10 +193,9 @@ describe("DOM change", () => {
     });
     const bar = await screen.findByText("bar");
     const foo = await screen.findByText("foo");
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "r");
-    });
+    view.focus();
+    await browser.keys("r");
+
     expect(view.state.doc).toEqualNode(
       doc(p("froo", em("bar"), strong("baz")))
     );
@@ -249,10 +211,9 @@ describe("DOM change", () => {
     });
     const bar = await screen.findByText("bar");
     const foo = await screen.findByText("foo");
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "a");
-    });
+    view.focus();
+    await browser.keys("a");
+
     expect(view.state.doc).toEqualNode(
       doc(p("foo", em("baar"), strong("baz")))
     );
@@ -264,10 +225,9 @@ describe("DOM change", () => {
 
   it("maps input to coordsAtPos through pending changes", async () => {
     const { view } = tempEditor({ doc: doc(p("foo")) });
-    act(() => {
-      view.dispatchEvent({ type: "input" } as Event);
-      view.dispatch(view.state.tr.insertText("more text"));
-    });
+    view.dispatchEvent({ type: "input" } as Event);
+    view.dispatch(view.state.tr.insertText("more text"));
+
     expect(view.coordsAtPos(13)).toBeTruthy();
   });
 
@@ -275,10 +235,8 @@ describe("DOM change", () => {
     const { view } = tempEditor({
       doc: doc(p(strong(a("foo<a>"), "bar"))),
     });
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "xy");
-    });
+    view.focus();
+    await browser.keys("xy");
 
     expect(view.state.doc).toEqualNode(doc(p(strong(a("foo"), "xybar"))));
   });
@@ -287,19 +245,15 @@ describe("DOM change", () => {
     const { view } = tempEditor({
       doc: doc(p(a(strong("foo<a>"), "bar"))),
     });
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "q");
-    });
+    view.focus();
+    await browser.keys("q");
+
     expect(view.state.doc).toEqualNode(doc(p(a(strong("fooq"), "bar"))));
     const found = screen.queryByText("\ufeffq");
     expect(found).toBeNull();
   });
 
-  // JSDOM doesn't seem to implement getTargetRanges on InputEvents, which we use
-  // to implement deletions
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("creates a correct step for an ambiguous selection-deletion", async () => {
+  it("creates a correct step for an ambiguous selection-deletion", async () => {
     let steps: Step[];
     const { view } = tempEditor({
       doc: doc(p("la<a>la<b>la")),
@@ -311,10 +265,8 @@ describe("DOM change", () => {
 
     (view as any).input.lastKeyCode = 8;
     (view as any).input.lastKeyCodeTime = Date.now();
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "[Backspace]");
-    });
+    view.focus();
+    await browser.keys(Key.Backspace);
 
     expect(steps!).toHaveLength(1);
     expect((steps![0] as any).from).toBe(3);
@@ -331,23 +283,18 @@ describe("DOM change", () => {
       },
     });
 
-    const user = userEvent.setup();
-    await act(async () => {
-      await user.type(view.dom, "t");
-    });
+    view.focus();
+    await browser.keys("t");
     expect(steps!).toHaveLength(1);
     expect((steps![0] as any).from).toBe(5);
     expect((steps![0] as any).to).toBe(8);
     expect((steps![0] as any).slice.content.toString()).toBe('<"t">');
 
-    act(() => {
-      view.dispatch(
-        view.state.tr.setSelection(TextSelection.create(view.state.doc, 7, 12))
-      );
-    });
-    await act(async () => {
-      await user.type(view.dom, "e");
-    });
+    view.dispatch(
+      view.state.tr.setSelection(TextSelection.create(view.state.doc, 7, 12))
+    );
+    view.focus();
+    await browser.keys("e");
 
     expect(steps!).toHaveLength(1);
     expect((steps![0] as any).from).toBe(7);

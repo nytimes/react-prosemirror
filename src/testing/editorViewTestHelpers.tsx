@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { expect } from "@jest/globals";
 import { render } from "@testing-library/react";
-import { MatcherFunction } from "expect";
+import { expect, MatcherFunction } from "expect";
 import { Node } from "prosemirror-model";
 import { EditorState, TextSelection } from "prosemirror-state";
 import { doc, eq, schema } from "prosemirror-test-builder";
