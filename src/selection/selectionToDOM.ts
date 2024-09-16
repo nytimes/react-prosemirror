@@ -161,13 +161,14 @@ function selectCursorWrapper(view: EditorView) {
   const v = view as InternalView;
   const domSel = v.domSelection(),
     range = document.createRange();
+  if (!domSel) return;
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const node = v.cursorWrapper!.dom,
     img = node.nodeName == "IMG";
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  if (img) range.setEnd(node.parentNode!, domIndex(node) + 1);
-  else range.setEnd(node, 0);
-  range.collapse(false);
+  if (img) range.setStart(node.parentNode!, domIndex(node) + 1);
+  else range.setStart(node, 0);
+  range.collapse(true);
   domSel.removeAllRanges();
   domSel.addRange(range);
   // Kludge to kill 'control selection' in IE11 when selecting an

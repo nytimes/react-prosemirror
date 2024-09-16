@@ -110,6 +110,12 @@ class DecorationGroup implements DecorationSource {
         );
     }
   }
+
+  forEachSet(f: (set: DecorationSet) => void) {
+    for (let i = 0; i < this.members.length; i++)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.members[i]!.forEachSet(f);
+  }
 }
 
 // Used to sort decorations so that ones with a low start position

@@ -1,6 +1,6 @@
 import { Node } from "prosemirror-model";
 import { Mapping } from "prosemirror-transform";
-import { Decoration, DecorationSource } from "prosemirror-view";
+import { Decoration, DecorationSet, DecorationSource } from "prosemirror-view";
 
 export interface InternalDecorationSource {
   /// Map the set of decorations in response to a change in the
@@ -12,6 +12,8 @@ export interface InternalDecorationSource {
   forChild(offset: number, child: Node): DecorationSource;
   /// @internal
   eq(other: DecorationSource): boolean;
+
+  forEachSet(f: (set: DecorationSet) => void): void;
 }
 
 export interface InternalDecorationSet extends InternalDecorationSource {

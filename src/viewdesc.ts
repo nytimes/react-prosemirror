@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { Fragment, Mark, Node, ParseRule } from "prosemirror-model";
+import { Fragment, Mark, Node, TagParseRule } from "prosemirror-model";
 import { Decoration, DecorationSource, EditorView } from "prosemirror-view";
 
 import { browser } from "./browser.js";
@@ -70,7 +70,7 @@ export class ViewDesc {
   // When parsing in-editor content (in domchange.js), we allow
   // descriptions to determine the parse rules that should be used to
   // parse them.
-  parseRule(): ParseRule | null {
+  parseRule(): Omit<TagParseRule, "tag"> | null {
     return null;
   }
 
@@ -710,7 +710,7 @@ export class MarkViewDesc extends ViewDesc {
     super(parent, children, dom, contentDOM);
   }
 
-  parseRule(): ParseRule | null {
+  parseRule() {
     if (this.dirty & NODE_DIRTY || this.mark.type.spec.reparseInView)
       return null;
     return {
@@ -757,14 +757,14 @@ export class NodeViewDesc extends ViewDesc {
     // pass
   }
 
-  parseRule(): ParseRule | null {
+  parseRule() {
     // Experimental kludge to allow opt-in re-parsing of nodes
     if (this.node.type.spec.reparseInView) return null;
     // FIXME the assumption that this can always return the current
     // attrs means that if the user somehow manages to change the
     // attrs in the dom, that won't be picked up. Not entirely sure
     // whether this is a problem
-    const rule: ParseRule = {
+    const rule: Omit<TagParseRule, "tag"> = {
       node: this.node.type.name,
       attrs: this.node.attrs,
     };
@@ -833,12 +833,13 @@ export class NodeViewDesc extends ViewDesc {
 
   // Remove selected node marking from this node.
   deselectNode() {
-    if (this.nodeDOM.nodeType == 1)
+    if (this.nodeDOM.nodeType == 1) {
       (this.nodeDOM as HTMLElement).classList.remove(
         "ProseMirror-selectednode"
       );
-    if (this.contentDOM || !this.node.type.spec.draggable)
-      (this.dom as HTMLElement).removeAttribute("draggable");
+      if (this.contentDOM || !this.node.type.spec.draggable)
+        (this.dom as HTMLElement).removeAttribute("draggable");
+    }
   }
 
   get domAtom() {
@@ -859,7 +860,7 @@ export class TextViewDesc extends NodeViewDesc {
     super(parent, children, node, outerDeco, innerDeco, dom, null, nodeDOM);
   }
 
-  parseRule(): ParseRule {
+  parseRule() {
     let skip = this.nodeDOM.parentNode;
     while (skip && skip != this.dom && !(skip as any).pmIsDeco)
       skip = skip.parentNode;
