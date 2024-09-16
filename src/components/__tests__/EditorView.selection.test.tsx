@@ -1,7 +1,7 @@
 /* eslint-disable jest/no-disabled-tests */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { act } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { Node as PMNode } from "prosemirror-model";
 import { NodeSelection, Selection } from "prosemirror-state";
 import {
@@ -20,15 +20,17 @@ import {
 } from "prosemirror-test-builder";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 
-import {
-  findTextNode,
-  tempEditor,
-} from "../../testing/editorViewTestHelpers.js";
+import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { setupProseMirrorView } from "../../testing/setupProseMirrorView.js";
 
 const img = img_({
   src: "data:image/gif;base64,R0lGODlhBQAFAIABAAAAAP///yH5BAEKAAEALAAAAAAFAAUAAAIEjI+pWAA7",
 });
+
+async function findTextNode(_: HTMLElement, text: string) {
+  const parent = await screen.findByText(text);
+  return parent.firstChild!;
+}
 
 function allPositions(doc: PMNode) {
   const found: number[] = [];
@@ -103,7 +105,7 @@ describe("EditorView", () => {
       setDOMSel(node, offset);
       view.dom.focus();
       act(() => {
-        (view as any).domObserver.flush();
+        view.domObserver.flush();
       });
       const sel = view.state.selection;
       expect(sel.head == null ? sel.from : sel.head).toBe(expected);
@@ -113,8 +115,7 @@ describe("EditorView", () => {
     test(one, 0, 1);
     test(one, 1, 2);
     test(one, 3, 4);
-    // TODO: Not sure why this is broken
-    // test(one.parentNode!, 0, 1);
+    test(one.parentNode!, 0, 1);
     test(one.parentNode!, 1, 4);
     test(two, 0, 8);
     test(two, 3, 11);
@@ -148,7 +149,7 @@ describe("EditorView", () => {
   // implementation, so this test doesn't work.
   // TODO: should we consider running these with puppeteer for
   // better test accuracy?
-  it.skip("returns sensible screen coordinates", () => {
+  it.skip("returns sensible screen coordinates", async () => {
     const { view } = tempEditor({ doc: doc(p("one"), p("two")) });
 
     const p00 = view.coordsAtPos(1);
@@ -171,7 +172,7 @@ describe("EditorView", () => {
     expect(p13.left).toBeGreaterThan(p10.left);
   });
 
-  it.skip("returns proper coordinates in code blocks", () => {
+  it.skip("returns proper coordinates in code blocks", async () => {
     const { view } = tempEditor({ doc: doc(code_block("a\nb\n")) }),
       p = [];
     for (let i = 1; i <= 5; i++) p.push(view.coordsAtPos(i));
@@ -188,7 +189,7 @@ describe("EditorView", () => {
     expect(Math.round(p4!.left)).toBe(Math.round(p2!.left));
   });
 
-  it.skip("produces sensible screen coordinates in corner cases", () => {
+  it.skip("produces sensible screen coordinates in corner cases", async () => {
     const { view } = tempEditor({
       doc: doc(
         p("one", em("two", strong("three"), img), br(), code("foo")),
@@ -211,13 +212,13 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("doesn't return zero-height rectangles after leaves", () => {
+  it.skip("doesn't return zero-height rectangles after leaves", async () => {
     const { view } = tempEditor({ doc: doc(p(img)) });
     const coords = view.coordsAtPos(2, 1);
     expect(coords.bottom - coords.top).toBeGreaterThan(5);
   });
 
-  it.skip("produces horizontal rectangles for positions between blocks", () => {
+  it.skip("produces horizontal rectangles for positions between blocks", async () => {
     const { view } = tempEditor({
       doc: doc(p("ha"), hr(), blockquote(p("ba"))),
     });
@@ -240,7 +241,7 @@ describe("EditorView", () => {
     expect(d.top).toBeLessThan(view.dom.getBoundingClientRect().bottom);
   });
 
-  it.skip("produces sensible screen coordinates around line breaks", () => {
+  it.skip("produces sensible screen coordinates around line breaks", async () => {
     const { view } = tempEditor({
       doc: doc(p("one two three four five-six-seven-eight")),
     });
@@ -281,7 +282,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("can find coordinates on node boundaries", () => {
+  it.skip("can find coordinates on node boundaries", async () => {
     const { view } = tempEditor({
       doc: doc(p("one ", em("two"), " ", em(strong("three")))),
     });
@@ -298,7 +299,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("finds proper coordinates in RTL text", () => {
+  it.skip("finds proper coordinates in RTL text", async () => {
     const { view } = tempEditor({ doc: doc(p("مرآة نثرية")) });
     view.dom.style.direction = "rtl";
     let prev: { left: number; top: number; right: number; bottom: number };
@@ -314,7 +315,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("can go back and forth between screen coordsa and document positions", () => {
+  it.skip("can go back and forth between screen coordsa and document positions", async () => {
     const { view } = tempEditor({
       doc: doc(p("one"), blockquote(p("two"), p("three"))),
     });
@@ -328,7 +329,7 @@ describe("EditorView", () => {
     });
   });
 
-  it.skip("returns correct screen coordinates for wrapped lines", () => {
+  it.skip("returns correct screen coordinates for wrapped lines", async () => {
     const { view } = tempEditor({});
     const top = view.coordsAtPos(1);
     let pos = 1,
@@ -346,7 +347,7 @@ describe("EditorView", () => {
     ).toBe(pos);
   });
 
-  it("makes arrow motion go through selectable inline nodes", () => {
+  it("makes arrow motion go through selectable inline nodes", async () => {
     const { view } = tempEditor({ doc: doc(p("foo<a>", img, "bar")) });
     act(() => {
       view.dispatchEvent(event(RIGHT));
@@ -368,7 +369,7 @@ describe("EditorView", () => {
     expect(view.state.selection.anchor).toBe(4);
   });
 
-  it("makes arrow motion go through selectable block nodes", () => {
+  it("makes arrow motion go through selectable block nodes", async () => {
     const { view } = tempEditor({
       doc: doc(p("hello<a>"), hr(), ul(li(p("there")))),
     });
@@ -383,7 +384,7 @@ describe("EditorView", () => {
     expect(view.state.selection.from).toBe(7);
   });
 
-  it("supports arrow motion through adjacent blocks", () => {
+  it("supports arrow motion through adjacent blocks", async () => {
     const { view } = tempEditor({
       doc: doc(blockquote(p("hello<a>")), hr(), hr(), p("there")),
     });
@@ -406,7 +407,7 @@ describe("EditorView", () => {
     expect(view.state.selection.from).toBe(9);
   });
 
-  it("support horizontal motion through blocks", () => {
+  it("support horizontal motion through blocks", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo<a>"), hr(), hr(), p("bar")),
     });
@@ -436,7 +437,7 @@ describe("EditorView", () => {
     expect(view.state.selection.head).toBe(4);
   });
 
-  it("allows moving directly from an inline node to a block node", () => {
+  it("allows moving directly from an inline node to a block node", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo", img), hr(), p(img, "bar")),
     });
@@ -452,7 +453,7 @@ describe("EditorView", () => {
     expect(view.state.selection.from).toBe(6);
   });
 
-  it("updates the selection even if the DOM parameters look unchanged", () => {
+  it("updates the selection even if the DOM parameters look unchanged", async () => {
     const { view, rerender } = tempEditor({ doc: doc(p("foobar<a>")) });
     view.focus();
     const decos = DecorationSet.create(view.state.doc, [
@@ -478,7 +479,7 @@ describe("EditorView", () => {
     expect(range.toString()).toBe("foobar");
   });
 
-  it("sets selection even if Selection.extend throws DOMException", () => {
+  it("sets selection even if Selection.extend throws DOMException", async () => {
     const originalExtend = window.Selection.prototype.extend;
     window.Selection.prototype.extend = () => {
       // declare global: DOMException
@@ -498,7 +499,7 @@ describe("EditorView", () => {
     }
   });
 
-  it("doesn't put the cursor after BR hack nodes", () => {
+  it("doesn't put the cursor after BR hack nodes", async () => {
     const { view } = tempEditor({ doc: doc(p()) });
     view.focus();
     expect(getSelection()!.focusOffset).toBe(0);

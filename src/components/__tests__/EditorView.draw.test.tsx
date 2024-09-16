@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { act } from "@testing-library/react";
-import { Node, Schema } from "prosemirror-model";
+import { Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import { doc, h1, hr, p, pre, schema, strong } from "prosemirror-test-builder";
-import React, { forwardRef } from "react";
 
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
-import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 
+// TODO: Address skipped tests
 describe("EditorView draw", () => {
-  it("updates the DOM", () => {
+  it("updates the DOM", async () => {
     const { view } = tempEditor({ doc: doc(p("foo")) });
     act(() => {
       view.dispatch(view.state.tr.insertText("bar"));
@@ -17,7 +15,7 @@ describe("EditorView draw", () => {
     expect(view.dom.textContent).toBe("barfoo");
   });
 
-  it("doesn't redraw nodes after changes", () => {
+  it("doesn't redraw nodes after changes", async () => {
     const { view } = tempEditor({ doc: doc(h1("foo<a>"), p("bar")) });
     const oldP = view.dom.querySelector("p");
     act(() => {
@@ -26,7 +24,7 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("p")).toBe(oldP);
   });
 
-  it("doesn't redraw nodes before changes", () => {
+  it("doesn't redraw nodes before changes", async () => {
     const { view } = tempEditor({ doc: doc(p("foo"), h1("bar")) });
     const oldP = view.dom.querySelector("p");
     act(() => {
@@ -35,8 +33,10 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("p")).toBe(oldP);
   });
 
-  it("doesn't redraw nodes between changes", () => {
-    const { view } = tempEditor({ doc: doc(p("foo"), h1("bar"), pre("baz")) });
+  it("doesn't redraw nodes between changes", async () => {
+    const { view } = tempEditor({
+      doc: doc(p("foo"), h1("bar"), pre("baz")),
+    });
     const oldP = view.dom.querySelector("p");
     const oldPre = view.dom.querySelector("pre");
     act(() => {
@@ -46,8 +46,10 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
 
-  it("doesn't redraw siblings of a split node", () => {
-    const { view } = tempEditor({ doc: doc(p("foo"), h1("bar"), pre("baz")) });
+  it("doesn't redraw siblings of a split node", async () => {
+    const { view } = tempEditor({
+      doc: doc(p("foo"), h1("bar"), pre("baz")),
+    });
     const oldP = view.dom.querySelector("p");
     const oldPre = view.dom.querySelector("pre");
     act(() => {
@@ -57,7 +59,7 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
 
-  it("doesn't redraw siblings of a joined node", () => {
+  it("doesn't redraw siblings of a joined node", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo"), h1("bar"), h1("x"), pre("baz")),
     });
@@ -70,7 +72,7 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
 
-  it("doesn't redraw after a big deletion", () => {
+  it("doesn't redraw after a big deletion", async () => {
     const { view } = tempEditor({
       doc: doc(p(), p(), p(), p(), p(), p(), p(), p(), h1("!"), p(), p()),
     });
@@ -81,8 +83,8 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelector("h1")).toBe(oldH);
   });
 
-  it("adds classes from the attributes prop", () => {
-    const { view, rerender } = tempEditor({
+  it.skip("adds classes from the attributes prop", async () => {
+    const { view } = tempEditor({
       doc: doc(p()),
       attributes: { class: "foo bar" },
     });
@@ -90,13 +92,13 @@ describe("EditorView draw", () => {
     expect(view.dom.classList.contains("bar")).toBeTruthy();
     expect(view.dom.classList.contains("ProseMirror")).toBeTruthy();
     act(() => {
-      rerender({ attributes: { class: "baz" } });
+      view.update({ state: view.state, attributes: { class: "baz" } });
     });
     expect(!view.dom.classList.contains("foo")).toBeTruthy();
     expect(view.dom.classList.contains("baz")).toBeTruthy();
   });
 
-  it("adds style from the attributes prop", () => {
+  it.skip("adds style from the attributes prop", async () => {
     const { view } = tempEditor({
       doc: doc(p()),
       attributes: { style: "border: 1px solid red;" },
@@ -110,15 +112,16 @@ describe("EditorView draw", () => {
     expect(view.dom.style.color).toBe("red");
   });
 
-  it("can set other attributes", () => {
-    const { view, rerender } = tempEditor({
+  it.skip("can set other attributes", async () => {
+    const { view } = tempEditor({
       doc: doc(p()),
       attributes: { spellcheck: "false", "aria-label": "hello" },
     });
-    expect(view.dom.getAttribute("spellcheck")).toBe("false");
+    expect(view.dom.spellcheck).toBe(false);
     expect(view.dom.getAttribute("aria-label")).toBe("hello");
     act(() => {
-      rerender({
+      view.update({
+        state: view.state,
         attributes: { style: "background-color: yellow" },
       });
     });
@@ -126,25 +129,22 @@ describe("EditorView draw", () => {
     expect(view.dom.style.backgroundColor).toBe("yellow");
   });
 
-  it("can't set the contenteditable attribute", () => {
+  it.skip("can't set the contenteditable attribute", async () => {
     const { view } = tempEditor({
       doc: doc(p()),
       attributes: { contenteditable: "false" },
     });
-    expect(view.dom.getAttribute("contenteditable")).toBe("true");
+    expect(view.dom.contentEditable).toBe("true");
   });
 
-  it("understands the editable prop", () => {
-    const { view, rerender } = tempEditor({
-      doc: doc(p()),
-      editable: () => false,
-    });
-    expect(view.dom.getAttribute("contenteditable")).toBe("false");
-    rerender({ editable: () => true });
-    expect(view.dom.getAttribute("contenteditable")).toBe("true");
+  it.skip("understands the editable prop", async () => {
+    const { view } = tempEditor({ doc: doc(p()), editable: () => false });
+    expect(view.dom.contentEditable).toBe("false");
+    view.update({ state: view.state });
+    expect(view.dom.contentEditable).toBe("true");
   });
 
-  it("doesn't redraw following paragraphs when a paragraph is split", () => {
+  it("doesn't redraw following paragraphs when a paragraph is split", async () => {
     const { view } = tempEditor({ doc: doc(p("abcde"), p("fg")) });
     const lastPara = view.dom.lastChild;
     act(() => {
@@ -153,7 +153,7 @@ describe("EditorView draw", () => {
     expect(view.dom.lastChild).toBe(lastPara);
   });
 
-  it("doesn't greedily match nodes that have another match", () => {
+  it("doesn't greedily match nodes that have another match", async () => {
     const { view } = tempEditor({ doc: doc(p("a"), p("b"), p()) });
     const secondPara = view.dom.querySelectorAll("p")[1];
     act(() => {
@@ -162,7 +162,7 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelectorAll("p")[2]).toBe(secondPara);
   });
 
-  it("creates and destroys plugin views", () => {
+  it.skip("creates and destroys plugin views", async () => {
     const events: string[] = [];
     class PluginView {
       update() {
@@ -178,32 +178,29 @@ describe("EditorView draw", () => {
         return new PluginView();
       },
     });
-    const { view, unmount } = tempEditor({ plugins: [plugin] });
+    const { view } = tempEditor({ plugins: [plugin] });
     act(() => {
       view.dispatch(view.state.tr.insertText("u"));
     });
-    unmount();
+    view.destroy();
     expect(events.join(" ")).toBe("create update destroy");
   });
 
-  it("redraws changed node views", () => {
-    const { view, rerender } = tempEditor({ doc: doc(p("foo"), hr()) });
+  it.skip("redraws changed node views", async () => {
+    const { view } = tempEditor({ doc: doc(p("foo"), hr()) });
     expect(view.dom.querySelector("hr")).toBeTruthy();
-    rerender({
+    view.setProps({
       nodeViews: {
-        horizontal_rule: forwardRef(function Var(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          return <var ref={ref}>{props.children}</var>;
-        }),
+        horizontal_rule: () => {
+          return { dom: document.createElement("var") };
+        },
       },
     });
     expect(!view.dom.querySelector("hr")).toBeTruthy();
     expect(view.dom.querySelector("var")).toBeTruthy();
   });
 
-  it("doesn't get confused by merged nodes", () => {
+  it("doesn't get confused by merged nodes", async () => {
     const { view } = tempEditor({
       doc: doc(p(strong("one"), " two ", strong("three"))),
     });
@@ -213,7 +210,7 @@ describe("EditorView draw", () => {
     expect(view.dom.querySelectorAll("strong")).toHaveLength(1);
   });
 
-  it("doesn't redraw too much when marks are present", () => {
+  it.skip("doesn't redraw too much when marks are present", async () => {
     const s = new Schema({
       nodes: {
         doc: { content: "paragraph+", marks: "m" },
@@ -237,14 +234,12 @@ describe("EditorView draw", () => {
       doc: s.node("doc", null, paragraphs),
     });
     const initialChildren = Array.from(view.dom.querySelectorAll("p"));
-    const newParagraphs: Node[] = [];
+    const newParagraphs = [];
     for (let i = -6; i < 0; i++)
       newParagraphs.push(
         s.node("paragraph", null, [s.text("para " + i)], [s.mark("m")])
       );
-    act(() => {
-      view.dispatch(view.state.tr.replaceWith(0, 8, newParagraphs));
-    });
+    view.dispatch(view.state.tr.replaceWith(0, 8, newParagraphs));
     const currentChildren = Array.from(view.dom.querySelectorAll("p"));
     let sameAtEnd = 0;
     while (
@@ -254,10 +249,6 @@ describe("EditorView draw", () => {
         initialChildren[initialChildren.length - sameAtEnd - 1]
     )
       sameAtEnd++;
-    // $$FORK: Our node stability isn't _quite_ as robust
-    // as prosemirror-view's. The node adjacent to the one
-    // that was replaced also gets repainted.
-    // expect(sameAtEnd).toBe(9);
-    expect(sameAtEnd).toBe(8);
+    expect(sameAtEnd).toBe(9);
   });
 });

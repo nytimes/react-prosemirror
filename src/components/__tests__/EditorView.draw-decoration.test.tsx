@@ -34,7 +34,7 @@ import { widget } from "../../decorations/ReactWidgetType.js";
 import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
-import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
+import { WidgetComponentProps } from "../WidgetComponentProps.js";
 
 const Widget = forwardRef<HTMLElement>(function Widget(props, ref) {
   return (
@@ -57,17 +57,10 @@ function decoPlugin(decos: readonly (string | Decoration)[]) {
   return new Plugin({
     state: {
       init(config) {
-        return config.doc
-          ? DecorationSet.create(config.doc, decos.map(make))
-          : DecorationSet.empty;
+        return DecorationSet.create(config.doc!, decos.map(make));
       },
       apply(tr, set, state) {
-        if (tr.docChanged) {
-          if (set === DecorationSet.empty) {
-            set = DecorationSet.create(tr.doc, decos.map(make));
-          }
-          set = set.map(tr.mapping, tr.doc);
-        }
+        if (tr.docChanged) set = set.map(tr.mapping, tr.doc);
         const change = tr.getMeta("updateDecorations");
         if (change) {
           if (change.remove) set = set.remove(change.remove);
@@ -93,7 +86,7 @@ function updateDeco(
 }
 
 describe("Decoration drawing", () => {
-  it("draws inline decorations", () => {
+  it("draws inline decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["2-5-foo"])],
@@ -103,7 +96,7 @@ describe("Decoration drawing", () => {
     expect(found.textContent).toBe("oob");
   });
 
-  it("draws wrapping decorations", () => {
+  it("draws wrapping decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin([Decoration.inline(1, 5, { nodeName: "i" })])],
@@ -112,7 +105,7 @@ describe("Decoration drawing", () => {
     expect(found && found.innerHTML).toBe("foo");
   });
 
-  it("draws node decorations", () => {
+  it("draws node decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo"), p("bar")),
       plugins: [decoPlugin([Decoration.node(5, 10, { class: "cls" })])],
@@ -123,7 +116,7 @@ describe("Decoration drawing", () => {
     expect(found[0]!.previousSibling!.nodeName).toBe("P");
   });
 
-  it("can update multi-level wrapping decorations", () => {
+  it("can update multi-level wrapping decorations", async () => {
     const d2 = Decoration.inline(1, 5, { nodeName: "i", class: "b" });
     const { view } = tempEditor({
       doc: doc(p("hello")),
@@ -152,12 +145,12 @@ describe("Decoration drawing", () => {
     ).toBe("a,c");
   });
 
-  it("draws overlapping inline decorations", () => {
+  it("draws overlapping inline decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("abcdef")),
       plugins: [decoPlugin(["3-5-foo", "4-6-bar", "1-7-baz"])],
     });
-    const baz = view.dom.querySelectorAll(".baz") as unknown as HTMLElement[];
+    const baz = view.dom.querySelectorAll(".baz") as any as HTMLElement[];
     expect(baz).toHaveLength(5);
     expect(Array.prototype.map.call(baz, (x) => x.textContent).join("-")).toBe(
       "ab-c-d-e-f"
@@ -170,28 +163,26 @@ describe("Decoration drawing", () => {
     expect(classes(baz[3]!)).toBe("bar baz");
   });
 
-  it("draws multiple widgets", () => {
+  it("draws multiple widgets", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["1-widget", "4-widget", "7-widget"])],
     });
-    const found = view.dom.querySelectorAll(
-      "button"
-    ) as unknown as HTMLElement[];
+    const found = view.dom.querySelectorAll("button") as any as HTMLElement[];
     expect(found).toHaveLength(3);
     expect(found[0]!.nextSibling!.textContent).toBe("foo");
     expect(found[1]!.nextSibling!.textContent).toBe("bar");
     expect(found[2]!.previousSibling!.textContent).toBe("bar");
   });
 
-  it("orders widgets by their side option", () => {
+  it("orders widgets by their side option", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [
         decoPlugin([
           widget(
             4,
-            forwardRef<HTMLSpanElement>(function B(props, ref) {
+            forwardRef(function B(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   B
@@ -202,7 +193,7 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef<HTMLSpanElement>(function A(props, ref) {
+            forwardRef(function A(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   A
@@ -213,7 +204,7 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef<HTMLSpanElement>(function C(props, ref) {
+            forwardRef(function C(props, ref) {
               return (
                 <span ref={ref} {...props}>
                   C
@@ -228,7 +219,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.textContent).toBe("fooABCbar");
   });
 
-  it("draws a widget in an empty node", () => {
+  it("draws a widget in an empty node", async () => {
     const { view } = tempEditor({
       doc: doc(p()),
       plugins: [decoPlugin(["1-widget"])],
@@ -236,7 +227,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll("button")).toHaveLength(1);
   });
 
-  it("draws widgets on node boundaries", () => {
+  it("draws widgets on node boundaries", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin(["4-widget"])],
@@ -244,7 +235,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll("button")).toHaveLength(1);
   });
 
-  it("draws decorations from multiple plugins", () => {
+  it("draws decorations from multiple plugins", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin(["2-widget"]), decoPlugin(["6-widget"])],
@@ -252,7 +243,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll("button")).toHaveLength(2);
   });
 
-  it("calls widget destroy methods", () => {
+  it("calls widget destroy methods", async () => {
     let destroyed = false;
     const DestroyableWidget = forwardRef<HTMLElement>(
       function DestroyableWidget(props, ref) {
@@ -278,7 +269,7 @@ describe("Decoration drawing", () => {
     expect(destroyed).toBeTruthy();
   });
 
-  it("draws inline decorations spanning multiple parents", () => {
+  it("draws inline decorations spanning multiple parents", async () => {
     const { view } = tempEditor({
       doc: doc(p("long first ", em("p"), "aragraph"), p("two")),
       plugins: [decoPlugin(["7-25-foo"])],
@@ -291,7 +282,7 @@ describe("Decoration drawing", () => {
     expect(foos[3]!.textContent).toBe("tw");
   });
 
-  it("draws inline decorations across empty paragraphs", () => {
+  it("draws inline decorations across empty paragraphs", async () => {
     const { view } = tempEditor({
       doc: doc(p("first"), p(), p("second")),
       plugins: [decoPlugin(["3-12-foo"])],
@@ -302,7 +293,7 @@ describe("Decoration drawing", () => {
     expect(foos[1]!.textContent).toBe("se");
   });
 
-  it("can handle inline decorations ending at the start or end of a node", () => {
+  it("can handle inline decorations ending at the start or end of a node", async () => {
     const { view } = tempEditor({
       doc: doc(p(), p()),
       plugins: [decoPlugin(["1-3-foo"])],
@@ -310,7 +301,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".foo")).toBeNull();
   });
 
-  it("can draw decorations with multiple classes", () => {
+  it("can draw decorations with multiple classes", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin(["1-4-foo bar"])],
@@ -319,7 +310,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll(".bar")).toHaveLength(1);
   });
 
-  it("supports overlapping inline decorations", () => {
+  it("supports overlapping inline decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["1-3-foo", "2-5-bar"])],
@@ -334,7 +325,7 @@ describe("Decoration drawing", () => {
     expect(bars[1]!.textContent).toBe("ob");
   });
 
-  it("doesn't redraw when irrelevant decorations change", () => {
+  it("doesn't redraw when irrelevant decorations change", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo"), p("baz")),
       plugins: [decoPlugin(["7-8-foo"])],
@@ -347,7 +338,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".bar")).not.toBeNull();
   });
 
-  it("doesn't redraw when irrelevant content changes", () => {
+  it("doesn't redraw when irrelevant content changes", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo"), p("baz")),
       plugins: [decoPlugin(["7-8-foo"])],
@@ -360,7 +351,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.lastChild).toBe(para2);
   });
 
-  it("can add a widget on a node boundary", () => {
+  it("can add a widget on a node boundary", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin([])],
@@ -371,7 +362,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll("button")).toHaveLength(1);
   });
 
-  it("can remove a widget on a node boundary", () => {
+  it("can remove a widget on a node boundary", async () => {
     const dec = make("4-widget");
     const { view } = tempEditor({
       doc: doc(p("foo", em("bar"))),
@@ -383,7 +374,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("button")).toBeNull();
   });
 
-  it("can remove the class from a text node", () => {
+  it("can remove the class from a text node", async () => {
     const dec = make("1-4-foo");
     const { view } = tempEditor({
       doc: doc(p("abc")),
@@ -396,7 +387,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".foo")).toBeNull();
   });
 
-  it("can remove the class from part of a text node", () => {
+  it("can remove the class from part of a text node", async () => {
     const dec = make("2-4-foo");
     const { view } = tempEditor({
       doc: doc(p("abcd")),
@@ -410,7 +401,7 @@ describe("Decoration drawing", () => {
     expect((view.dom.firstChild as HTMLElement).innerHTML).toBe("abcd");
   });
 
-  it("can change the class for part of a text node", () => {
+  it("can change the class for part of a text node", async () => {
     const dec = make("2-4-foo");
     const { view } = tempEditor({
       doc: doc(p("abcd")),
@@ -424,7 +415,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".bar")).not.toBeNull();
   });
 
-  it("draws a widget added in the middle of a text node", () => {
+  it("draws a widget added in the middle of a text node", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin([])],
@@ -435,7 +426,7 @@ describe("Decoration drawing", () => {
     expect((view.dom.firstChild as HTMLElement).textContent).toBe("foωo");
   });
 
-  it("can update a text node around a widget", () => {
+  it("can update a text node around a widget", async () => {
     const { view } = tempEditor({
       doc: doc(p("bar")),
       plugins: [decoPlugin(["3-widget"])],
@@ -447,7 +438,7 @@ describe("Decoration drawing", () => {
     expect((view.dom.firstChild as HTMLElement).textContent).toBe("aωr");
   });
 
-  it("can update a text node with an inline decoration", () => {
+  it("can update a text node with an inline decoration", async () => {
     const { view } = tempEditor({
       doc: doc(p("bar")),
       plugins: [decoPlugin(["1-3-foo"])],
@@ -461,7 +452,7 @@ describe("Decoration drawing", () => {
     expect(foo.nextSibling!.textContent).toBe("r");
   });
 
-  it("correctly redraws a partially decorated node when a widget is added", () => {
+  it("correctly redraws a partially decorated node when a widget is added", async () => {
     const { view } = tempEditor({
       doc: doc(p("one", em("two"))),
       plugins: [decoPlugin(["1-6-foo"])],
@@ -475,7 +466,7 @@ describe("Decoration drawing", () => {
     expect(foos[1]!.textContent).toBe("tw");
   });
 
-  it("correctly redraws when skipping split text node", () => {
+  it("correctly redraws when skipping split text node", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       plugins: [decoPlugin(["3-widget", "3-4-foo"])],
@@ -486,7 +477,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelectorAll("button")).toHaveLength(2);
   });
 
-  it("drops removed node decorations from the view", () => {
+  it("drops removed node decorations from the view", async () => {
     const deco = Decoration.node(1, 6, { class: "cls" });
     const { view } = tempEditor({
       doc: doc(blockquote(p("foo"), p("bar"))),
@@ -498,7 +489,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector(".cls")).toBeNull();
   });
 
-  it("can update a node's attributes without replacing the node", () => {
+  it("can update a node's attributes without replacing the node", async () => {
     const deco = Decoration.node(0, 5, { title: "title", class: "foo" });
     const { view } = tempEditor({
       doc: doc(p("foo")),
@@ -513,7 +504,7 @@ describe("Decoration drawing", () => {
     expect(para.title).toBeFalsy();
   });
 
-  it("can add and remove CSS custom properties from a node", () => {
+  it("can add and remove CSS custom properties from a node", async () => {
     const deco = Decoration.node(0, 5, { style: "--my-custom-property:36px" });
     const { view } = tempEditor({
       doc: doc(p("foo")),
@@ -534,7 +525,7 @@ describe("Decoration drawing", () => {
     ).toBe("");
   });
 
-  it("updates decorated nodes even if a widget is added before them", () => {
+  it("updates decorated nodes even if a widget is added before them", async () => {
     const { view } = tempEditor({
       doc: doc(p("a"), p("b")),
       plugins: [decoPlugin([])],
@@ -549,7 +540,7 @@ describe("Decoration drawing", () => {
     expect(lastP!.style.color).toBe("red");
   });
 
-  it("doesn't redraw nodes when a widget before them is replaced", () => {
+  it("doesn't redraw nodes when a widget before them is replaced", async () => {
     const w0 = make("3-widget");
     const { view } = tempEditor({
       doc: doc(h1("a"), p("b")),
@@ -569,7 +560,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("p")).toBe(initialP);
   });
 
-  it("can add and remove inline style", () => {
+  it("can add and remove inline style", async () => {
     const deco = Decoration.inline(1, 6, {
       style: "color: rgba(0,10,200,.4); text-decoration: underline",
     });
@@ -589,7 +580,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("img")!.style.textDecoration).toBe("");
   });
 
-  it("passes decorations to a node view", () => {
+  it("passes decorations to a node view", async () => {
     let current = "";
     const { view } = tempEditor({
       doc: doc(p("foo"), hr()),
@@ -599,7 +590,7 @@ describe("Decoration drawing", () => {
           props: NodeViewComponentProps,
           ref
         ) {
-          current = props.nodeProps.decorations.map((d) => d.spec.name).join();
+          current = props.decorations.map((d) => d.spec.name).join();
           return <hr ref={ref as LegacyRef<HTMLHRElement>} />;
         }),
       },
@@ -622,15 +613,17 @@ describe("Decoration drawing", () => {
     expect(current).toBe("b,c");
   });
 
-  it("draws the specified marks around a widget", () => {
+  it("draws the specified marks around a widget", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [
         decoPlugin([
           widget(
             4,
-            forwardRef<HTMLImageElement>(function Img(props, ref) {
-              return <img {...props} ref={ref} />;
+            forwardRef(function Img(props, ref) {
+              return (
+                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
+              );
             }),
             {
               marks: [schema.mark("em")],
@@ -643,15 +636,17 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("em img")).not.toBeNull();
   });
 
-  it("draws widgets inside the marks for their side", () => {
+  it("draws widgets inside the marks for their side", async () => {
     const { view } = tempEditor({
       doc: doc(p(em("foo"), strong("bar"))),
       plugins: [
         decoPlugin([
           widget(
             4,
-            forwardRef<HTMLImageElement>(function Img(props, ref) {
-              return <img {...props} ref={ref} />;
+            forwardRef(function Img(props, ref) {
+              return (
+                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
+              );
             }),
             { side: -1, key: "img-widget" }
           ),
@@ -659,8 +654,8 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef<HTMLBRElement>(function BR(props, ref) {
-              return <br {...props} ref={ref} />;
+            forwardRef(function BR(props, ref) {
+              return <br {...props} ref={ref as LegacyRef<HTMLBRElement>} />;
             }),
             { key: "br-widget" }
           ),
@@ -668,7 +663,7 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             7,
-            forwardRef<HTMLSpanElement>(function Span(props, ref) {
+            forwardRef(function Span(props, ref) {
               return <span {...props} ref={ref} />;
             }),
             { side: 1, key: "span-widget" }
@@ -683,12 +678,18 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("strong span")).toBeNull();
   });
 
-  it("draws decorations inside node views", () => {
+  it("draws decorations inside node views", async () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
-          { nodeProps, children, ...props }: NodeViewComponentProps,
+          {
+            decorations,
+            innerDecorations,
+            isSelected,
+            children,
+            ...props
+          }: NodeViewComponentProps,
           ref
         ) {
           return (
@@ -702,8 +703,10 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             2,
-            forwardRef<HTMLImageElement>(function Img(props, ref) {
-              return <img {...props} ref={ref} />;
+            forwardRef(function Img(props, ref) {
+              return (
+                <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
+              );
             }),
             { key: "img-widget" }
           ),
@@ -713,16 +716,16 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("img")).not.toBeNull();
   });
 
-  it("can delay widget drawing to render time", () => {
+  it("can delay widget drawing to render time", async () => {
     const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef<HTMLSpanElement>(function Span(props, ref) {
+            forwardRef(function Span(props, ref) {
               useEditorEffect((view) => {
-                expect(view?.state).toBe(state);
+                expect(view.state).toBe(state);
               });
               return (
                 <span {...props} ref={ref}>
@@ -738,23 +741,24 @@ describe("Decoration drawing", () => {
     expect(view.dom.textContent).toBe("hi!");
   });
 
-  it("supports widgets querying their own position", () => {
+  it("supports widgets querying their own position", async () => {
     tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef<HTMLButtonElement, WidgetViewComponentProps>(
-              function Widget({ pos, ...props }, ref) {
-                expect(pos).toBe(3);
-                return (
-                  <button ref={ref} {...props}>
-                    ω
-                  </button>
-                );
-              }
-            ),
+            forwardRef(function Widget(
+              { pos, ...props }: WidgetComponentProps,
+              ref
+            ) {
+              expect(pos).toBe(3);
+              return (
+                <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
+                  ω
+                </button>
+              );
+            }),
             { key: "button-widget" }
           ),
         ]);
@@ -762,7 +766,7 @@ describe("Decoration drawing", () => {
     });
   });
 
-  it("doesn't redraw widgets with matching keys", () => {
+  it("doesn't redraw widgets with matching keys", async () => {
     const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
@@ -778,7 +782,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("button")).toBe(widgetDOM);
   });
 
-  it("doesn't redraw widgets with identical specs", () => {
+  it("doesn't redraw widgets with identical specs", async () => {
     const { view } = tempEditor({
       doc: doc(p("hi")),
       decorations(state) {
@@ -794,7 +798,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.querySelector("button")).toBe(widgetDOM);
   });
 
-  it("doesn't get confused by split text nodes", () => {
+  it("doesn't get confused by split text nodes", async () => {
     const { view } = tempEditor({
       doc: doc(p("abab")),
       decorations(state) {
@@ -814,7 +818,7 @@ describe("Decoration drawing", () => {
     expect(view.dom.textContent).toBe("abab");
   });
 
-  it("only draws inline decorations on the innermost level", () => {
+  it("only draws inline decorations on the innermost level", async () => {
     const s = new Schema({
       nodes: {
         doc: { content: "(text | thing)*" },
@@ -846,7 +850,7 @@ describe("Decoration drawing", () => {
     expect(styled[1]!.parentNode!.nodeName).toBe("STRONG");
   });
 
-  it("can handle nodeName decoration overlapping with classes", () => {
+  it("can handle nodeName decoration overlapping with classes", async () => {
     const { view } = tempEditor({
       doc: doc(p("one two three")),
       plugins: [
@@ -861,7 +865,7 @@ describe("Decoration drawing", () => {
     );
   });
 
-  it("can handle combining decorations from parent editors in child editors", () => {
+  it("can handle combining decorations from parent editors in child editors", async () => {
     let decosFromFirstEditor: DecorationSource | undefined;
     let { view } = tempEditor({
       doc: doc(p("one two three")),
@@ -871,10 +875,17 @@ describe("Decoration drawing", () => {
       ],
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
-          { nodeProps, children, ...props }: NodeViewComponentProps,
+          {
+            decorations,
+            innerDecorations,
+            isSelected,
+            children,
+            ...props
+          }: NodeViewComponentProps,
           ref
         ) {
-          decosFromFirstEditor = nodeProps.innerDecorations;
+          // @ts-expect-error Don't worry about it
+          decosFromFirstEditor = innerDecorations;
           return (
             <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
               {children}

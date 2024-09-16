@@ -39,7 +39,7 @@ export type Props = Omit<UseEditorOptions, "nodeViews"> & {
   };
 };
 
-export function ProseMirror({
+function ProseMirrorInner({
   className,
   children,
   nodeViews = {},
@@ -62,27 +62,33 @@ export function ProseMirror({
   const outerDecos = editor.view ? computeDocDeco(editor.view) : [];
 
   return (
-    <LayoutGroup>
-      <EditorContext.Provider value={editor}>
-        <NodeViewContext.Provider
+    <EditorContext.Provider value={editor}>
+      <NodeViewContext.Provider
+        value={{
+          nodeViews,
+        }}
+      >
+        <DocNodeViewContext.Provider
           value={{
-            nodeViews,
+            className: className,
+            setMount: setMount,
+            node: editor.view?.state.doc,
+            innerDeco: innerDecos,
+            outerDeco: outerDecos,
+            viewDesc: editor.docViewDescRef.current,
           }}
         >
-          <DocNodeViewContext.Provider
-            value={{
-              className: className,
-              setMount: setMount,
-              node: editor.view?.state.doc,
-              innerDeco: innerDecos,
-              outerDeco: outerDecos,
-              viewDesc: editor.docViewDescRef.current,
-            }}
-          >
-            {children}
-          </DocNodeViewContext.Provider>
-        </NodeViewContext.Provider>
-      </EditorContext.Provider>
+          {children}
+        </DocNodeViewContext.Provider>
+      </NodeViewContext.Provider>
+    </EditorContext.Provider>
+  );
+}
+
+export function ProseMirror(props: Props) {
+  return (
+    <LayoutGroup>
+      <ProseMirrorInner {...props} />
     </LayoutGroup>
   );
 }
