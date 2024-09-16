@@ -21,7 +21,9 @@ export function cssToStyles(css: string) {
   for (let i = 0; i < declaration.length; i++) {
     const property = declaration.item(i);
     const value = declaration.getPropertyValue(property);
-    const camelCasePropertyName = kebabCaseToCamelCase(property);
+    const camelCasePropertyName = property.startsWith("--")
+      ? property
+      : kebabCaseToCamelCase(property);
     styles[camelCasePropertyName] = value;
   }
 

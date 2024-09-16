@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 
 // TODO: figure out whether it's possible to support native
@@ -8,7 +9,6 @@
 // For now, we've updated the factory in this file to use
 // our React widgets.
 
-import { act } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
 import { Plugin, TextSelection } from "prosemirror-state";
 import {
@@ -34,7 +34,7 @@ import { widget } from "../../decorations/ReactWidgetType.js";
 import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
-import { WidgetComponentProps } from "../WidgetComponentProps.js";
+import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
 
 const Widget = forwardRef<HTMLElement>(function Widget(props, ref) {
   return (
@@ -57,7 +57,9 @@ function decoPlugin(decos: readonly (string | Decoration)[]) {
   return new Plugin({
     state: {
       init(config) {
-        return DecorationSet.create(config.doc!, decos.map(make));
+        return config.doc
+          ? DecorationSet.create(config.doc, decos.map(make))
+          : DecorationSet.empty;
       },
       apply(tr, set, state) {
         if (tr.docChanged) set = set.map(tr.mapping, tr.doc);
@@ -128,13 +130,11 @@ describe("Decoration drawing", () => {
       ],
     });
     expect(view.dom.querySelectorAll("i")).toHaveLength(2);
-    act(() => {
-      updateDeco(
-        view,
-        [Decoration.inline(1, 5, { nodeName: "i", class: "c" })],
-        [d2]
-      );
-    });
+    updateDeco(
+      view,
+      [Decoration.inline(1, 5, { nodeName: "i", class: "c" })],
+      [d2]
+    );
     const iNodes = view.dom.querySelectorAll("i");
     expect(iNodes).toHaveLength(2);
     expect(
@@ -182,7 +182,10 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function B(props, ref) {
+            forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function B(
+              props,
+              ref
+            ) {
               return (
                 <span ref={ref} {...props}>
                   B
@@ -193,7 +196,10 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef(function A(props, ref) {
+            forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function A(
+              props,
+              ref
+            ) {
               return (
                 <span ref={ref} {...props}>
                   A
@@ -204,7 +210,10 @@ describe("Decoration drawing", () => {
           ),
           widget(
             4,
-            forwardRef(function C(props, ref) {
+            forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function C(
+              props,
+              ref
+            ) {
               return (
                 <span ref={ref} {...props}>
                   C
@@ -263,9 +272,7 @@ describe("Decoration drawing", () => {
         ]),
       ],
     });
-    act(() => {
-      view.dispatch(view.state.tr.delete(1, 4));
-    });
+    view.dispatch(view.state.tr.delete(1, 4));
     expect(destroyed).toBeTruthy();
   });
 
@@ -331,9 +338,7 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin(["7-8-foo"])],
     });
     const para2 = view.dom.lastChild;
-    act(() => {
-      updateDeco(view, [make("2-3-bar")]);
-    });
+    updateDeco(view, [make("2-3-bar")]);
     expect(view.dom.lastChild).toBe(para2);
     expect(view.dom.querySelector(".bar")).not.toBeNull();
   });
@@ -344,10 +349,8 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin(["7-8-foo"])],
     });
     const para2 = view.dom.lastChild;
-    act(() => {
-      view.dispatch(view.state.tr.delete(2, 3));
-      view.dispatch(view.state.tr.delete(2, 3));
-    });
+    view.dispatch(view.state.tr.delete(2, 3));
+    view.dispatch(view.state.tr.delete(2, 3));
     expect(view.dom.lastChild).toBe(para2);
   });
 
@@ -356,9 +359,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin([])],
     });
-    act(() => {
-      updateDeco(view, [make("4-widget")]);
-    });
+    updateDeco(view, [make("4-widget")]);
     expect(view.dom.querySelectorAll("button")).toHaveLength(1);
   });
 
@@ -368,9 +369,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo", em("bar"))),
       plugins: [decoPlugin([dec])],
     });
-    act(() => {
-      updateDeco(view, null, [dec]);
-    });
+    updateDeco(view, null, [dec]);
     expect(view.dom.querySelector("button")).toBeNull();
   });
 
@@ -381,9 +380,7 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([dec])],
     });
     expect(view.dom.querySelector(".foo")).not.toBeNull();
-    act(() => {
-      updateDeco(view, null, [dec]);
-    });
+    updateDeco(view, null, [dec]);
     expect(view.dom.querySelector(".foo")).toBeNull();
   });
 
@@ -394,9 +391,7 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([dec])],
     });
     expect(view.dom.querySelector(".foo")).not.toBeNull();
-    act(() => {
-      updateDeco(view, null, [dec]);
-    });
+    updateDeco(view, null, [dec]);
     expect(view.dom.querySelector(".foo")).toBeNull();
     expect((view.dom.firstChild as HTMLElement).innerHTML).toBe("abcd");
   });
@@ -408,9 +403,7 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([dec])],
     });
     expect(view.dom.querySelector(".foo")).not.toBeNull();
-    act(() => {
-      updateDeco(view, [make("2-4-bar")], [dec]);
-    });
+    updateDeco(view, [make("2-4-bar")], [dec]);
     expect(view.dom.querySelector(".foo")).toBeNull();
     expect(view.dom.querySelector(".bar")).not.toBeNull();
   });
@@ -420,9 +413,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo")),
       plugins: [decoPlugin([])],
     });
-    act(() => {
-      updateDeco(view, [make("3-widget")]);
-    });
+    updateDeco(view, [make("3-widget")]);
     expect((view.dom.firstChild as HTMLElement).textContent).toBe("foωo");
   });
 
@@ -431,9 +422,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("bar")),
       plugins: [decoPlugin(["3-widget"])],
     });
-    act(() => {
-      view.dispatch(view.state.tr.delete(1, 2));
-    });
+    view.dispatch(view.state.tr.delete(1, 2));
     expect(view.dom.querySelectorAll("button")).toHaveLength(1);
     expect((view.dom.firstChild as HTMLElement).textContent).toBe("aωr");
   });
@@ -443,9 +432,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("bar")),
       plugins: [decoPlugin(["1-3-foo"])],
     });
-    act(() => {
-      view.dispatch(view.state.tr.delete(1, 2));
-    });
+    view.dispatch(view.state.tr.delete(1, 2));
     const foo = view.dom.querySelector(".foo") as HTMLElement;
     expect(foo).not.toBeNull();
     expect(foo.textContent).toBe("a");
@@ -457,9 +444,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("one", em("two"))),
       plugins: [decoPlugin(["1-6-foo"])],
     });
-    act(() => {
-      updateDeco(view, [make("6-widget")]);
-    });
+    updateDeco(view, [make("6-widget")]);
     const foos = view.dom.querySelectorAll(".foo");
     expect(foos).toHaveLength(2);
     expect(foos[0]!.textContent).toBe("one");
@@ -471,9 +456,7 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo")),
       plugins: [decoPlugin(["3-widget", "3-4-foo"])],
     });
-    act(() => {
-      updateDeco(view, [make("4-widget")]);
-    });
+    updateDeco(view, [make("4-widget")]);
     expect(view.dom.querySelectorAll("button")).toHaveLength(2);
   });
 
@@ -483,9 +466,7 @@ describe("Decoration drawing", () => {
       doc: doc(blockquote(p("foo"), p("bar"))),
       plugins: [decoPlugin([deco])],
     });
-    act(() => {
-      updateDeco(view, null, [deco]);
-    });
+    updateDeco(view, null, [deco]);
     expect(view.dom.querySelector(".cls")).toBeNull();
   });
 
@@ -496,9 +477,7 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([deco])],
     });
     const para = view.dom.querySelector("p") as HTMLElement;
-    act(() => {
-      updateDeco(view, [Decoration.node(0, 5, { class: "foo bar" })], [deco]);
-    });
+    updateDeco(view, [Decoration.node(0, 5, { class: "foo bar" })], [deco]);
     expect(view.dom.querySelector("p")).toBe(para);
     expect(para.className).toBe("foo bar");
     expect(para.title).toBeFalsy();
@@ -515,9 +494,7 @@ describe("Decoration drawing", () => {
         .querySelector("p")!
         .style.getPropertyValue("--my-custom-property")
     ).toBe("36px");
-    act(() => {
-      updateDeco(view, null, [deco]);
-    });
+    updateDeco(view, null, [deco]);
     expect(
       view.dom
         .querySelector("p")!
@@ -531,12 +508,10 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([])],
     });
     const lastP = view.dom.querySelectorAll("p")[1];
-    act(() => {
-      updateDeco(view, [
-        make("3-widget"),
-        Decoration.node(3, 6, { style: "color: red" }),
-      ]);
-    });
+    updateDeco(view, [
+      make("3-widget"),
+      Decoration.node(3, 6, { style: "color: red" }),
+    ]);
     expect(lastP!.style.color).toBe("red");
   });
 
@@ -547,16 +522,14 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin([w0])],
     });
     const initialP = view.dom.querySelector("p");
-    act(() => {
-      view.dispatch(
-        view.state.tr
-          .setMeta("updateDecorations", {
-            add: [make("3-widget")],
-            remove: [w0],
-          })
-          .insertText("c", 5)
-      );
-    });
+    view.dispatch(
+      view.state.tr
+        .setMeta("updateDecorations", {
+          add: [make("3-widget")],
+          remove: [w0],
+        })
+        .insertText("c", 5)
+    );
     expect(view.dom.querySelector("p")).toBe(initialP);
   });
 
@@ -573,9 +546,7 @@ describe("Decoration drawing", () => {
       (view.dom.querySelector("img")!.previousSibling as HTMLElement).style
         .textDecoration
     ).toBe("underline");
-    act(() => {
-      updateDeco(view, null, [deco]);
-    });
+    updateDeco(view, null, [deco]);
     expect(view.dom.querySelector("img")!.style.color).toBe("");
     expect(view.dom.querySelector("img")!.style.textDecoration).toBe("");
   });
@@ -586,30 +557,25 @@ describe("Decoration drawing", () => {
       doc: doc(p("foo"), hr()),
       plugins: [decoPlugin([])],
       nodeViews: {
-        horizontal_rule: forwardRef(function HR(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          current = props.decorations.map((d) => d.spec.name).join();
-          return <hr ref={ref as LegacyRef<HTMLHRElement>} />;
-        }),
+        horizontal_rule: forwardRef<HTMLHRElement, NodeViewComponentProps>(
+          function HR({ nodeProps, children, ...props }, ref) {
+            current = nodeProps.decorations.map((d) => d.spec.name).join();
+            return <hr ref={ref as LegacyRef<HTMLHRElement>} {...props} />;
+          }
+        ),
       },
     });
     const a = Decoration.node(5, 6, {}, { name: "a" });
-    act(() => {
-      updateDeco(view, [a], []);
-    });
+    updateDeco(view, [a], []);
     expect(current).toBe("a");
-    act(() => {
-      updateDeco(
-        view,
-        [
-          Decoration.node(5, 6, {}, { name: "b" }),
-          Decoration.node(5, 6, {}, { name: "c" }),
-        ],
-        [a]
-      );
-    });
+    updateDeco(
+      view,
+      [
+        Decoration.node(5, 6, {}, { name: "b" }),
+        Decoration.node(5, 6, {}, { name: "c" }),
+      ],
+      [a]
+    );
     expect(current).toBe("b,c");
   });
 
@@ -620,7 +586,10 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function Img(props, ref) {
+            forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
+              props,
+              ref
+            ) {
               return (
                 <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
               );
@@ -643,7 +612,10 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function Img(props, ref) {
+            forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
+              props,
+              ref
+            ) {
               return (
                 <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
               );
@@ -654,7 +626,10 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             4,
-            forwardRef(function BR(props, ref) {
+            forwardRef<HTMLImageElement, WidgetViewComponentProps>(function BR(
+              props,
+              ref
+            ) {
               return <br {...props} ref={ref as LegacyRef<HTMLBRElement>} />;
             }),
             { key: "br-widget" }
@@ -663,9 +638,11 @@ describe("Decoration drawing", () => {
         decoPlugin([
           widget(
             7,
-            forwardRef(function Span(props, ref) {
-              return <span {...props} ref={ref} />;
-            }),
+            forwardRef<HTMLImageElement, WidgetViewComponentProps>(
+              function Span(props, ref) {
+                return <span {...props} ref={ref} />;
+              }
+            ),
             { side: 1, key: "span-widget" }
           ),
         ]),
@@ -682,28 +659,24 @@ describe("Decoration drawing", () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          {
-            decorations,
-            innerDecorations,
-            isSelected,
-            children,
-            ...props
-          }: NodeViewComponentProps,
-          ref
-        ) {
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
-              {children}
-            </p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph({ nodeProps, children, ...props }, ref) {
+            return (
+              <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
+                {children}
+              </p>
+            );
+          }
+        ),
       },
       plugins: [
         decoPlugin([
           widget(
             2,
-            forwardRef(function Img(props, ref) {
+            forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
+              props,
+              ref
+            ) {
               return (
                 <img {...props} ref={ref as LegacyRef<HTMLImageElement>} />
               );
@@ -723,7 +696,10 @@ describe("Decoration drawing", () => {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef(function Span(props, ref) {
+            forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function Span(
+              props,
+              ref
+            ) {
               useEditorEffect((view) => {
                 expect(view.state).toBe(state);
               });
@@ -748,17 +724,19 @@ describe("Decoration drawing", () => {
         return DecorationSet.create(state.doc, [
           widget(
             3,
-            forwardRef(function Widget(
-              { pos, ...props }: WidgetComponentProps,
-              ref
-            ) {
-              expect(pos).toBe(3);
-              return (
-                <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
-                  ω
-                </button>
-              );
-            }),
+            forwardRef<HTMLButtonElement, WidgetViewComponentProps>(
+              function Widget(
+                { pos, ...props }: WidgetViewComponentProps,
+                ref
+              ) {
+                expect(pos).toBe(3);
+                return (
+                  <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
+                    ω
+                  </button>
+                );
+              }
+            ),
             { key: "button-widget" }
           ),
         ]);
@@ -776,9 +754,7 @@ describe("Decoration drawing", () => {
       },
     });
     const widgetDOM = view.dom.querySelector("button");
-    act(() => {
-      view.dispatch(view.state.tr.insertText("!", 2, 2));
-    });
+    view.dispatch(view.state.tr.insertText("!", 2, 2));
     expect(view.dom.querySelector("button")).toBe(widgetDOM);
   });
 
@@ -792,9 +768,7 @@ describe("Decoration drawing", () => {
       },
     });
     const widgetDOM = view.dom.querySelector("button");
-    act(() => {
-      view.dispatch(view.state.tr.insertText("!", 2, 2));
-    });
+    view.dispatch(view.state.tr.insertText("!", 2, 2));
     expect(view.dom.querySelector("button")).toBe(widgetDOM);
   });
 
@@ -810,11 +784,9 @@ describe("Decoration drawing", () => {
             ]);
       },
     });
-    act(() => {
-      view.dispatch(
-        view.state.tr.setSelection(TextSelection.create(view.state.doc, 5))
-      );
-    });
+    view.dispatch(
+      view.state.tr.setSelection(TextSelection.create(view.state.doc, 5))
+    );
     expect(view.dom.textContent).toBe("abab");
   });
 
@@ -874,24 +846,19 @@ describe("Decoration drawing", () => {
         decoPlugin([Decoration.inline(2, 13, { class: "bar" })]),
       ],
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          {
-            decorations,
-            innerDecorations,
-            isSelected,
-            children,
-            ...props
-          }: NodeViewComponentProps,
-          ref
-        ) {
-          // @ts-expect-error Don't worry about it
-          decosFromFirstEditor = innerDecorations;
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
-              {children}
-            </p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(
+            { nodeProps, children, ...props }: NodeViewComponentProps,
+            ref
+          ) {
+            decosFromFirstEditor = nodeProps.innerDecorations;
+            return (
+              <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
+                {children}
+              </p>
+            );
+          }
+        ),
       },
     });
 
