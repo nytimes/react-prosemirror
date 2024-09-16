@@ -37,7 +37,9 @@
     "fix:toc": "markdown-toc --bullets='-' -i README.md",
     "fix": "concurrently -P 'npm:fix:* {@}' --",
     "prepack": "yarn build",
-    "test": "wdio run ./wdio.conf.ts"
+    "test:wdio": "wdio run ./wdio.conf.ts",
+    "test:unit": "jest",
+    "test": "yarn test:unit && yarn test:wdio"
   },
   "devDependencies": {
     "@jest/globals": "^29.6.2",
