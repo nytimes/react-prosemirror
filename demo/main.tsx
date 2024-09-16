@@ -14,7 +14,13 @@ import {
   NodeViewConstructor,
 } from "prosemirror-view";
 import "prosemirror-view/style/prosemirror.css";
-import React, { ForwardedRef, Ref, forwardRef, useState } from "react";
+import React, {
+  ForwardedRef,
+  Ref,
+  StrictMode,
+  forwardRef,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -345,4 +351,8 @@ function DemoEditor() {
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const root = createRoot(document.getElementById("root")!);
 
-root.render(<DemoEditor />);
+root.render(
+  <StrictMode>
+    <DemoEditor />
+  </StrictMode>
+);

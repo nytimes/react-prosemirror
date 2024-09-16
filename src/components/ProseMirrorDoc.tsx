@@ -1,6 +1,7 @@
 import React, {
+  DetailedHTMLProps,
   ForwardedRef,
-  HTMLProps,
+  HTMLAttributes,
   ReactElement,
   createContext,
   forwardRef,
@@ -23,7 +24,7 @@ export const DocNodeViewContext = createContext<DocNodeViewContextValue>(
 
 type Props = {
   as?: ReactElement;
-} & Omit<HTMLProps<HTMLElement>, "ref">;
+} & Omit<DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref">;
 
 function ProseMirrorDoc(
   { as, ...props }: Props,
