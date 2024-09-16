@@ -51,15 +51,10 @@ export class SelectionDOMObserver {
   }
 
   connectSelection() {
-    // TODO: Unclear whether this is safe. Without it,
-    // the DOMObserver will be triggered by its own selection
-    // updates
-    // setTimeout(() =>
     this.view.dom.ownerDocument.addEventListener(
       "selectionchange",
       this.onSelectionChange
     );
-    // );
   }
 
   disconnectSelection() {
@@ -109,7 +104,7 @@ export class SelectionDOMObserver {
       desc.ignoreMutation({
         type: "selection",
         target: container?.nodeType == 3 ? container?.parentNode : container,
-      } as any)
+      })
     ) {
       this.setCurSelection();
       return true;

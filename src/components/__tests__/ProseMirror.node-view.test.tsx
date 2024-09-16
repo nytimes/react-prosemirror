@@ -79,7 +79,7 @@ describe("nodeViews prop", () => {
       doc: doc(p("foo")),
       nodeViews: {
         paragraph: forwardRef(function Paragraph(
-          { children, ...props }: NodeViewComponentProps,
+          { children, nodeProps, ...props }: NodeViewComponentProps,
           ref
         ) {
           return (

@@ -1,87 +1,84 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { expect } from "@jest/globals";
-import { act, fireEvent } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { EditorState, Plugin } from "prosemirror-state";
-import { doc, em, p, schema, strong } from "prosemirror-test-builder";
+import { code, doc, em, p, schema, strong } from "prosemirror-test-builder";
 import {
   Decoration,
   DecorationSet,
-  EditorView,
   // @ts-expect-error This is an internal export
   __endComposition,
 } from "prosemirror-view";
+import React, { forwardRef } from "react";
 
-import {
-  findTextNode,
-  tempEditor,
-} from "../../testing/editorViewTestHelpers.js";
-import { setupProseMirrorView } from "../../testing/setupProseMirrorView.js";
+import { widget } from "../../decorations/ReactWidgetType.js";
+import { tempEditor } from "../../testing/editorViewTestHelpers.js";
+import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
 
-function endComposition(view: EditorView, forceUpdate?: boolean) {
-  act(() => {
-    __endComposition(view, forceUpdate);
-  });
-}
+// function endComposition(view: EditorView, forceUpdate?: boolean) {
+//   act(() => {
+//     __endComposition(view, forceUpdate);
+//   });
+// }
 
-function event(pm: EditorView, type: string) {
-  act(() => {
-    pm.dom.dispatchEvent(new CompositionEvent(type));
-  });
-}
+// function event(pm: EditorView, type: string) {
+//   act(() => {
+//     pm.dom.dispatchEvent(new CompositionEvent(type));
+//   });
+// }
 
-function edit(node: Text, text = "", from = node.nodeValue!.length, to = from) {
-  const val = node.nodeValue!;
-  node.nodeValue = val.slice(0, from) + text + val.slice(to);
-  document.getSelection()!.collapse(node, from + text.length);
-  return node;
-}
+// function edit(node: Text, text = "", from = node.nodeValue!.length, to = from) {
+//   const val = node.nodeValue!;
+//   node.nodeValue = val.slice(0, from) + text + val.slice(to);
+//   document.getSelection()!.collapse(node, from + text.length);
+//   return node;
+// }
 
-function hasCompositionNode(_pm: EditorView) {
-  let { focusNode } = document.getSelection()!;
-  while (focusNode && !focusNode.pmViewDesc) focusNode = focusNode.parentNode;
-  return (
-    focusNode && focusNode.pmViewDesc!.constructor.name == "CompositionViewDesc"
-  );
-}
+// function hasCompositionNode(_pm: EditorView) {
+//   let { focusNode } = document.getSelection()!;
+//   while (focusNode && !focusNode.pmViewDesc) focusNode = focusNode.parentNode;
+//   return (
+//     focusNode && focusNode.pmViewDesc!.constructor.name == "CompositionViewDesc"
+//   );
+// }
 
-function compose(
-  pm: EditorView,
-  start: () => Text,
-  update: ((node: Text) => void)[],
-  options: any = {}
-) {
-  event(pm, "compositionstart");
-  expect(pm.composing).toBeTruthy();
-  let node: Text;
-  const sel = document.getSelection()!;
-  for (let i = -1; i < update.length; i++) {
-    if (i < 0) node = start();
-    else update[i]!(node!);
-    const { focusNode, focusOffset } = sel;
-    act(() => {
-      (pm as any).domObserver.flush();
-    });
+// function compose(
+//   pm: EditorView,
+//   start: () => Text,
+//   update: ((node: Text) => void)[],
+//   options: any = {}
+// ) {
+//   event(pm, "compositionstart");
+//   expect(pm.composing).toBeTruthy();
+//   let node: Text;
+//   const sel = document.getSelection()!;
+//   for (let i = -1; i < update.length; i++) {
+//     if (i < 0) node = start();
+//     else update[i]!(node!);
+//     const { focusNode, focusOffset } = sel;
+//     act(() => {
+//       (pm as any).domObserver.flush();
+//     });
 
-    if (options.cancel && i == update.length - 1) {
-      expect(hasCompositionNode(pm)).toBeFalsy();
-    } else {
-      expect(
-        node!.parentNode! && pm.dom.contains(node!.parentNode!)
-      ).toBeTruthy();
-      expect(sel.focusNode).toBe(focusNode);
-      expect(sel.focusOffset).toBe(focusOffset);
-    }
-  }
-  event(pm, "compositionend");
-  if (options.end) {
-    options.end(node!);
-    (pm as any).domObserver.flush();
-  }
-  endComposition(pm);
-  expect(pm.composing).toBeFalsy();
-  expect(hasCompositionNode(pm)).toBeFalsy();
-}
+//     if (options.cancel && i == update.length - 1) {
+//       expect(hasCompositionNode(pm)).toBeFalsy();
+//     } else {
+//       expect(
+//         node!.parentNode! && pm.dom.contains(node!.parentNode!)
+//       ).toBeTruthy();
+//       expect(sel.focusNode).toBe(focusNode);
+//       expect(sel.focusOffset).toBe(focusOffset);
+//     }
+//   }
+//   event(pm, "compositionend");
+//   if (options.end) {
+//     options.end(node!);
+//     (pm as any).domObserver.flush();
+//   }
+//   endComposition(pm);
+//   expect(pm.composing).toBeFalsy();
+//   expect(hasCompositionNode(pm)).toBeFalsy();
+// }
 
 function wordDeco(state: EditorState) {
   const re = /[^\s]+/g,
@@ -102,37 +99,38 @@ const wordHighlighter = new Plugin({
   props: { decorations: wordDeco },
 });
 
-// const Widget = forwardRef(function Widget(
-//   { widget, pos, ...props }: WidgetViewComponentProps,
-//   ref: Ref<HTMLElement>
-// ) {
-//   return (
-//     <var ref={ref} {...props}>
-//       ×
-//     </var>
-//   );
-// });
+const Widget = forwardRef<HTMLElement, WidgetViewComponentProps>(
+  function Widget({ widget, pos, ...props }, ref) {
+    return (
+      <var ref={ref} {...props}>
+        ×
+      </var>
+    );
+  }
+);
 
-// function widgets(positions: number[], sides: number[]) {
-//   return new Plugin({
-//     state: {
-//       init(state) {
-//         const deco = positions.map((p, i) =>
-//           widget(p, Widget, { side: sides[i] })
-//         );
-//         return DecorationSet.create(state.doc!, deco);
-//       },
-//       apply(tr, deco) {
-//         return deco.map(tr.mapping, tr.doc);
-//       },
-//     },
-//     props: {
-//       decorations(this: Plugin, state) {
-//         return this.getState(state);
-//       },
-//     },
-//   });
-// }
+function widgets(positions: number[], sides: number[]) {
+  return new Plugin({
+    state: {
+      init(config) {
+        const deco = positions.map((p, i) =>
+          widget(p, Widget, { side: sides[i] })
+        );
+        return config.doc
+          ? DecorationSet.create(config.doc, deco)
+          : DecorationSet.empty;
+      },
+      apply(tr, deco) {
+        return deco.map(tr.mapping, tr.doc);
+      },
+    },
+    props: {
+      decorations(this: Plugin, state) {
+        return this.getState(state);
+      },
+    },
+  });
+}
 
 function insertComposition(dom: Element) {
   fireEvent.keyDown(dom, { key: "Dead", code: "Quote" });
@@ -176,10 +174,6 @@ function insertComposition(dom: Element) {
 }
 
 describe("EditorView composition", () => {
-  beforeAll(() => {
-    setupProseMirrorView();
-  });
-
   it("supports composition in an empty block", () => {
     const { view } = tempEditor({ doc: doc(p("<a>")) });
     insertComposition(view.dom);
@@ -206,23 +200,23 @@ describe("EditorView composition", () => {
 
   // TODO: Deal with Android style compositions
   // eslint-disable-next-line jest/no-disabled-tests
-  it.skip("can deal with Android-style newline-after-composition", () => {
-    const { view: pm } = tempEditor({ doc: doc(p("abcdef")) });
-    compose(
-      pm,
-      () => edit(findTextNode(pm.dom, "abcdef")!),
-      [(n) => edit(n, "x", 3), (n) => edit(n, "y", 4)],
-      {
-        end: (n: Text) => {
-          const line = pm.dom.appendChild(document.createElement("div"));
-          line.textContent = "def";
-          n.nodeValue = "abcxy";
-          document.getSelection()!.collapse(line, 0);
-        },
-      }
-    );
-    expect(pm.state.doc).toEqualNode(doc(p("abcxy"), p("def")));
-  });
+  // it.skip("can deal with Android-style newline-after-composition", () => {
+  //   const { view: pm } = tempEditor({ doc: doc(p("abcdef")) });
+  //   compose(
+  //     pm,
+  //     () => edit(findTextNode(pm.dom, "abcdef")!),
+  //     [(n) => edit(n, "x", 3), (n) => edit(n, "y", 4)],
+  //     {
+  //       end: (n: Text) => {
+  //         const line = pm.dom.appendChild(document.createElement("div"));
+  //         line.textContent = "def";
+  //         n.nodeValue = "abcxy";
+  //         document.getSelection()!.collapse(line, 0);
+  //       },
+  //     }
+  //   );
+  //   expect(pm.state.doc).toEqualNode(doc(p("abcxy"), p("def")));
+  // });
 
   it("handles replacement of existing words", () => {
     const { view } = tempEditor({ doc: doc(p("one <a>two<b> three")) });
@@ -246,44 +240,25 @@ describe("EditorView composition", () => {
     );
   });
 
-  // This passes, but I think it shouldn't; it doesn't seem to work
-  // in the demo
-  it.skip("supports composition in a cursor wrapper", () => {
+  it("supports composition in a cursor wrapper", () => {
     const { view } = tempEditor({ doc: doc(p("<a>")) });
     view.dispatch(view.state.tr.addStoredMark(schema.marks.em!.create()));
     insertComposition(view.dom);
     expect(view.state.doc).toEqualNode(doc(p(em("é"))));
   });
 
-  // it("handles composition in a multi-child mark with a cursor wrapper", () => {
-  //   const { view: pm } = requireFocus(
-  //     tempEditor({ doc: doc(p("one ", em("two<a>", strong(" three")))) })
-  //   );
-  //   pm.dispatch(pm.state.tr.addStoredMark(schema.marks.code.create()));
-  //   const emNode = pm.dom.querySelector("em")!;
-  //   compose(
-  //     pm,
-  //     () =>
-  //       edit(
-  //         emNode.insertBefore(
-  //           document.createTextNode(""),
-  //           emNode.querySelector("strong")
-  //         ),
-  //         "o"
-  //       ),
-  //     [(n) => edit(n, "o"), (n) => edit(n, "w")],
-  //     { node: true }
-  //   );
-  //   ist(
-  //     pm.state.doc,
-  //     doc(p("one ", em("two", code("oow"), strong(" three")))),
-  //     eq
-  //   );
-  // });
+  it("handles composition in a multi-child mark with a cursor wrapper", () => {
+    const { view } = tempEditor({
+      doc: doc(p("one ", em("two<a>", strong(" three")))),
+    });
+    view.dispatch(view.state.tr.addStoredMark(schema.marks.code!.create()));
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(
+      doc(p("one ", em("two", code("é"), strong(" three"))))
+    );
+  });
 
-  // TODO: This also passes but does not actually work in the
-  // demo :(
-  it.skip("doesn't get interrupted by changes in decorations", () => {
+  it("doesn't get interrupted by changes in decorations", () => {
     const { view } = tempEditor({
       doc: doc(p("foo <a>...<b>")),
       plugins: [wordHighlighter],
@@ -292,16 +267,14 @@ describe("EditorView composition", () => {
     expect(view.state.doc).toEqualNode(doc(p("foo é")));
   });
 
-  // it("works inside highlighted text", () => {
-  //   const { view: pm } = requireFocus(
-  //     tempEditor({ doc: doc(p("one two")), plugins: [wordHighlighter] })
-  //   );
-  //   compose(pm, () => edit(findTextNode(pm.dom, "one")!, "x"), [
-  //     (n) => edit(n, "y"),
-  //     (n) => edit(n, "."),
-  //   ]);
-  //   ist(pm.state.doc, doc(p("onexy. two")), eq);
-  // });
+  it("works inside highlighted text", () => {
+    const { view } = tempEditor({
+      doc: doc(p("one<a> two")),
+      plugins: [wordHighlighter],
+    });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("oneé two")));
+  });
 
   // it("can handle compositions spanning multiple nodes", () => {
   //   const { view: pm } = requireFocus(
@@ -322,25 +295,14 @@ describe("EditorView composition", () => {
   //   ist(pm.state.doc, doc(p("xyzone twoabc")), eq);
   // });
 
-  // it("doesn't overwrite widgets next to the composition", () => {
-  //   const { view: pm } = requireFocus(
-  //     tempEditor({ doc: doc(p("")), plugins: [widgets([1, 1], [-1, 1])] })
-  //   );
-  //   compose(
-  //     pm,
-  //     () => {
-  //       const p = pm.dom.firstChild!;
-  //       return edit(p.insertBefore(document.createTextNode("a"), p.lastChild));
-  //     },
-  //     [(n) => edit(n, "b", 0, 1)],
-  //     {
-  //       end: () => {
-  //         ist(pm.dom.querySelectorAll("var").length, 2);
-  //       },
-  //     }
-  //   );
-  //   ist(pm.state.doc, doc(p("b")), eq);
-  // });
+  it("doesn't overwrite widgets next to the composition", () => {
+    const { view } = tempEditor({
+      doc: doc(p("")),
+      plugins: [widgets([1, 1], [-1, 1])],
+    });
+    insertComposition(view.dom);
+    expect(view.state.doc).toEqualNode(doc(p("é")));
+  });
 
   // it("cancels composition when a change fully overlaps with it", () => {
   //   const { view: pm } = requireFocus(

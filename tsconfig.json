@@ -31,6 +31,6 @@
     "incremental": true,
     /* "Classic" React JSX pragma */
     "jsx": "react",
-    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework"]
+    "types": ["node", "@wdio/globals/types", "@wdio/mocha-framework", "jest"]
   }
 }
