@@ -35,7 +35,7 @@ describe("nodeViews prop", () => {
         ) {
           return (
             <p ref={ref as LegacyRef<HTMLParagraphElement>}>
-              {props.node.textContent.toUpperCase()}
+              {props.nodeProps.node.textContent.toUpperCase()}
             </p>
           );
         }),
@@ -62,7 +62,7 @@ describe("nodeViews prop", () => {
         ) {
           return (
             <p ref={ref as LegacyRef<HTMLParagraphElement>}>
-              {props.node.textContent.toUpperCase()}
+              {props.nodeProps.node.textContent.toUpperCase()}
             </p>
           );
         }),
@@ -160,7 +160,7 @@ describe("nodeViews prop", () => {
       doc: doc(blockquote(p("abc"), p("foo", br()))),
       nodeViews: {
         hard_break: forwardRef(function BR(props: NodeViewComponentProps, ref) {
-          pos = props.pos;
+          pos = props.nodeProps.pos;
           return <br ref={ref as LegacyRef<HTMLBRElement>} />;
         }),
       },
@@ -206,8 +206,8 @@ describe("nodeViews prop", () => {
         ) {
           return (
             <var ref={ref}>
-              {props.decorations.length
-                ? props.decorations[0]!.spec.name
+              {props.nodeProps.decorations.length
+                ? props.nodeProps.decorations[0]!.spec.name
                 : "[]"}
             </var>
           );
@@ -234,7 +234,7 @@ describe("nodeViews prop", () => {
           ref
         ) {
           expect(
-            (props.innerDecorations as DecorationSet)
+            (props.nodeProps.innerDecorations as DecorationSet)
               .find()
               .map((d) => `${d.from}-${d.to}`)
               .join()
@@ -262,7 +262,7 @@ describe("nodeViews prop", () => {
           props: NodeViewComponentProps,
           ref
         ) {
-          innerDecos = (props.innerDecorations as DecorationSet)
+          innerDecos = (props.nodeProps.innerDecorations as DecorationSet)
             .find()
             .map((d) => `${d.from}-${d.to}`);
           return (
