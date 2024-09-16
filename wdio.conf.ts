@@ -26,7 +26,10 @@ export const config: WebdriverIO.Config = {
   // The path of the spec files will be resolved relative from the directory of
   // of the config file unless it's absolute.
   //
-  specs: ["./src/components/__tests__/ProseMirror.*.test.tsx"],
+  specs: [
+    "./src/components/__tests__/ProseMirror.*.test.tsx",
+    "./src/components/__tests__/ProseMirror.test.tsx",
+  ],
   // Patterns to exclude.
   exclude: [
     // 'path/to/excluded/files'
@@ -55,12 +58,10 @@ export const config: WebdriverIO.Config = {
   //
   capabilities: [
     {
-      // capabilities for local browser web tests
-      browserName: "chrome", // or "firefox", "microsoftedge", "safari"
+      browserName: "chrome",
     },
     {
-      // capabilities for local browser web tests
-      browserName: "firefox", // or "firefox", "microsoftedge", "safari"
+      browserName: "firefox",
     },
   ],
 

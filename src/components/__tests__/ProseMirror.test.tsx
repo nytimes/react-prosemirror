@@ -1,23 +1,13 @@
 import { act, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { Schema } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
-import React, { useEffect, useState } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 
-import { useNodeViews } from "../../hooks/useNodeViews.js";
-import { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
-import {
-  setupProseMirrorView,
-  teardownProseMirrorView,
-} from "../../testing/setupProseMirrorView.js";
+import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 import { ProseMirror } from "../ProseMirror.js";
+import { ProseMirrorDoc } from "../ProseMirrorDoc.js";
 
-describe.skip("ProseMirror", () => {
-  beforeAll(() => {
-    setupProseMirrorView();
-  });
-
+describe("ProseMirror", () => {
   it("renders a contenteditable", async () => {
     const schema = new Schema({
       nodes: {
@@ -28,19 +18,29 @@ describe.skip("ProseMirror", () => {
     const editorState = EditorState.create({ schema });
 
     function TestEditor() {
-      const [mount, setMount] = useState<HTMLDivElement | null>(null);
-
       return (
-        <ProseMirror mount={mount} state={editorState}>
-          <div data-testid="editor" ref={setMount} />
+        <ProseMirror defaultState={editorState}>
+          <ProseMirrorDoc data-testid="editor" />
         </ProseMirror>
       );
     }
-    const user = userEvent.setup();
     render(<TestEditor />);
 
     const editor = screen.getByTestId("editor");
-    await user.type(editor, "Hello, world!");
+    editor.focus();
+    await browser.keys("H");
+    await browser.keys("e");
+    await browser.keys("l");
+    await browser.keys("l");
+    await browser.keys("o");
+    await browser.keys(",");
+    await browser.keys(" ");
+    await browser.keys("w");
+    await browser.keys("o");
+    await browser.keys("r");
+    await browser.keys("l");
+    await browser.keys("d");
+    await browser.keys("!");
 
     expect(editor.textContent).toBe("Hello, world!");
   });
@@ -55,7 +55,6 @@ describe.skip("ProseMirror", () => {
     let outerEditorState = EditorState.create({ schema });
     function TestEditor() {
       const [editorState, setEditorState] = useState(outerEditorState);
-      const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       useEffect(() => {
         outerEditorState = editorState;
@@ -63,21 +62,32 @@ describe.skip("ProseMirror", () => {
 
       return (
         <ProseMirror
-          mount={mount}
           state={editorState}
           dispatchTransaction={(tr) =>
             act(() => setEditorState(editorState.apply(tr)))
           }
         >
-          <div data-testid="editor" ref={setMount} />
+          <ProseMirrorDoc data-testid="editor" />
         </ProseMirror>
       );
     }
-    const user = userEvent.setup();
     render(<TestEditor />);
 
     const editor = screen.getByTestId("editor");
-    await user.type(editor, "Hello, world!");
+    editor.focus();
+    await browser.keys("H");
+    await browser.keys("e");
+    await browser.keys("l");
+    await browser.keys("l");
+    await browser.keys("o");
+    await browser.keys(",");
+    await browser.keys(" ");
+    await browser.keys("w");
+    await browser.keys("o");
+    await browser.keys("r");
+    await browser.keys("l");
+    await browser.keys("d");
+    await browser.keys("!");
 
     expect(outerEditorState.doc.textContent).toBe("Hello, world!");
   });
@@ -86,60 +96,60 @@ describe.skip("ProseMirror", () => {
     const schema = new Schema({
       nodes: {
         text: {},
-        paragraph: { content: "text*" },
+        paragraph: {
+          content: "text*",
+          toDOM() {
+            return ["p", 0];
+          },
+        },
         doc: { content: "paragraph+" },
       },
     });
     const editorState = EditorState.create({ schema });
 
-    function Paragraph({ children }: NodeViewComponentProps) {
-      return <p data-testid="paragraph">{children}</p>;
-    }
+    const Paragraph = forwardRef<HTMLDivElement | null, NodeViewComponentProps>(
+      function Paragraph({ children }, ref) {
+        return (
+          <p ref={ref} data-testid="paragraph">
+            {children}
+          </p>
+        );
+      }
+    );
 
     const reactNodeViews = {
-      paragraph: () => ({
-        component: Paragraph,
-        dom: document.createElement("div"),
-        contentDOM: document.createElement("span"),
-      }),
+      paragraph: Paragraph,
     };
 
     function TestEditor() {
-      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
-      const [mount, setMount] = useState<HTMLDivElement | null>(null);
-
       return (
-        <ProseMirror
-          mount={mount}
-          state={editorState}
-          dispatchTransaction={function (this: EditorView, tr) {
-            // We have to wrap the update in `act` to handle all of
-            // the async portal registering and component rendering that
-            // happens "out of band" because it's triggered by ProseMirror,
-            // not React.
-            act(() => this.updateState(this.state.apply(tr)));
-          }}
-          nodeViews={nodeViews}
-        >
-          <div data-testid="editor" ref={setMount} />
-          {renderNodeViews()}
+        <ProseMirror defaultState={editorState} nodeViews={reactNodeViews}>
+          <ProseMirrorDoc data-testid="editor" />
         </ProseMirror>
       );
     }
-    const user = userEvent.setup();
     render(<TestEditor />);
 
     const editor = screen.getByTestId("editor");
 
-    await user.type(editor, "Hello, world!");
+    editor.focus();
+    await browser.keys("H");
+    await browser.keys("e");
+    await browser.keys("l");
+    await browser.keys("l");
+    await browser.keys("o");
+    await browser.keys(",");
+    await browser.keys(" ");
+    await browser.keys("w");
+    await browser.keys("o");
+    await browser.keys("r");
+    await browser.keys("l");
+    await browser.keys("d");
+    await browser.keys("!");
 
     expect(editor.textContent).toBe("Hello, world!");
     // Ensure that ProseMirror really rendered our Paragraph
     // component, not just any old <p> tag
     expect(screen.getAllByTestId("paragraph").length).toBeGreaterThanOrEqual(1);
-  });
-
-  afterAll(() => {
-    teardownProseMirrorView();
   });
 });

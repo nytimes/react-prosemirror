@@ -5,6 +5,7 @@ import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 import React, {
   ForwardedRef,
+  HTMLProps,
   ReactElement,
   cloneElement,
   createElement,
@@ -26,10 +27,18 @@ export type DocNodeViewProps = {
   outerDeco: Decoration[];
   as?: ReactElement;
   viewDesc?: NodeViewDesc;
-};
+} & Omit<HTMLProps<HTMLElement>, "ref">;
 
 export const DocNodeView = forwardRef(function DocNodeView(
-  { className, node, innerDeco, outerDeco, as, viewDesc }: DocNodeViewProps,
+  {
+    className,
+    node,
+    innerDeco,
+    outerDeco,
+    as,
+    viewDesc,
+    ...elementProps
+  }: DocNodeViewProps,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +61,7 @@ export const DocNodeView = forwardRef(function DocNodeView(
   );
 
   const props = {
+    ...elementProps,
     ref: innerRef,
     className,
     suppressContentEditableWarning: true,

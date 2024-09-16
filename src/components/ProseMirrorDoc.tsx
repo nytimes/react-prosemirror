@@ -1,5 +1,6 @@
 import React, {
   ForwardedRef,
+  HTMLProps,
   ReactElement,
   createContext,
   forwardRef,
@@ -22,10 +23,10 @@ export const DocNodeViewContext = createContext<DocNodeViewContextValue>(
 
 type Props = {
   as?: ReactElement;
-};
+} & Omit<HTMLProps<HTMLElement>, "ref">;
 
 function ProseMirrorDoc(
-  { as }: Props,
+  { as, ...props }: Props,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
   const innerRef = useRef<HTMLDivElement | null>(null);
@@ -46,6 +47,7 @@ function ProseMirrorDoc(
           innerRef.current = el;
           setMount(el);
         }}
+        {...props}
         {...docProps}
         as={as}
       />
