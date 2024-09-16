@@ -1,35 +1,32 @@
-import { act } from "@testing-library/react";
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import { doc, h1, hr, p, pre, schema, strong } from "prosemirror-test-builder";
+import React, { forwardRef } from "react";
 
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
+import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 
-// TODO: Address skipped tests
 describe("EditorView draw", () => {
   it("updates the DOM", async () => {
     const { view } = tempEditor({ doc: doc(p("foo")) });
-    act(() => {
-      view.dispatch(view.state.tr.insertText("bar"));
-    });
+    view.dispatch(view.state.tr.insertText("bar"));
     expect(view.dom.textContent).toBe("barfoo");
   });
 
   it("doesn't redraw nodes after changes", async () => {
     const { view } = tempEditor({ doc: doc(h1("foo<a>"), p("bar")) });
     const oldP = view.dom.querySelector("p");
-    act(() => {
-      view.dispatch(view.state.tr.insertText("!"));
-    });
+
+    view.dispatch(view.state.tr.insertText("!"));
     expect(view.dom.querySelector("p")).toBe(oldP);
   });
 
   it("doesn't redraw nodes before changes", async () => {
     const { view } = tempEditor({ doc: doc(p("foo"), h1("bar")) });
     const oldP = view.dom.querySelector("p");
-    act(() => {
-      view.dispatch(view.state.tr.insertText("!", 2));
-    });
+
+    view.dispatch(view.state.tr.insertText("!", 2));
     expect(view.dom.querySelector("p")).toBe(oldP);
   });
 
@@ -39,9 +36,8 @@ describe("EditorView draw", () => {
     });
     const oldP = view.dom.querySelector("p");
     const oldPre = view.dom.querySelector("pre");
-    act(() => {
-      view.dispatch(view.state.tr.insertText("!", 2));
-    });
+
+    view.dispatch(view.state.tr.insertText("!", 2));
     expect(view.dom.querySelector("p")).toBe(oldP);
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
@@ -52,9 +48,8 @@ describe("EditorView draw", () => {
     });
     const oldP = view.dom.querySelector("p");
     const oldPre = view.dom.querySelector("pre");
-    act(() => {
-      view.dispatch(view.state.tr.split(8));
-    });
+
+    view.dispatch(view.state.tr.split(8));
     expect(view.dom.querySelector("p")).toBe(oldP);
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
@@ -65,9 +60,8 @@ describe("EditorView draw", () => {
     });
     const oldP = view.dom.querySelector("p");
     const oldPre = view.dom.querySelector("pre");
-    act(() => {
-      view.dispatch(view.state.tr.join(10));
-    });
+
+    view.dispatch(view.state.tr.join(10));
     expect(view.dom.querySelector("p")).toBe(oldP);
     expect(view.dom.querySelector("pre")).toBe(oldPre);
   });
@@ -77,28 +71,25 @@ describe("EditorView draw", () => {
       doc: doc(p(), p(), p(), p(), p(), p(), p(), p(), h1("!"), p(), p()),
     });
     const oldH = view.dom.querySelector("h1");
-    act(() => {
-      view.dispatch(view.state.tr.delete(2, 14));
-    });
+
+    view.dispatch(view.state.tr.delete(2, 14));
     expect(view.dom.querySelector("h1")).toBe(oldH);
   });
 
-  it.skip("adds classes from the attributes prop", async () => {
-    const { view } = tempEditor({
+  it("adds classes from the attributes prop", async () => {
+    const { view, rerender } = tempEditor({
       doc: doc(p()),
       attributes: { class: "foo bar" },
     });
     expect(view.dom.classList.contains("foo")).toBeTruthy();
     expect(view.dom.classList.contains("bar")).toBeTruthy();
     expect(view.dom.classList.contains("ProseMirror")).toBeTruthy();
-    act(() => {
-      view.update({ state: view.state, attributes: { class: "baz" } });
-    });
+    rerender({ attributes: { class: "baz" } });
     expect(!view.dom.classList.contains("foo")).toBeTruthy();
     expect(view.dom.classList.contains("baz")).toBeTruthy();
   });
 
-  it.skip("adds style from the attributes prop", async () => {
+  it("adds style from the attributes prop", async () => {
     const { view } = tempEditor({
       doc: doc(p()),
       attributes: { style: "border: 1px solid red;" },
@@ -112,24 +103,21 @@ describe("EditorView draw", () => {
     expect(view.dom.style.color).toBe("red");
   });
 
-  it.skip("can set other attributes", async () => {
-    const { view } = tempEditor({
+  it("can set other attributes", async () => {
+    const { view, rerender } = tempEditor({
       doc: doc(p()),
       attributes: { spellcheck: "false", "aria-label": "hello" },
     });
     expect(view.dom.spellcheck).toBe(false);
     expect(view.dom.getAttribute("aria-label")).toBe("hello");
-    act(() => {
-      view.update({
-        state: view.state,
-        attributes: { style: "background-color: yellow" },
-      });
+    rerender({
+      attributes: { style: "background-color: yellow" },
     });
     expect(view.dom.hasAttribute("aria-label")).toBe(false);
     expect(view.dom.style.backgroundColor).toBe("yellow");
   });
 
-  it.skip("can't set the contenteditable attribute", async () => {
+  it("can't set the contenteditable attribute", async () => {
     const { view } = tempEditor({
       doc: doc(p()),
       attributes: { contenteditable: "false" },
@@ -137,32 +125,33 @@ describe("EditorView draw", () => {
     expect(view.dom.contentEditable).toBe("true");
   });
 
-  it.skip("understands the editable prop", async () => {
-    const { view } = tempEditor({ doc: doc(p()), editable: () => false });
+  it("understands the editable prop", async () => {
+    const { view, rerender } = tempEditor({
+      doc: doc(p()),
+      editable: () => false,
+    });
+    rerender({});
     expect(view.dom.contentEditable).toBe("false");
-    view.update({ state: view.state });
+    rerender({ editable: () => true });
+    rerender({});
     expect(view.dom.contentEditable).toBe("true");
   });
 
   it("doesn't redraw following paragraphs when a paragraph is split", async () => {
     const { view } = tempEditor({ doc: doc(p("abcde"), p("fg")) });
     const lastPara = view.dom.lastChild;
-    act(() => {
-      view.dispatch(view.state.tr.split(3));
-    });
+    view.dispatch(view.state.tr.split(3));
     expect(view.dom.lastChild).toBe(lastPara);
   });
 
   it("doesn't greedily match nodes that have another match", async () => {
     const { view } = tempEditor({ doc: doc(p("a"), p("b"), p()) });
     const secondPara = view.dom.querySelectorAll("p")[1];
-    act(() => {
-      view.dispatch(view.state.tr.split(2));
-    });
+    view.dispatch(view.state.tr.split(2));
     expect(view.dom.querySelectorAll("p")[2]).toBe(secondPara);
   });
 
-  it.skip("creates and destroys plugin views", async () => {
+  it("creates and destroys plugin views", async () => {
     const events: string[] = [];
     class PluginView {
       update() {
@@ -178,22 +167,22 @@ describe("EditorView draw", () => {
         return new PluginView();
       },
     });
-    const { view } = tempEditor({ plugins: [plugin] });
-    act(() => {
-      view.dispatch(view.state.tr.insertText("u"));
-    });
-    view.destroy();
+    const { view, unmount } = tempEditor({ plugins: [plugin] });
+    view.dispatch(view.state.tr.insertText("u"));
+    unmount();
     expect(events.join(" ")).toBe("create update destroy");
   });
 
-  it.skip("redraws changed node views", async () => {
-    const { view } = tempEditor({ doc: doc(p("foo"), hr()) });
+  it("redraws changed node views", async () => {
+    const { view, rerender } = tempEditor({ doc: doc(p("foo"), hr()) });
     expect(view.dom.querySelector("hr")).toBeTruthy();
-    view.setProps({
+    rerender({
       nodeViews: {
-        horizontal_rule: () => {
-          return { dom: document.createElement("var") };
-        },
+        horizontal_rule: forwardRef<HTMLElement, NodeViewComponentProps>(
+          function HorizontalRule({ nodeProps, ...props }, ref) {
+            return <var ref={ref} {...props} />;
+          }
+        ),
       },
     });
     expect(!view.dom.querySelector("hr")).toBeTruthy();
@@ -204,13 +193,11 @@ describe("EditorView draw", () => {
     const { view } = tempEditor({
       doc: doc(p(strong("one"), " two ", strong("three"))),
     });
-    act(() => {
-      view.dispatch(view.state.tr.removeMark(1, 4, schema.marks.strong));
-    });
+    view.dispatch(view.state.tr.removeMark(1, 4, schema.marks.strong));
     expect(view.dom.querySelectorAll("strong")).toHaveLength(1);
   });
 
-  it.skip("doesn't redraw too much when marks are present", async () => {
+  it("doesn't redraw too much when marks are present", async () => {
     const s = new Schema({
       nodes: {
         doc: { content: "paragraph+", marks: "m" },

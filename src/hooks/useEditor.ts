@@ -7,7 +7,14 @@ import {
   EditorProps,
   EditorView,
 } from "prosemirror-view";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { flushSync } from "react-dom";
 
 import { DOMNode } from "../dom.js";
@@ -100,11 +107,21 @@ export class ReactEditorView extends EditorView {
     this.oldProps = props;
   }
 
-  updatePluginViews() {
+  updatePluginViews(prevState?: EditorState) {
     if (this.shouldUpdatePluginViews) {
       // @ts-expect-error We're making use of knowledge of internal methods here
-      super.updatePluginViews();
+      super.updatePluginViews(prevState);
     }
+  }
+
+  // We want to trigger the default EditorView cleanup, but without
+  // the actual view.dom cleanup (which React will have already handled).
+  // So we give the EditorView a dummy DOM element and ask it to clean up
+  destroy() {
+    // @ts-expect-error we're intentionally overwriting this property
+    // to prevent side effects
+    this.dom = document.createElement("div");
+    super.destroy();
   }
 }
 
@@ -221,6 +238,12 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     dispatchTransaction,
     docView: docViewDescRef.current,
   };
+
+  useEffect(() => {
+    return () => {
+      view?.destroy();
+    };
+  }, [view]);
 
   // This rule is concerned about infinite updates due to the
   // call to setView. These calls are deliberately conditional,

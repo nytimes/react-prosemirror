@@ -54,6 +54,7 @@ export function tempEditor({
 } & Omit<Props, "state">): {
   view: EditorViewT;
   rerender: (props: Omit<Props, "state" | "plugins">) => void;
+  unmount: () => void;
 } {
   startDoc = startDoc ?? doc(p());
   const state = EditorState.create({
@@ -69,17 +70,15 @@ export function tempEditor({
 
   let view: EditorView | null = null;
 
-  // return new Promise((resolve) => {
   function Test() {
     useEditorEffect((v) => {
       view = v;
-      // resolve({ view, rerender: rerenderEditor });
     }, []);
 
     return null;
   }
 
-  const { rerender } = render(
+  const { rerender, unmount } = render(
     <ProseMirror
       {...(controlled ? { state } : { defaultState: state })}
       {...props}
@@ -101,6 +100,9 @@ export function tempEditor({
     );
   }
 
-  return { view: view as unknown as EditorView, rerender: rerenderEditor };
-  // });
+  return {
+    view: view as unknown as EditorView,
+    rerender: rerenderEditor,
+    unmount,
+  };
 }

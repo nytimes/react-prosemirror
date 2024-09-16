@@ -71,7 +71,19 @@ export function htmlAttrsToReactProps(
         break;
       }
       case "contenteditable": {
-        props.contentEditable = attrValue != null;
+        if (attrValue === "" || attrValue === "true") {
+          props.contentEditable = true;
+          break;
+        }
+        if (attrValue === "false") {
+          props.contentEditable = false;
+          break;
+        }
+        if (attrValue === "plaintext-only") {
+          props.contentEditable = "plaintext-only";
+          break;
+        }
+        props.contentEditable = null;
         break;
       }
       case "draggable": {
@@ -105,6 +117,7 @@ export function htmlAttrsToReactProps(
         }
         if (attrValue === "false") {
           props.spellCheck = false;
+          break;
         }
         props.spellCheck = null;
         break;
