@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { DOMOutputSpec, Node } from "prosemirror-model";
 import { NodeSelection } from "prosemirror-state";
 import {
@@ -10,13 +11,14 @@ import React, {
   RefAttributes,
   cloneElement,
   createElement,
+  memo,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { useEditorState } from "../hooks/useEditorState.js";
@@ -34,13 +36,13 @@ type NodeViewProps = {
   innerDeco: DecorationSource;
 };
 
-export function NodeView({
+export const NodeView = memo<NodeViewProps>(function NodeView({
   outerDeco,
   pos,
   node,
   innerDeco,
   ...props
-}: NodeViewProps) {
+}) {
   const domRef = useRef<HTMLElement | null>(null);
   const nodeDomRef = useRef<HTMLElement | null>(null);
   const contentDomRef = useRef<HTMLElement | null>(null);
@@ -116,8 +118,9 @@ export function NodeView({
     customNodeViewRootRef.current.appendChild(dom);
   }, [customNodeView, view, innerDeco, node, outerDeco]);
 
-  const childDescriptors = useNodeViewDescriptor(
+  useNodeViewDescriptor(
     node,
+    pos,
     domRef,
     nodeDomRef,
     innerDeco,
@@ -126,22 +129,28 @@ export function NodeView({
     contentDomRef
   );
 
+  const nodeProps = useMemo(
+    () => ({
+      node: node,
+      pos: pos,
+      decorations: outerDeco,
+      innerDecorations: innerDeco,
+      isSelected:
+        state.selection instanceof NodeSelection &&
+        state.selection.node === node,
+    }),
+    [innerDeco, node, outerDeco, pos, state.selection]
+  );
+
+  const children = useMemo(
+    () => <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />,
+    [innerDeco, node, pos]
+  );
+
   if (Component) {
     element = (
-      <Component
-        {...props}
-        ref={nodeDomRef}
-        nodeProps={{
-          node: node,
-          pos: pos,
-          decorations: outerDeco,
-          innerDecorations: innerDeco,
-          isSelected:
-            state.selection instanceof NodeSelection &&
-            state.selection.node === node,
-        }}
-      >
-        <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+      <Component {...props} ref={nodeDomRef} nodeProps={nodeProps}>
+        {children}
       </Component>
     );
   } else if (customNodeView) {
@@ -166,11 +175,7 @@ export function NodeView({
         contentEditable: !!contentDOM,
         suppressContentEditableWarning: true,
       },
-      contentDOM &&
-        createPortal(
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />,
-          contentDOM
-        )
+      contentDOM && createPortal(children, contentDOM)
     );
   } else {
     const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
@@ -178,7 +183,7 @@ export function NodeView({
     if (outputSpec) {
       element = (
         <OutputSpec {...props} ref={nodeDomRef} outputSpec={outputSpec}>
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+          {children}
         </OutputSpec>
       );
     }
@@ -206,19 +211,15 @@ export function NodeView({
     decoratedElement
   );
 
-  return (
-    <ChildDescriptorsContext.Provider value={childDescriptors}>
-      {cloneElement(
-        markedElement,
-        node.marks.length ||
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          outerDeco.some((d) => (d as any).type.attrs.nodeName)
-          ? { ref: domRef }
-          : // If all of the node decorations were attr-only, then
-            // we've already passed the domRef to the NodeView component
-            // as a prop
-            undefined
-      )}
-    </ChildDescriptorsContext.Provider>
+  return cloneElement(
+    markedElement,
+    node.marks.length ||
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      outerDeco.some((d) => (d as any).type.attrs.nodeName)
+      ? { ref: domRef }
+      : // If all of the node decorations were attr-only, then
+        // we've already passed the domRef to the NodeView component
+        // as a prop
+        undefined
   );
-}
+});

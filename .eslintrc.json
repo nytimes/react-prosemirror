@@ -16,6 +16,7 @@
     "node": false
   },
   "rules": {
+    "react/prop-types": "off",
     "no-console": ["error", { "allow": ["error"] }],
     "react-hooks/exhaustive-deps": [
       "warn",

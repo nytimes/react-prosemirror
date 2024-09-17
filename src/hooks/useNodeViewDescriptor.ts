@@ -2,11 +2,15 @@ import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 import { MutableRefObject, useContext, useLayoutEffect, useRef } from "react";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { ViewDescriptorContext } from "../contexts/ViewDescriptorContext.js";
+import { reactKeysPluginKey } from "../plugins/reactKeys.js";
 import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
+
+import { useEditorState } from "./useEditorState.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
+  pos: number,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSource,
@@ -15,11 +19,23 @@ export function useNodeViewDescriptor(
   contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
-  const siblingDescriptors = useContext(ChildDescriptorsContext);
-  const childDescriptors: ViewDesc[] = [];
+  const viewDescContext = useContext(ViewDescriptorContext);
+  const editorState = useEditorState();
+  const reactKeysState =
+    editorState && reactKeysPluginKey.getState(editorState);
+  const key = reactKeysState?.posToKey.get(pos);
+  const childKeys = key && reactKeysState?.keyToChildren.get(key);
+  const parentKey = key && reactKeysState?.keyToParent.get(key);
 
   useLayoutEffect(() => {
-    if (!node || !nodeDomRef.current) return;
+    if (!node || !nodeDomRef.current || !childKeys) return;
+
+    const childDescriptors = childKeys
+      .map((key) => viewDescContext[key])
+      .filter((childDesc): childDesc is ViewDesc => !!childDesc);
+
+    const parentDescriptor =
+      parentKey !== undefined ? viewDescContext[parentKey] : undefined;
 
     const firstChildDesc = childDescriptors[0];
 
@@ -35,7 +51,7 @@ export function useNodeViewDescriptor(
         nodeDomRef.current
       );
     } else {
-      nodeViewDescRef.current.parent = undefined;
+      nodeViewDescRef.current.parent = parentDescriptor;
       nodeViewDescRef.current.children = childDescriptors;
       nodeViewDescRef.current.node = node;
       nodeViewDescRef.current.outerDeco = outerDecorations;
@@ -54,12 +70,11 @@ export function useNodeViewDescriptor(
         null;
       nodeViewDescRef.current.nodeDOM = nodeDomRef.current;
     }
-    siblingDescriptors.push(nodeViewDescRef.current);
+
+    viewDescContext[key] = nodeViewDescRef.current;
 
     for (const childDesc of childDescriptors) {
       childDesc.parent = nodeViewDescRef.current;
     }
   });
-
-  return childDescriptors;
 }

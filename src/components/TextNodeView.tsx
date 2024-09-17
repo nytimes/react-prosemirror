@@ -1,17 +1,20 @@
 import { Node } from "prosemirror-model";
+import { EditorState } from "prosemirror-state";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
 
+import { reactKeysPluginKey } from "../plugins/reactKeys.js";
 import { CompositionViewDesc, TextViewDesc, ViewDesc } from "../viewdesc.js";
 
 import { wrapInDeco } from "./ChildNodeViews.js";
 
 type Props = {
   view: EditorView | null;
+  state: EditorState | null;
   node: Node;
   pos: number;
-  siblingDescriptors: ViewDesc[];
+  viewDescContext: Record<string, ViewDesc>;
   decorations: readonly Decoration[];
 };
 
@@ -19,14 +22,17 @@ export class TextNodeView extends Component<Props> {
   private viewDescRef: null | TextViewDesc = null;
 
   updateEffect() {
-    const { decorations, siblingDescriptors, node } = this.props;
+    const { decorations, viewDescContext, node, state, pos } = this.props;
+    const reactKeysState = state && reactKeysPluginKey.getState(state);
+    const key = reactKeysState?.posToKey.get(pos);
+    const parentKey = key && reactKeysState?.keyToParent.get(key);
+    const parent =
+      parentKey !== undefined ? viewDescContext[parentKey] : undefined;
+
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
     const dom = findDOMNode(this);
 
-    // We only need to explicitly create a CompositionViewDesc
-    // when a composition was started that produces a new text node.
-    // Otherwise we just rely on re-rendering the renderRef
     if (!dom) {
       return;
     }
@@ -47,7 +53,7 @@ export class TextNodeView extends Component<Props> {
         textNode
       );
     } else {
-      this.viewDescRef.parent = undefined;
+      this.viewDescRef.parent = parent;
       this.viewDescRef.children = [];
       this.viewDescRef.node = node;
       this.viewDescRef.outerDeco = decorations;
@@ -58,7 +64,9 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.nodeDOM = textNode;
     }
 
-    siblingDescriptors.push(this.viewDescRef);
+    if (key) {
+      viewDescContext[key] = this.viewDescRef;
+    }
   }
 
   componentDidMount(): void {

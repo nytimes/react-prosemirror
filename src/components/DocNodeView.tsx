@@ -11,11 +11,11 @@ import React, {
   cloneElement,
   createElement,
   forwardRef,
+  memo,
   useImperativeHandle,
   useRef,
 } from "react";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
@@ -30,68 +30,67 @@ export type DocNodeViewProps = {
   viewDesc?: NodeViewDesc;
 } & Omit<DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref">;
 
-export const DocNodeView = forwardRef(function DocNodeView(
-  {
-    className,
-    node,
-    innerDeco,
-    outerDeco,
-    as,
-    viewDesc,
-    ...elementProps
-  }: DocNodeViewProps,
-  ref: ForwardedRef<HTMLDivElement | null>
-) {
-  const innerRef = useRef<HTMLDivElement | null>(null);
+export const DocNodeView = memo(
+  forwardRef(function DocNodeView(
+    {
+      className,
+      node,
+      innerDeco,
+      outerDeco,
+      as,
+      viewDesc,
+      ...elementProps
+    }: DocNodeViewProps,
+    ref: ForwardedRef<HTMLDivElement | null>
+  ) {
+    const innerRef = useRef<HTMLDivElement | null>(null);
 
-  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
-    ref,
-    () => {
-      return innerRef.current;
-    },
-    []
-  );
+    useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
+      ref,
+      () => {
+        return innerRef.current;
+      },
+      []
+    );
 
-  const childDescriptors = useNodeViewDescriptor(
-    node,
-    innerRef,
-    innerRef,
-    innerDeco,
-    outerDeco,
-    viewDesc
-  );
+    useNodeViewDescriptor(
+      node,
+      -1,
+      innerRef,
+      innerRef,
+      innerDeco,
+      outerDeco,
+      viewDesc
+    );
 
-  const props = {
-    ...elementProps,
-    ref: innerRef,
-    className,
-    suppressContentEditableWarning: true,
-  };
+    const props = {
+      ...elementProps,
+      ref: innerRef,
+      className,
+      suppressContentEditableWarning: true,
+    };
 
-  const element = as
-    ? cloneElement(
-        as,
-        props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
+    const element = as
+      ? cloneElement(
+          as,
+          props,
           <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
-        </ChildDescriptorsContext.Provider>
-      )
-    : createElement(
-        "div",
-        props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
+        )
+      : createElement(
+          "div",
+          props,
           <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
-        </ChildDescriptorsContext.Provider>
-      );
+        );
 
-  if (!node) return element;
+    if (!node) return element;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nodeDecorations = outerDeco.filter((deco) => !(deco as any).inline);
-  if (!nodeDecorations.length) {
-    return element;
-  }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodeDecorations = outerDeco.filter((deco) => !(deco as any).inline);
+    if (!nodeDecorations.length) {
+      return element;
+    }
 
-  const wrapped = nodeDecorations.reduce(wrapInDeco, element);
-  return wrapped;
-});
+    const wrapped = nodeDecorations.reduce(wrapInDeco, element);
+    return wrapped;
+  })
+);

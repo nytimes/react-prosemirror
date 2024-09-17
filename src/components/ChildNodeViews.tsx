@@ -4,11 +4,12 @@ import React, {
   ReactNode,
   cloneElement,
   createElement,
+  memo,
   useContext,
 } from "react";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
+import { ViewDescriptorContext } from "../contexts/ViewDescriptorContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
 import { iterDeco } from "../decorations/iterDeco.js";
 import { useEditorState } from "../hooks/useEditorState.js";
@@ -79,7 +80,10 @@ type SharedMarksProps = {
   childViews: Child[];
 };
 
-function InlineView({ innerPos, childViews }: SharedMarksProps) {
+const InlineView = memo(function InlineView({
+  innerPos,
+  childViews,
+}: SharedMarksProps) {
   const { view } = useContext(EditorContext);
   const editorState = useEditorState();
   const reactKeys = useReactKeys();
@@ -130,17 +134,22 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
               ) : child.type === "native-widget" ? (
                 <NativeWidgetView widget={child.widget} pos={childPos} />
               ) : child.node.isText ? (
-                <ChildDescriptorsContext.Consumer>
-                  {(siblingDescriptors) => (
-                    <TextNodeView
-                      view={view}
-                      node={child.node}
-                      pos={childPos}
-                      siblingDescriptors={siblingDescriptors}
-                      decorations={child.outerDeco}
-                    />
+                <EditorContext.Consumer>
+                  {({ state }) => (
+                    <ViewDescriptorContext.Consumer>
+                      {(viewDescContext) => (
+                        <TextNodeView
+                          view={view}
+                          state={state}
+                          node={child.node}
+                          pos={childPos}
+                          viewDescContext={viewDescContext}
+                          decorations={child.outerDeco}
+                        />
+                      )}
+                    </ViewDescriptorContext.Consumer>
                   )}
-                </ChildDescriptorsContext.Consumer>
+                </EditorContext.Consumer>
               ) : (
                 <NodeView
                   node={child.node}
@@ -189,7 +198,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
       })}
     </>
   );
-}
+});
 
 function createKey(
   doc: Node | undefined,
@@ -332,7 +341,7 @@ function createChildElements(
   });
 }
 
-export function ChildNodeViews({
+export const ChildNodeViews = memo(function ChildNodeViews({
   pos,
   node,
   innerDecorations,
@@ -411,4 +420,4 @@ export function ChildNodeViews({
   }
 
   return <>{childElements}</>;
-}
+});

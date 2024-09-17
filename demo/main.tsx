@@ -19,6 +19,8 @@ import React, {
   Ref,
   StrictMode,
   forwardRef,
+  useCallback,
+  useMemo,
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -114,6 +116,7 @@ const editorState = EditorState.create({
       ]),
       schema.text(" the first paragraph"),
     ]),
+    schema.nodes.paragraph.create({}, []),
     schema.nodes.paragraph.create({}, [
       schema.text("This is the second paragraph"),
       schema.nodes.footnote.create({ number: 1 }, schema.text("Footnote")),
@@ -284,7 +287,7 @@ const plugins = [
     "Mod-i": toggleMark(schema.marks.em),
     "Mod-b": toggleMark(schema.marks.strong),
   }),
-  viewPlugin,
+  // viewPlugin,
   gapCursor(),
   // widgetPlugin,
 ];
@@ -302,6 +305,27 @@ const customNodeViews: Record<string, NodeViewConstructor> = {
 function DemoEditor() {
   const [state, setState] = useState(editorState);
   const [showReactNodeViews, setShowReactNodeViews] = useState(true);
+
+  const dispatchTransaction = useCallback(function (tr) {
+    setState((prev) => {
+      return prev.apply(tr);
+    });
+  }, []);
+
+  const nodeViews = useMemo(
+    () =>
+      showReactNodeViews
+        ? {
+            paragraph: Paragraph,
+            list: List,
+            list_item: ListItem,
+            footnote: Footnote,
+          }
+        : undefined,
+    [showReactNodeViews]
+  );
+
+  const docEl = useMemo(() => <article />, []);
 
   return (
     <main>
@@ -324,25 +348,12 @@ function DemoEditor() {
         key={`${showReactNodeViews}`}
         className="ProseMirror"
         state={state}
-        dispatchTransaction={function (tr) {
-          setState((prev) => {
-            return prev.apply(tr);
-          });
-        }}
+        dispatchTransaction={dispatchTransaction}
         plugins={plugins}
-        nodeViews={
-          showReactNodeViews
-            ? {
-                paragraph: Paragraph,
-                list: List,
-                list_item: ListItem,
-                footnote: Footnote,
-              }
-            : undefined
-        }
+        nodeViews={nodeViews}
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}
       >
-        <ProseMirrorDoc as={<article />} />
+        <ProseMirrorDoc as={docEl} />
       </ProseMirror>
     </main>
   );

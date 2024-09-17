@@ -10,7 +10,7 @@ import React, {
   useRef,
 } from "react";
 
-import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { ViewDescriptorContext } from "../contexts/ViewDescriptorContext.js";
 
 import { DocNodeView, DocNodeViewProps } from "./DocNodeView.js";
 
@@ -42,7 +42,7 @@ function ProseMirrorDoc(
   );
 
   return (
-    <ChildDescriptorsContext.Provider value={[]}>
+    <ViewDescriptorContext.Provider value={{}}>
       <DocNodeView
         ref={(el) => {
           innerRef.current = el;
@@ -52,7 +52,7 @@ function ProseMirrorDoc(
         {...docProps}
         as={as}
       />
-    </ChildDescriptorsContext.Provider>
+    </ViewDescriptorContext.Provider>
   );
 }
 

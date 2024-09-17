@@ -3,6 +3,7 @@ import React, {
   ForwardRefExoticComponent,
   ReactNode,
   RefAttributes,
+  useMemo,
   useState,
 } from "react";
 
@@ -59,25 +60,40 @@ function ProseMirrorInner({
     ? viewDecorations(editor.view, editor.cursorWrapper)
     : (DecorationSet.empty as unknown as DecorationSet);
 
-  const outerDecos = editor.view ? computeDocDeco(editor.view) : [];
+  const outerDecos = useMemo(
+    () => (editor.view ? computeDocDeco(editor.view) : []),
+    [editor.view]
+  );
+
+  const docNodeContextValue = useMemo(
+    () => ({
+      className: className,
+      setMount: setMount,
+      node: editor.view?.state.doc,
+      innerDeco: innerDecos,
+      outerDeco: outerDecos,
+      viewDesc: editor.docViewDescRef.current,
+    }),
+    [
+      className,
+      editor.docViewDescRef,
+      editor.view?.state.doc,
+      innerDecos,
+      outerDecos,
+    ]
+  );
+
+  const nodeViewContextValue = useMemo(
+    () => ({
+      nodeViews,
+    }),
+    [nodeViews]
+  );
 
   return (
     <EditorContext.Provider value={editor}>
-      <NodeViewContext.Provider
-        value={{
-          nodeViews,
-        }}
-      >
-        <DocNodeViewContext.Provider
-          value={{
-            className: className,
-            setMount: setMount,
-            node: editor.view?.state.doc,
-            innerDeco: innerDecos,
-            outerDeco: outerDecos,
-            viewDesc: editor.docViewDescRef.current,
-          }}
-        >
+      <NodeViewContext.Provider value={nodeViewContextValue}>
+        <DocNodeViewContext.Provider value={docNodeContextValue}>
           {children}
         </DocNodeViewContext.Provider>
       </NodeViewContext.Provider>
