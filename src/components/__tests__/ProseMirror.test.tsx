@@ -2,10 +2,22 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { act, render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
-import { EditorState } from "prosemirror-state";
-import { doc, em, hr, li, p, strong, ul } from "prosemirror-test-builder";
+import { EditorState, Plugin } from "prosemirror-state";
+import {
+  doc,
+  em,
+  hr,
+  li,
+  p,
+  schema,
+  strong,
+  ul,
+} from "prosemirror-test-builder";
+import { EditorView } from "prosemirror-view";
 import React, { forwardRef, useEffect, useState } from "react";
 
+import { useEditorEffect } from "../../hooks/useEditorEffect.js";
+import { reactKeys } from "../../plugins/reactKeys.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 import { ProseMirror } from "../ProseMirror.js";
@@ -258,5 +270,81 @@ describe("ProseMirror", () => {
 
     view.dispatch(view.state.tr.insertText("x"));
     expect(view).toBe(thisBinding);
+  });
+
+  it("replaces the EditorView when ProseMirror would redraw", async () => {
+    const viewPlugin = () =>
+      new Plugin({
+        props: {
+          nodeViews: {
+            horizontal_rule() {
+              const dom = document.createElement("hr");
+              return {
+                dom,
+              };
+            },
+          },
+        },
+      });
+
+    const startDoc = doc(p());
+    const firstState = EditorState.create({
+      doc: startDoc,
+      schema,
+      plugins: [viewPlugin(), reactKeys()],
+    });
+
+    let firstView: EditorView | null = null;
+    let secondView: EditorView | null = null;
+
+    function Test() {
+      useEditorEffect((v) => {
+        if (firstView === null) {
+          firstView = v;
+        } else {
+          secondView = v;
+        }
+      });
+
+      return null;
+    }
+
+    const Paragraph = forwardRef<HTMLDivElement | null, NodeViewComponentProps>(
+      function Paragraph({ nodeProps, children, ...props }, ref) {
+        return (
+          <p ref={ref} data-testid="node-view" {...props}>
+            {children}
+          </p>
+        );
+      }
+    );
+
+    const { rerender } = render(
+      <ProseMirror state={firstState} nodeViews={{ paragraph: Paragraph }}>
+        <Test></Test>
+        <ProseMirrorDoc />
+      </ProseMirror>
+    );
+
+    expect(() => screen.getByTestId("node-view")).not.toThrow();
+
+    const secondState = EditorState.create({
+      doc: startDoc,
+      schema,
+      plugins: [viewPlugin(), reactKeys()],
+    });
+
+    rerender(
+      <ProseMirror state={secondState} nodeViews={{ paragraph: Paragraph }}>
+        <Test></Test>
+        <ProseMirrorDoc />
+      </ProseMirror>
+    );
+
+    expect(() => screen.getByTestId("node-view")).not.toThrow();
+
+    expect(firstView).not.toBeNull();
+    expect(secondView).not.toBeNull();
+    expect(firstView === secondView).toBeFalsy();
   });
 });

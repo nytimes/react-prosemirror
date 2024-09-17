@@ -10,12 +10,7 @@ import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
-import {
-  ReactEditorView,
-  UseEditorOptions,
-  useEditor,
-} from "../hooks/useEditor.js";
-import { usePendingViewEffects } from "../hooks/usePendingViewEffects.js";
+import { UseEditorOptions, useEditor } from "../hooks/useEditor.js";
 
 import { LayoutGroup } from "./LayoutGroup.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
@@ -52,8 +47,6 @@ function ProseMirrorInner({
     ...props,
     nodeViews: customNodeViews,
   });
-
-  usePendingViewEffects(editor.view as ReactEditorView | null);
 
   const innerDecos = editor.view
     ? viewDecorations(editor.view, editor.cursorWrapper)

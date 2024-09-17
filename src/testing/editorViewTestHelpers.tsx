@@ -73,7 +73,7 @@ export function tempEditor({
   function Test() {
     useEditorEffect((v) => {
       view = v;
-    }, []);
+    });
 
     return null;
   }
@@ -98,6 +98,7 @@ export function tempEditor({
         <ProseMirrorDoc />
       </ProseMirror>
     );
+    return view;
   }
 
   return {

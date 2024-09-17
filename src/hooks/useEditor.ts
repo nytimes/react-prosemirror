@@ -6,15 +6,10 @@ import {
   DirectEditorProps,
   EditorProps,
   EditorView,
+  MarkViewConstructor,
+  NodeViewConstructor,
 } from "prosemirror-view";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { DOMNode } from "../dom.js";
@@ -24,6 +19,34 @@ import { NodeViewDesc } from "../viewdesc.js";
 
 import { useComponentEventListeners } from "./useComponentEventListeners.js";
 import { useForceUpdate } from "./useForceUpdate.js";
+
+type NodeViewSet = {
+  [name: string]: NodeViewConstructor | MarkViewConstructor;
+};
+
+function buildNodeViews(view: ReactEditorView) {
+  const result: NodeViewSet = Object.create(null);
+  function add(obj: NodeViewSet) {
+    for (const prop in obj)
+      if (!Object.prototype.hasOwnProperty.call(result, prop))
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        result[prop] = obj[prop]!;
+  }
+  view.someProp("nodeViews", add);
+  view.someProp("markViews", add);
+  return result;
+}
+
+function changedNodeViews(a: NodeViewSet, b: NodeViewSet) {
+  let nA = 0,
+    nB = 0;
+  for (const prop in a) {
+    if (a[prop] != b[prop]) return true;
+    nA++;
+  }
+  for (const _ in b) nB++;
+  return nA != nB;
+}
 
 // @ts-expect-error We're making use of knowledge of internal methods here
 export class ReactEditorView extends EditorView {
@@ -74,6 +97,33 @@ export class ReactEditorView extends EditorView {
     this.docView.dom.replaceChildren();
     // @ts-expect-error We're making use of knowledge of internal attributes here
     this.docView = props.docView;
+  }
+
+  /**
+   * Whether the EditorView's updateStateInner method thinks that the
+   * docView needs to be blown away and redrawn.
+   *
+   * @privateremarks
+   *
+   * When ProseMirror View detects that the EditorState has been reconfigured
+   * to provide new custom node views, it calls an internal function that
+   * we can't override in order to recreate the entire editor DOM.
+   *
+   * This property mimics that check, so that we can replace the EditorView
+   * with another of our own, preventing ProseMirror View from taking over
+   * DOM management responsibility.
+   */
+  get needsRedraw() {
+    if (
+      this.oldProps.state.plugins === this._props.state.plugins &&
+      this._props.plugins === this.oldProps.plugins
+    ) {
+      return false;
+    }
+
+    const newNodeViews = buildNodeViews(this);
+    // @ts-expect-error Internal property
+    return changedNodeViews(this.nodeViews, newNodeViews);
   }
 
   /**
@@ -239,7 +289,7 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     docView: docViewDescRef.current,
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     return () => {
       view?.destroy();
     };
@@ -263,6 +313,25 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
       setView(newView);
       newView.dom.addEventListener("compositionend", forceUpdate);
       return;
+    }
+  });
+
+  // This rule is concerned about infinite updates due to the
+  // call to setView. These calls are deliberately conditional,
+  // so this is not a concern.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    // If ProseMirror View is about to redraw the entire document's
+    // DOM, clear the EditorView and reconstruct another, instead.
+    // This only happens when a newly instantiated EditorState has
+    // been provided.
+    if (view?.needsRedraw) {
+      setView(null);
+      return;
+    } else {
+      // @ts-expect-error Internal property - domObserver
+      view?.domObserver.selectionToDOM();
+      view?.runPendingEffects();
     }
   });
 
