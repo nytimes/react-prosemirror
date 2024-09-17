@@ -137,7 +137,7 @@ export function NodeView({
           decorations: outerDeco,
           innerDecorations: innerDeco,
           isSelected:
-            state?.selection instanceof NodeSelection &&
+            state.selection instanceof NodeSelection &&
             state.selection.node === node,
         }}
       >

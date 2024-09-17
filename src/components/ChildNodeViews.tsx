@@ -152,7 +152,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
 
             return cloneElement(childElement, {
               key: createKey(
-                editorState?.doc,
+                editorState.doc,
                 innerPos,
                 child,
                 reactKeys?.posToKey
@@ -390,7 +390,7 @@ export function ChildNodeViews({
   const childElements = createChildElements(
     children,
     innerPos,
-    editorState?.doc,
+    editorState.doc,
     reactKeys?.posToKey
   );
 

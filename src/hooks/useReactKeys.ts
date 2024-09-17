@@ -4,5 +4,5 @@ import { useEditorState } from "./useEditorState.js";
 
 export function useReactKeys() {
   const state = useEditorState();
-  return state && reactKeysPluginKey.getState(state);
+  return reactKeysPluginKey.getState(state);
 }
