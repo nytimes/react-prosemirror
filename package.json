@@ -107,6 +107,5 @@
   },
   "dependencies": {
     "classnames": "^2.3.2"
-  },
-  "stableVersion": "0.7.0-next.8"
+  }
 }
