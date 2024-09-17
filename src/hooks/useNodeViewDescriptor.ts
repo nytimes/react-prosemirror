@@ -3,10 +3,9 @@ import { Decoration, DecorationSource } from "prosemirror-view";
 import { MutableRefObject, useContext, useLayoutEffect, useRef } from "react";
 
 import { ViewDescriptorContext } from "../contexts/ViewDescriptorContext.js";
-import { reactKeysPluginKey } from "../plugins/reactKeys.js";
 import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
-import { useEditorState } from "./useEditorState.js";
+import { useReactKeys } from "./useReactKeys.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
@@ -20,9 +19,7 @@ export function useNodeViewDescriptor(
 ) {
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
   const viewDescContext = useContext(ViewDescriptorContext);
-  const editorState = useEditorState();
-  const reactKeysState =
-    editorState && reactKeysPluginKey.getState(editorState);
+  const reactKeysState = useReactKeys();
   const key = reactKeysState?.posToKey.get(pos);
   const childKeys = key && reactKeysState?.keyToChildren.get(key);
   const parentKey = key && reactKeysState?.keyToParent.get(key);
