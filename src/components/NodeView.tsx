@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
+import { StopEventContext } from "../contexts/StopEventContext.js";
 import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
@@ -116,7 +117,7 @@ export function NodeView({
     customNodeViewRootRef.current.appendChild(dom);
   }, [customNodeView, view, innerDeco, node, outerDeco]);
 
-  const childDescriptors = useNodeViewDescriptor(
+  const { childDescriptors, setStopEvent } = useNodeViewDescriptor(
     node,
     domRef,
     nodeDomRef,
@@ -207,18 +208,20 @@ export function NodeView({
   );
 
   return (
-    <ChildDescriptorsContext.Provider value={childDescriptors}>
-      {cloneElement(
-        markedElement,
-        node.marks.length ||
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          outerDeco.some((d) => (d as any).type.attrs.nodeName)
-          ? { ref: domRef }
-          : // If all of the node decorations were attr-only, then
-            // we've already passed the domRef to the NodeView component
-            // as a prop
-            undefined
-      )}
-    </ChildDescriptorsContext.Provider>
+    <StopEventContext.Provider value={setStopEvent}>
+      <ChildDescriptorsContext.Provider value={childDescriptors}>
+        {cloneElement(
+          markedElement,
+          node.marks.length ||
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            outerDeco.some((d) => (d as any).type.attrs.nodeName)
+            ? { ref: domRef }
+            : // If all of the node decorations were attr-only, then
+              // we've already passed the domRef to the NodeView component
+              // as a prop
+              undefined
+        )}
+      </ChildDescriptorsContext.Provider>
+    </StopEventContext.Provider>
   );
 }

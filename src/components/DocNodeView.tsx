@@ -52,7 +52,7 @@ export const DocNodeView = forwardRef(function DocNodeView(
     []
   );
 
-  const childDescriptors = useNodeViewDescriptor(
+  const { childDescriptors } = useNodeViewDescriptor(
     node,
     innerRef,
     innerRef,

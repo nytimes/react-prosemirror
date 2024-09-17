@@ -277,7 +277,8 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
       DecorationSet.empty,
       tempDom,
       null,
-      tempDom
+      tempDom,
+      () => false
     )
   );
 

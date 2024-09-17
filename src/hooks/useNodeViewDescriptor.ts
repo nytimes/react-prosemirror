@@ -1,6 +1,12 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
-import { MutableRefObject, useContext, useLayoutEffect, useRef } from "react";
+import {
+  MutableRefObject,
+  useCallback,
+  useContext,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
@@ -15,6 +21,13 @@ export function useNodeViewDescriptor(
   contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
+  const stopEvent = useRef<(event: Event) => boolean | undefined>(() => false);
+  const setStopEvent = useCallback(
+    (newStopEvent: (event: Event) => boolean | undefined) => {
+      stopEvent.current = newStopEvent;
+    },
+    []
+  );
   const siblingDescriptors = useContext(ChildDescriptorsContext);
   const childDescriptors: ViewDesc[] = [];
 
@@ -32,7 +45,8 @@ export function useNodeViewDescriptor(
         innerDecorations,
         domRef?.current ?? nodeDomRef.current,
         firstChildDesc?.dom.parentElement ?? null,
-        nodeDomRef.current
+        nodeDomRef.current,
+        (event) => !!stopEvent.current(event)
       );
     } else {
       nodeViewDescRef.current.parent = undefined;
@@ -61,5 +75,5 @@ export function useNodeViewDescriptor(
     }
   });
 
-  return childDescriptors;
+  return { childDescriptors, setStopEvent };
 }

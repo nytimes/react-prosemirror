@@ -748,7 +748,8 @@ export class NodeViewDesc extends ViewDesc {
     public innerDeco: DecorationSource,
     dom: DOMNode,
     contentDOM: HTMLElement | null,
-    public nodeDOM: DOMNode
+    public nodeDOM: DOMNode,
+    public stopEvent: (event: Event) => boolean
   ) {
     super(parent, children, dom, contentDOM);
   }
@@ -857,7 +858,17 @@ export class TextViewDesc extends NodeViewDesc {
     dom: DOMNode,
     nodeDOM: DOMNode
   ) {
-    super(parent, children, node, outerDeco, innerDeco, dom, null, nodeDOM);
+    super(
+      parent,
+      children,
+      node,
+      outerDeco,
+      innerDeco,
+      dom,
+      null,
+      nodeDOM,
+      () => false
+    );
   }
 
   parseRule() {

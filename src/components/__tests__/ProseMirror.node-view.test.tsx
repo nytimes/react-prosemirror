@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { act } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import { Plugin } from "prosemirror-state";
 import { blockquote, br, doc, p } from "prosemirror-test-builder";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import React, { LegacyRef, forwardRef, useEffect } from "react";
 
+import { useStopEvent } from "../../hooks/useStopEvent.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 
@@ -282,5 +283,34 @@ describe("nodeViews prop", () => {
     });
 
     expect(innerDecos.join()).toBe("1-2");
+  });
+
+  it("can provide a stopEvent hook", async () => {
+    tempEditor({
+      doc: doc(p("input value")),
+      nodeViews: {
+        paragraph: forwardRef<HTMLInputElement, NodeViewComponentProps>(
+          function ParagraphInput({ nodeProps, children, ...props }, ref) {
+            useStopEvent(() => {
+              return true;
+            });
+            return (
+              <input
+                ref={ref}
+                type="text"
+                defaultValue={nodeProps.node.textContent}
+                {...props}
+              />
+            );
+          }
+        ),
+      },
+    });
+
+    const input = screen.getByDisplayValue("input value");
+    input.focus();
+    await browser.keys("z");
+
+    expect(await $(input).getValue()).toBe("input valuez");
   });
 });
