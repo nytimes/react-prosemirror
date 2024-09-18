@@ -4,3 +4,5 @@
 yarn lint-staged
 yarn demo:build
 git add docs
+yarn build
+git add dist
