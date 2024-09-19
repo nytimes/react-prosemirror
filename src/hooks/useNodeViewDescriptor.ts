@@ -6,6 +6,7 @@ import {
   useContext,
   useLayoutEffect,
   useRef,
+  useState,
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
@@ -20,6 +21,7 @@ export function useNodeViewDescriptor(
   viewDesc?: NodeViewDesc,
   contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
+  const [hasContentDOM, setHasContentDOM] = useState(true);
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
   const stopEvent = useRef<(event: Event) => boolean | undefined>(() => false);
   const setStopEvent = useCallback(
@@ -68,6 +70,7 @@ export function useNodeViewDescriptor(
         null;
       nodeViewDescRef.current.nodeDOM = nodeDomRef.current;
     }
+    setHasContentDOM(nodeViewDescRef.current.contentDOM !== null);
     siblingDescriptors.push(nodeViewDescRef.current);
 
     for (const childDesc of childDescriptors) {
@@ -75,5 +78,5 @@ export function useNodeViewDescriptor(
     }
   });
 
-  return { childDescriptors, setStopEvent };
+  return { hasContentDOM, childDescriptors, setStopEvent };
 }

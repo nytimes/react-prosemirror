@@ -117,20 +117,26 @@ export function NodeView({
     customNodeViewRootRef.current.appendChild(dom);
   }, [customNodeView, view, innerDeco, node, outerDeco]);
 
-  const { childDescriptors, setStopEvent } = useNodeViewDescriptor(
-    node,
-    domRef,
-    nodeDomRef,
-    innerDeco,
-    outerDeco,
-    undefined,
-    contentDomRef
-  );
+  const { hasContentDOM, childDescriptors, setStopEvent } =
+    useNodeViewDescriptor(
+      node,
+      domRef,
+      nodeDomRef,
+      innerDeco,
+      outerDeco,
+      undefined,
+      contentDomRef
+    );
 
   if (Component) {
     element = (
       <Component
-        {...props}
+        {...{
+          ...props,
+          ...(!hasContentDOM && {
+            contentEditable: false,
+          }),
+        }}
         ref={nodeDomRef}
         nodeProps={{
           node: node,
