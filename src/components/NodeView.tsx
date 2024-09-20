@@ -128,15 +128,17 @@ export function NodeView({
       contentDomRef
     );
 
+  const finalProps = {
+    ...props,
+    ...(!hasContentDOM && {
+      contentEditable: false,
+    }),
+  };
+
   if (Component) {
     element = (
       <Component
-        {...{
-          ...props,
-          ...(!hasContentDOM && {
-            contentEditable: false,
-          }),
-        }}
+        {...finalProps}
         ref={nodeDomRef}
         nodeProps={{
           node: node,
@@ -184,7 +186,7 @@ export function NodeView({
 
     if (outputSpec) {
       element = (
-        <OutputSpec {...props} ref={nodeDomRef} outputSpec={outputSpec}>
+        <OutputSpec {...finalProps} ref={nodeDomRef} outputSpec={outputSpec}>
           <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
         </OutputSpec>
       );

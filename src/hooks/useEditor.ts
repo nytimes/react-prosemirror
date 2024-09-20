@@ -48,6 +48,13 @@ function changedNodeViews(a: NodeViewSet, b: NodeViewSet) {
   return nA != nB;
 }
 
+function changedProps(a: DirectEditorProps, b: DirectEditorProps) {
+  for (const prop of Object.keys(a) as (keyof DirectEditorProps)[]) {
+    if (a[prop] !== b[prop]) return true;
+  }
+  return false;
+}
+
 // @ts-expect-error We're making use of knowledge of internal methods here
 export class ReactEditorView extends EditorView {
   private shouldUpdatePluginViews = false;
@@ -144,10 +151,12 @@ export class ReactEditorView extends EditorView {
    * calls to pureSetProps.
    */
   runPendingEffects() {
-    const newProps = this.props;
-    this._props = this.oldProps;
-    this.state = this._props.state;
-    this.update(newProps);
+    if (changedProps(this.props, this.oldProps)) {
+      const newProps = this.props;
+      this._props = this.oldProps;
+      this.state = this._props.state;
+      this.update(newProps);
+    }
   }
 
   update(props: DirectEditorProps) {
@@ -254,7 +263,10 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     [options.plugins, componentEventListenersPlugin, setCursorWrapper]
   );
 
-  function dispatchTransaction(this: EditorView, tr: Transaction) {
+  const dispatchTransaction = useCallback(function dispatchTransaction(
+    this: EditorView,
+    tr: Transaction
+  ) {
     flushSync(() => {
       if (!options.state) {
         setState((s) => s.apply(tr));
@@ -264,7 +276,8 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
         options.dispatchTransaction.call(this, tr);
       }
     });
-  }
+  },
+  []);
 
   const tempDom = document.createElement("div");
 

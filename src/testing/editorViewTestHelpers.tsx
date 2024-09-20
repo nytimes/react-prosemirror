@@ -53,7 +53,7 @@ export function tempEditor({
   controlled?: boolean;
 } & Omit<Props, "state">): {
   view: EditorViewT;
-  rerender: (props: Omit<Props, "state" | "plugins">) => void;
+  rerender: (props?: Omit<Props, "state" | "plugins">) => void;
   unmount: () => void;
 } {
   startDoc = startDoc ?? doc(p());
@@ -88,7 +88,9 @@ export function tempEditor({
     </ProseMirror>
   );
 
-  function rerenderEditor({ ...newProps }: Omit<Props, "state" | "plugins">) {
+  function rerenderEditor({
+    ...newProps
+  }: Omit<Props, "state" | "plugins"> = {}) {
     rerender(
       <ProseMirror
         {...(controlled ? { state } : { defaultState: state })}
@@ -100,6 +102,9 @@ export function tempEditor({
     );
     return view;
   }
+
+  // We need two renders for the hasContentDOM state to settle
+  rerenderEditor();
 
   return {
     view: view as unknown as EditorView,
