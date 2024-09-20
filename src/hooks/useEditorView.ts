@@ -3,7 +3,7 @@ import { EditorState } from "prosemirror-state";
 import type { Plugin, Transaction } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
 import type { EditorProps } from "prosemirror-view";
-import { useLayoutEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 import type { EditorContextValue } from "../contexts/EditorContext.js";
@@ -94,9 +94,25 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
     dispatchTransaction,
   };
 
+  const directEditorPropsRef = useRef(directEditorProps);
+  directEditorPropsRef.current = directEditorProps;
+
+  const mountRef = useRef(mount);
+  mountRef.current = mount;
+
   const [view, setView] = useState<EditorView | null>(null);
 
   useLayoutEffect(() => {
+    if (view && !view.docView) {
+      if (mountRef.current) {
+        setView(
+          new EditorView(
+            { mount: mountRef.current },
+            directEditorPropsRef.current
+          )
+        );
+      }
+    }
     return () => {
       if (view) {
         view.destroy();
