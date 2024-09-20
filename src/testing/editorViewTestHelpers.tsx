@@ -9,6 +9,7 @@ import React from "react";
 
 import { Props, ProseMirror } from "../components/ProseMirror.js";
 import { ProseMirrorDoc } from "../components/ProseMirrorDoc.js";
+import { DOMNode } from "../dom.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 import { reactKeys } from "../plugins/reactKeys.js";
 
@@ -111,4 +112,23 @@ export function tempEditor({
     rerender: rerenderEditor,
     unmount,
   };
+}
+
+function findTextNodeInner(node: DOMNode, text: string): Text | undefined {
+  if (node.nodeType == 3) {
+    if (node.nodeValue == text) return node as Text;
+  } else if (node.nodeType == 1) {
+    for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
+      const found = findTextNodeInner(ch, text);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
+export function findTextNode(node: DOMNode, text: string): Text {
+  const found = findTextNodeInner(node, text);
+  if (found) return found;
+
+  throw new Error("Unable to find matching text node");
 }
