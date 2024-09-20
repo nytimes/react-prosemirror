@@ -263,21 +263,20 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     [options.plugins, componentEventListenersPlugin, setCursorWrapper]
   );
 
-  const dispatchTransaction = useCallback(function dispatchTransaction(
-    this: EditorView,
-    tr: Transaction
-  ) {
-    flushSync(() => {
-      if (!options.state) {
-        setState((s) => s.apply(tr));
-      }
+  const dispatchTransaction = useCallback(
+    function dispatchTransaction(this: EditorView, tr: Transaction) {
+      flushSync(() => {
+        if (!options.state) {
+          setState((s) => s.apply(tr));
+        }
 
-      if (options.dispatchTransaction) {
-        options.dispatchTransaction.call(this, tr);
-      }
-    });
-  },
-  []);
+        if (options.dispatchTransaction) {
+          options.dispatchTransaction.call(this, tr);
+        }
+      });
+    },
+    [options.dispatchTransaction, options.state]
+  );
 
   const tempDom = document.createElement("div");
 

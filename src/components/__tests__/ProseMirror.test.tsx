@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
 import {
@@ -79,9 +79,7 @@ describe("ProseMirror", () => {
       return (
         <ProseMirror
           state={editorState}
-          dispatchTransaction={(tr) =>
-            act(() => setEditorState(editorState.apply(tr)))
-          }
+          dispatchTransaction={(tr) => setEditorState(editorState.apply(tr))}
         >
           <ProseMirrorDoc data-testid="editor" />
         </ProseMirror>
