@@ -55,6 +55,10 @@ function changedProps(a: DirectEditorProps, b: DirectEditorProps) {
   return false;
 }
 
+function getEditable(view: ReactEditorView) {
+  return !view.someProp("editable", (value) => value(view.state) === false);
+}
+
 // @ts-expect-error We're making use of knowledge of internal methods here
 export class ReactEditorView extends EditorView {
   private shouldUpdatePluginViews = false;
@@ -95,7 +99,7 @@ export class ReactEditorView extends EditorView {
     // @ts-expect-error We're making use of knowledge of internal attributes here
     this.domObserver.start();
 
-    // updateCursorWrapper(this);
+    this.editable = getEditable(this);
 
     // Destroy the DOM created by the default
     // ProseMirror ViewDesc implementation; we
@@ -144,6 +148,8 @@ export class ReactEditorView extends EditorView {
       ...props,
     };
     this.state = this._props.state;
+
+    this.editable = getEditable(this);
   }
 
   /**
