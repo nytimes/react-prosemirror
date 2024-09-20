@@ -10,7 +10,8 @@ import {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { NodeViewDesc, ViewDesc } from "../viewdesc.js";
+import { EditorContext } from "../contexts/EditorContext.js";
+import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
@@ -21,6 +22,7 @@ export function useNodeViewDescriptor(
   viewDesc?: NodeViewDesc,
   contentDOMRef?: MutableRefObject<HTMLElement | null>
 ) {
+  const { view } = useContext(EditorContext);
   const [hasContentDOM, setHasContentDOM] = useState(true);
   const nodeViewDescRef = useRef<NodeViewDesc | undefined>(viewDesc);
   const stopEvent = useRef<(event: Event) => boolean | undefined>(() => false);
@@ -75,7 +77,48 @@ export function useNodeViewDescriptor(
 
     for (const childDesc of childDescriptors) {
       childDesc.parent = nodeViewDescRef.current;
+
+      // Because TextNodeViews can't locate the DOM nodes
+      // for compositions, we need to override them here
+      if (childDesc instanceof CompositionViewDesc) {
+        const compositionTopDOM =
+          nodeViewDescRef.current.contentDOM?.firstChild;
+        if (!compositionTopDOM)
+          throw new Error(
+            `Started a composition but couldn't find the text node it belongs to.`
+          );
+
+        let textDOM = compositionTopDOM;
+        while (textDOM.firstChild) {
+          textDOM = textDOM.firstChild as Element | Text;
+        }
+
+        if (!textDOM || !(textDOM instanceof Text))
+          throw new Error(
+            `Started a composition but couldn't find the text node it belongs to.`
+          );
+
+        childDesc.dom = compositionTopDOM;
+        childDesc.textDOM = textDOM;
+        childDesc.text = textDOM.data;
+        // @ts-expect-error ???
+        childDesc.textDOM.pmViewDesc = childDesc;
+
+        // @ts-expect-error ???
+        view?.input.compositionNodes.push(childDesc);
+      }
     }
+
+    return () => {
+      if (
+        nodeViewDescRef.current?.children[0] instanceof CompositionViewDesc &&
+        !view?.composing
+      ) {
+        nodeViewDescRef.current?.children[0].dom.parentNode?.removeChild(
+          nodeViewDescRef.current?.children[0].dom
+        );
+      }
+    };
   });
 
   return { hasContentDOM, childDescriptors, setStopEvent };
