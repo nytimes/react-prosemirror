@@ -168,6 +168,7 @@ const InlineView = memo(function InlineView({
 
         return (
           <MarkView
+            pos={innerPos}
             key={createKey(
               // editorState?.doc,
               innerPos,
@@ -410,8 +411,8 @@ export const ChildNodeViews = memo(function ChildNodeViews({
     /\n$/.test(lastChild.node.text!)
   ) {
     childElements.push(
-      <SeparatorHackView key="trailing-hack-img" />,
-      <TrailingHackView key="trailing-hack-br" />
+      <SeparatorHackView pos={innerPos} key="trailing-hack-img" />,
+      <TrailingHackView pos={innerPos} key="trailing-hack-br" />
     );
   }
 

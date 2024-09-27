@@ -17,11 +17,12 @@ import { OutputSpec } from "./OutputSpec.js";
 
 type Props = {
   mark: Mark;
+  pos: number;
   children: ReactNode;
 };
 
 export const MarkView = memo(
-  forwardRef(function MarkView({ mark, children }: Props, ref) {
+  forwardRef(function MarkView({ mark, pos, children }: Props, ref) {
     const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
     const viewDescRef = useRef<MarkViewDesc | undefined>(undefined);
 
@@ -63,6 +64,7 @@ export const MarkView = memo(
         viewDescRef.current = new MarkViewDesc(
           parentRef.current,
           childDescriptors.current,
+          pos,
           mark,
           domRef.current,
           firstChildDesc?.dom.parentElement ?? domRef.current
@@ -73,10 +75,13 @@ export const MarkView = memo(
         viewDescRef.current.contentDOM =
           firstChildDesc?.dom.parentElement ?? domRef.current;
         viewDescRef.current.mark = mark;
+        viewDescRef.current.pos = pos;
       }
       if (!siblingsRef.current.includes(viewDescRef.current)) {
         siblingsRef.current.push(viewDescRef.current);
       }
+
+      siblingsRef.current.sort((a, b) => a.pos - b.pos);
 
       for (const childDesc of childDescriptors.current) {
         childDesc.parent = viewDescRef.current;

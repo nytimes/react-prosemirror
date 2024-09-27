@@ -15,6 +15,7 @@ import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
+  pos: number,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSource,
@@ -56,6 +57,7 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current = new NodeViewDesc(
         parentRef.current,
         childDescriptors.current,
+        pos,
         node,
         outerDecorations,
         innerDecorations,
@@ -68,6 +70,7 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current.parent = parentRef.current;
       nodeViewDescRef.current.children = childDescriptors.current;
       nodeViewDescRef.current.node = node;
+      nodeViewDescRef.current.pos = pos;
       nodeViewDescRef.current.outerDeco = outerDecorations;
       nodeViewDescRef.current.innerDeco = innerDecorations;
       nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
@@ -89,6 +92,8 @@ export function useNodeViewDescriptor(
     if (!siblingsRef.current.includes(nodeViewDescRef.current)) {
       siblingsRef.current.push(nodeViewDescRef.current);
     }
+
+    siblingsRef.current.sort((a, b) => a.pos - b.pos);
 
     for (const childDesc of childDescriptors.current) {
       childDesc.parent = nodeViewDescRef.current;

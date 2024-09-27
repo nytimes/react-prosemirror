@@ -3,7 +3,11 @@ import React, { useContext, useLayoutEffect, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { TrailingHackViewDesc } from "../viewdesc.js";
 
-export function TrailingHackView() {
+type Props = {
+  pos: number;
+};
+
+export function TrailingHackView({ pos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<TrailingHackViewDesc | null>(null);
 
@@ -27,16 +31,19 @@ export function TrailingHackView() {
       viewDescRef.current = new TrailingHackViewDesc(
         parentRef.current,
         [],
+        pos,
         ref.current,
         null
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.dom = ref.current;
+      viewDescRef.current.pos = pos;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
+    siblingsRef.current.sort((a, b) => a.pos - b.pos);
   });
 
   return <br ref={ref} className="ProseMirror-trailingBreak" />;

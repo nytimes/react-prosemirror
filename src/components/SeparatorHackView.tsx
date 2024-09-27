@@ -4,7 +4,11 @@ import { browser } from "../browser.js";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { TrailingHackViewDesc } from "../viewdesc.js";
 
-export function SeparatorHackView() {
+type Props = {
+  pos: number;
+};
+
+export function SeparatorHackView({ pos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<TrailingHackViewDesc | null>(null);
   const ref = useRef<HTMLImageElement | null>(null);
@@ -40,12 +44,14 @@ export function SeparatorHackView() {
       viewDescRef.current = new TrailingHackViewDesc(
         parentRef.current,
         [],
+        pos,
         ref.current,
         null
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.dom = ref.current;
+      viewDescRef.current.pos = pos;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);

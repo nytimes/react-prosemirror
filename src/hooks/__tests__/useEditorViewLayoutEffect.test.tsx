@@ -6,6 +6,7 @@ import React from "react";
 
 import { LayoutGroup } from "../../components/LayoutGroup.js";
 import { EditorContext } from "../../contexts/EditorContext.js";
+import { EditorStateContext } from "../../contexts/EditorStateContext.js";
 import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({
@@ -32,12 +33,13 @@ describe("useEditorViewLayoutEffect", () => {
         <EditorContext.Provider
           value={{
             view: editorView,
-            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -58,12 +60,14 @@ describe("useEditorViewLayoutEffect", () => {
         <EditorContext.Provider
           value={{
             view: editorView,
-            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={[]} />
+          {" "}
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={[]} />
+          </EditorStateContext.Provider>{" "}
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -73,12 +77,13 @@ describe("useEditorViewLayoutEffect", () => {
         <EditorContext.Provider
           value={{
             view: editorView,
-            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={[]} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={[]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -98,12 +103,13 @@ describe("useEditorViewLayoutEffect", () => {
         <EditorContext.Provider
           value={{
             view: editorView,
-            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={["one"]} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={["one"]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -113,12 +119,13 @@ describe("useEditorViewLayoutEffect", () => {
         <EditorContext.Provider
           value={{
             view: editorView,
-            state: editorState,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={["two"]} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={["two"]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );

@@ -59,17 +59,20 @@ export function NativeWidgetView({ widget, pos }: Props) {
     if (!viewDescRef.current) {
       viewDescRef.current = new WidgetViewDesc(
         parentRef.current,
+        pos,
         widget,
         rootDomRef.current
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.widget = widget;
+      viewDescRef.current.pos = pos;
       viewDescRef.current.dom = rootDomRef.current;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
+    siblingsRef.current.sort((a, b) => a.pos - b.pos);
   });
 
   return <span ref={rootDomRef} />;

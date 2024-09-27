@@ -57,6 +57,7 @@ export const DocNodeView = memo(
 
     const { childDescriptors, nodeViewDescRef } = useNodeViewDescriptor(
       node,
+      -1,
       innerRef,
       innerRef,
       innerDeco,

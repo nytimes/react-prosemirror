@@ -56,7 +56,7 @@ export class TextNodeView extends Component<Props> {
   private renderRef: null | JSX.Element = null;
 
   updateEffect() {
-    const { view, decorations, siblingsRef, parentRef, node } = this.props;
+    const { view, decorations, siblingsRef, parentRef, pos, node } = this.props;
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
     const dom = findDOMNode(this);
@@ -69,6 +69,7 @@ export class TextNodeView extends Component<Props> {
 
       this.viewDescRef = new CompositionViewDesc(
         parentRef.current,
+        pos,
         // These are just placeholders/dummies. We can't
         // actually find the correct DOM nodes from here,
         // so we let our parent do it.
@@ -91,6 +92,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef = new TextViewDesc(
         undefined,
         [],
+        pos,
         node,
         decorations,
         DecorationSet.empty,
@@ -101,6 +103,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.parent = parentRef.current;
       this.viewDescRef.children = [];
       this.viewDescRef.node = node;
+      this.viewDescRef.pos = pos;
       this.viewDescRef.outerDeco = decorations;
       this.viewDescRef.innerDeco = DecorationSet.empty;
       this.viewDescRef.dom = dom;
@@ -112,6 +115,8 @@ export class TextNodeView extends Component<Props> {
     if (!siblingsRef.current.includes(this.viewDescRef)) {
       siblingsRef.current.push(this.viewDescRef);
     }
+
+    siblingsRef.current.sort((a, b) => a.pos - b.pos);
   }
 
   shouldComponentUpdate(nextProps: Props): boolean {

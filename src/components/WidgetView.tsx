@@ -32,17 +32,20 @@ export function WidgetView({ widget, pos }: Props) {
     if (!viewDescRef.current) {
       viewDescRef.current = new WidgetViewDesc(
         parentRef.current,
+        pos,
         widget,
         domRef.current
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.widget = widget;
+      viewDescRef.current.pos = pos;
       viewDescRef.current.dom = domRef.current;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
+    siblingsRef.current.sort((a, b) => a.pos - b.pos);
   });
 
   const { Component } = widget.type;

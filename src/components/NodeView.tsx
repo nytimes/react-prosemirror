@@ -125,6 +125,7 @@ export const NodeView = memo(function NodeView({
   const { hasContentDOM, childDescriptors, setStopEvent, nodeViewDescRef } =
     useNodeViewDescriptor(
       node,
+      pos,
       domRef,
       nodeDomRef,
       innerDeco,
@@ -214,7 +215,11 @@ export const NodeView = memo(function NodeView({
   // TODO: Should we only be wrapping non-inline elements? Inline elements have
   // already been wrapped in ChildNodeViews/InlineView?
   const markedElement = node.marks.reduce(
-    (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+    (element, mark) => (
+      <MarkView pos={pos} mark={mark}>
+        {element}
+      </MarkView>
+    ),
     decoratedElement
   );
 
