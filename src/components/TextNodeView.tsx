@@ -1,6 +1,6 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
-import { Component } from "react";
+import { Component, MutableRefObject } from "react";
 import { findDOMNode } from "react-dom";
 
 import { CompositionViewDesc, TextViewDesc, ViewDesc } from "../viewdesc.js";
@@ -11,7 +11,8 @@ type Props = {
   view: EditorView | null;
   node: Node;
   pos: number;
-  siblingDescriptors: ViewDesc[];
+  siblingsRef: MutableRefObject<ViewDesc[]>;
+  parentRef: MutableRefObject<ViewDesc | undefined>;
   decorations: readonly Decoration[];
 };
 
@@ -20,7 +21,7 @@ export class TextNodeView extends Component<Props> {
   private renderRef: null | JSX.Element = null;
 
   updateEffect() {
-    const { view, decorations, siblingDescriptors, node } = this.props;
+    const { view, decorations, siblingsRef, parentRef, node } = this.props;
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
     const dom = findDOMNode(this);
@@ -32,7 +33,7 @@ export class TextNodeView extends Component<Props> {
       if (!view?.composing) return;
 
       this.viewDescRef = new CompositionViewDesc(
-        undefined,
+        parentRef.current,
         // These are just placeholders/dummies. We can't
         // actually find the correct DOM nodes from here,
         // so we let our parent do it.
@@ -62,7 +63,7 @@ export class TextNodeView extends Component<Props> {
         textNode
       );
     } else {
-      this.viewDescRef.parent = undefined;
+      this.viewDescRef.parent = parentRef.current;
       this.viewDescRef.children = [];
       this.viewDescRef.node = node;
       this.viewDescRef.outerDeco = decorations;
@@ -73,7 +74,9 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.nodeDOM = textNode;
     }
 
-    siblingDescriptors.push(this.viewDescRef);
+    if (!siblingsRef.current.includes(this.viewDescRef)) {
+      siblingsRef.current.push(this.viewDescRef);
+    }
   }
 
   componentDidMount(): void {
@@ -82,6 +85,15 @@ export class TextNodeView extends Component<Props> {
 
   componentDidUpdate(): void {
     this.updateEffect();
+  }
+
+  componentWillUnmount(): void {
+    const { siblingsRef } = this.props;
+    if (!this.viewDescRef) return;
+    if (siblingsRef.current.includes(this.viewDescRef)) {
+      const index = siblingsRef.current.indexOf(this.viewDescRef);
+      siblingsRef.current.splice(index, 1);
+    }
   }
 
   render() {

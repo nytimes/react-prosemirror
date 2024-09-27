@@ -628,7 +628,7 @@ export class ViewDesc {
 export class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    readonly widget: Decoration,
+    public widget: Decoration,
     dom: DOMNode
   ) {
     super(parent, [], dom, null);
@@ -703,7 +703,7 @@ export class MarkViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
-    readonly mark: Mark,
+    public mark: Mark,
     dom: DOMNode,
     contentDOM: HTMLElement
   ) {

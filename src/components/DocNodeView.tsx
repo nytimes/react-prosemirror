@@ -12,6 +12,7 @@ import React, {
   createElement,
   forwardRef,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from "react";
 
@@ -52,13 +53,21 @@ export const DocNodeView = forwardRef(function DocNodeView(
     []
   );
 
-  const { childDescriptors } = useNodeViewDescriptor(
+  const { childDescriptors, nodeViewDescRef } = useNodeViewDescriptor(
     node,
     innerRef,
     innerRef,
     innerDeco,
     outerDeco,
     viewDesc
+  );
+
+  const childContextValue = useMemo(
+    () => ({
+      parentRef: nodeViewDescRef,
+      siblingsRef: childDescriptors,
+    }),
+    [childDescriptors, nodeViewDescRef]
   );
 
   const props = {
@@ -72,14 +81,14 @@ export const DocNodeView = forwardRef(function DocNodeView(
     ? cloneElement(
         as,
         props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
+        <ChildDescriptorsContext.Provider value={childContextValue}>
           <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
         </ChildDescriptorsContext.Provider>
       )
     : createElement(
         "div",
         props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
+        <ChildDescriptorsContext.Provider value={childContextValue}>
           <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
         </ChildDescriptorsContext.Provider>
       );

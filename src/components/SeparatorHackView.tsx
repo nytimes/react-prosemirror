@@ -5,15 +5,27 @@ import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js"
 import { TrailingHackViewDesc } from "../viewdesc.js";
 
 export function SeparatorHackView() {
-  const siblingDescriptors = useContext(ChildDescriptorsContext);
+  const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
+  const viewDescRef = useRef<TrailingHackViewDesc | null>(null);
   const ref = useRef<HTMLImageElement | null>(null);
   const [shouldRender, setShouldRender] = useState(false);
+
+  useLayoutEffect(() => {
+    const siblings = siblingsRef.current;
+    return () => {
+      if (!viewDescRef.current) return;
+      if (siblings.includes(viewDescRef.current)) {
+        const index = siblings.indexOf(viewDescRef.current);
+        siblings.splice(index, 1);
+      }
+    };
+  }, [siblingsRef]);
 
   // There's no risk of an infinite loop here, because
   // we call setShouldRender conditionally
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    const lastSibling = siblingDescriptors[siblingDescriptors.length - 1];
+    const lastSibling = siblingsRef.current[siblingsRef.current.length - 1];
     if (
       (browser.safari || browser.chrome) &&
       (lastSibling?.dom as HTMLElement)?.contentEditable == "false"
@@ -24,8 +36,20 @@ export function SeparatorHackView() {
 
     if (!ref.current) return;
 
-    const desc = new TrailingHackViewDesc(undefined, [], ref.current, null);
-    siblingDescriptors.push(desc);
+    if (!viewDescRef.current) {
+      viewDescRef.current = new TrailingHackViewDesc(
+        parentRef.current,
+        [],
+        ref.current,
+        null
+      );
+    } else {
+      viewDescRef.current.parent = parentRef.current;
+      viewDescRef.current.dom = ref.current;
+    }
+    if (!siblingsRef.current.includes(viewDescRef.current)) {
+      siblingsRef.current.push(viewDescRef.current);
+    }
   });
 
   return shouldRender ? (

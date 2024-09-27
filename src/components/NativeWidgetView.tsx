@@ -11,10 +11,23 @@ type Props = {
 };
 
 export function NativeWidgetView({ widget, pos }: Props) {
-  const siblingDescriptors = useContext(ChildDescriptorsContext);
+  const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
+  const viewDescRef = useRef<WidgetViewDesc | null>(null);
+
   const rootDomRef = useRef<HTMLDivElement | null>(null);
   const posRef = useRef(pos);
   posRef.current = pos;
+
+  useLayoutEffect(() => {
+    const siblings = siblingsRef.current;
+    return () => {
+      if (!viewDescRef.current) return;
+      if (siblings.includes(viewDescRef.current)) {
+        const index = siblings.indexOf(viewDescRef.current);
+        siblings.splice(index, 1);
+      }
+    };
+  }, [siblingsRef]);
 
   useEditorEffect((view) => {
     if (!rootDomRef.current) return;
@@ -43,8 +56,20 @@ export function NativeWidgetView({ widget, pos }: Props) {
   useLayoutEffect(() => {
     if (!rootDomRef.current) return;
 
-    const desc = new WidgetViewDesc(undefined, widget, rootDomRef.current);
-    siblingDescriptors.push(desc);
+    if (!viewDescRef.current) {
+      viewDescRef.current = new WidgetViewDesc(
+        parentRef.current,
+        widget,
+        rootDomRef.current
+      );
+    } else {
+      viewDescRef.current.parent = parentRef.current;
+      viewDescRef.current.widget = widget;
+      viewDescRef.current.dom = rootDomRef.current;
+    }
+    if (!siblingsRef.current.includes(viewDescRef.current)) {
+      siblingsRef.current.push(viewDescRef.current);
+    }
   });
 
   return <span ref={rootDomRef} />;

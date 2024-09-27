@@ -5,6 +5,7 @@ import React, {
   useContext,
   useImperativeHandle,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 
@@ -22,8 +23,10 @@ export const MarkView = forwardRef(function MarkView(
   { mark, children }: Props,
   ref
 ) {
-  const siblingDescriptors = useContext(ChildDescriptorsContext);
-  const childDescriptors: ViewDesc[] = [];
+  const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
+  const viewDescRef = useRef<MarkViewDesc | undefined>(undefined);
+
+  const childDescriptors = useRef<ViewDesc[]>([]);
   const domRef = useRef<HTMLElement | null>(null);
 
   useImperativeHandle(
@@ -39,27 +42,56 @@ export const MarkView = forwardRef(function MarkView(
     throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
 
   useLayoutEffect(() => {
+    const siblings = siblingsRef.current;
+    return () => {
+      if (!viewDescRef.current) return;
+      if (siblings.includes(viewDescRef.current)) {
+        const index = siblings.indexOf(viewDescRef.current);
+        siblings.splice(index, 1);
+      }
+    };
+  }, [siblingsRef]);
+
+  useLayoutEffect(() => {
     if (!domRef.current) return;
 
-    const firstChildDesc = childDescriptors[0];
+    const firstChildDesc = childDescriptors.current[0];
 
-    const desc = new MarkViewDesc(
-      undefined,
-      childDescriptors,
-      mark,
-      domRef.current,
-      firstChildDesc?.dom.parentElement ?? domRef.current
-    );
-    siblingDescriptors.push(desc);
+    if (!viewDescRef.current) {
+      viewDescRef.current = new MarkViewDesc(
+        parentRef.current,
+        childDescriptors.current,
+        mark,
+        domRef.current,
+        firstChildDesc?.dom.parentElement ?? domRef.current
+      );
+    } else {
+      viewDescRef.current.parent = parentRef.current;
+      viewDescRef.current.dom = domRef.current;
+      viewDescRef.current.contentDOM =
+        firstChildDesc?.dom.parentElement ?? domRef.current;
+      viewDescRef.current.mark = mark;
+    }
+    if (!siblingsRef.current.includes(viewDescRef.current)) {
+      siblingsRef.current.push(viewDescRef.current);
+    }
 
-    for (const childDesc of childDescriptors) {
-      childDesc.parent = desc;
+    for (const childDesc of childDescriptors.current) {
+      childDesc.parent = viewDescRef.current;
     }
   });
 
+  const childContextValue = useMemo(
+    () => ({
+      parentRef: viewDescRef,
+      siblingsRef: childDescriptors,
+    }),
+    [childDescriptors, viewDescRef]
+  );
+
   return (
     <OutputSpec ref={domRef} outputSpec={outputSpec}>
-      <ChildDescriptorsContext.Provider value={childDescriptors}>
+      <ChildDescriptorsContext.Provider value={childContextValue}>
         {children}
       </ChildDescriptorsContext.Provider>
     </OutputSpec>

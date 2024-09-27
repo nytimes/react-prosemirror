@@ -12,6 +12,7 @@ import React, {
   createElement,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
@@ -117,7 +118,7 @@ export function NodeView({
     customNodeViewRootRef.current.appendChild(dom);
   }, [customNodeView, view, innerDeco, node, outerDeco]);
 
-  const { hasContentDOM, childDescriptors, setStopEvent } =
+  const { hasContentDOM, childDescriptors, setStopEvent, nodeViewDescRef } =
     useNodeViewDescriptor(
       node,
       domRef,
@@ -215,9 +216,17 @@ export function NodeView({
     decoratedElement
   );
 
+  const childContextValue = useMemo(
+    () => ({
+      parentRef: nodeViewDescRef,
+      siblingsRef: childDescriptors,
+    }),
+    [childDescriptors, nodeViewDescRef]
+  );
+
   return (
     <StopEventContext.Provider value={setStopEvent}>
-      <ChildDescriptorsContext.Provider value={childDescriptors}>
+      <ChildDescriptorsContext.Provider value={childContextValue}>
         {cloneElement(
           markedElement,
           node.marks.length ||

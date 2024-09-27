@@ -131,12 +131,13 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
                 <NativeWidgetView widget={child.widget} pos={childPos} />
               ) : child.node.isText ? (
                 <ChildDescriptorsContext.Consumer>
-                  {(siblingDescriptors) => (
+                  {({ siblingsRef, parentRef }) => (
                     <TextNodeView
                       view={view}
                       node={child.node}
                       pos={childPos}
-                      siblingDescriptors={siblingDescriptors}
+                      siblingsRef={siblingsRef}
+                      parentRef={parentRef}
                       decorations={child.outerDeco}
                     />
                   )}
