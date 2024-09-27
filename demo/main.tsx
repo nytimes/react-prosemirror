@@ -19,6 +19,8 @@ import React, {
   Ref,
   StrictMode,
   forwardRef,
+  useCallback,
+  useMemo,
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -303,6 +305,25 @@ function DemoEditor() {
   const [state, setState] = useState(editorState);
   const [showReactNodeViews, setShowReactNodeViews] = useState(true);
 
+  const nodeViews = useMemo(
+    () =>
+      showReactNodeViews
+        ? {
+            // paragraph: Paragraph,
+            list: List,
+            list_item: ListItem,
+            footnote: Footnote,
+          }
+        : undefined,
+    [showReactNodeViews]
+  );
+
+  const dispatchTransaction = useCallback(function (tr) {
+    setState((prev) => {
+      return prev.apply(tr);
+    });
+  }, []);
+
   return (
     <main>
       <h1>React ProseMirror Demo</h1>
@@ -324,25 +345,12 @@ function DemoEditor() {
         key={`${showReactNodeViews}`}
         className="ProseMirror"
         state={state}
-        dispatchTransaction={function (tr) {
-          setState((prev) => {
-            return prev.apply(tr);
-          });
-        }}
+        dispatchTransaction={dispatchTransaction}
         plugins={plugins}
-        nodeViews={
-          showReactNodeViews
-            ? {
-                paragraph: Paragraph,
-                list: List,
-                list_item: ListItem,
-                footnote: Footnote,
-              }
-            : undefined
-        }
+        nodeViews={nodeViews}
         customNodeViews={showReactNodeViews ? undefined : customNodeViews}
       >
-        <ProseMirrorDoc as={<article />} />
+        <ProseMirrorDoc />
       </ProseMirror>
     </main>
   );

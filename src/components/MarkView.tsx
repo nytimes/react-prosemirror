@@ -2,6 +2,7 @@ import { Mark } from "prosemirror-model";
 import React, {
   ReactNode,
   forwardRef,
+  memo,
   useContext,
   useImperativeHandle,
   useLayoutEffect,
@@ -19,81 +20,83 @@ type Props = {
   children: ReactNode;
 };
 
-export const MarkView = forwardRef(function MarkView(
-  { mark, children }: Props,
-  ref
-) {
-  const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
-  const viewDescRef = useRef<MarkViewDesc | undefined>(undefined);
+export const MarkView = memo(
+  forwardRef(function MarkView({ mark, children }: Props, ref) {
+    const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
+    const viewDescRef = useRef<MarkViewDesc | undefined>(undefined);
 
-  const childDescriptors = useRef<ViewDesc[]>([]);
-  const domRef = useRef<HTMLElement | null>(null);
+    const childDescriptors = useRef<ViewDesc[]>([]);
+    const domRef = useRef<HTMLElement | null>(null);
 
-  useImperativeHandle(
-    ref,
-    () => {
-      return domRef.current;
-    },
-    []
-  );
+    useImperativeHandle(
+      ref,
+      () => {
+        return domRef.current;
+      },
+      []
+    );
 
-  const outputSpec = mark.type.spec.toDOM?.(mark, true);
-  if (!outputSpec)
-    throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
+    const outputSpec = useMemo(
+      () => mark.type.spec.toDOM?.(mark, true),
+      [mark]
+    );
+    if (!outputSpec)
+      throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
 
-  useLayoutEffect(() => {
-    const siblings = siblingsRef.current;
-    return () => {
-      if (!viewDescRef.current) return;
-      if (siblings.includes(viewDescRef.current)) {
-        const index = siblings.indexOf(viewDescRef.current);
-        siblings.splice(index, 1);
+    useLayoutEffect(() => {
+      const siblings = siblingsRef.current;
+      return () => {
+        if (!viewDescRef.current) return;
+        if (siblings.includes(viewDescRef.current)) {
+          const index = siblings.indexOf(viewDescRef.current);
+          siblings.splice(index, 1);
+        }
+      };
+    }, [siblingsRef]);
+
+    useLayoutEffect(() => {
+      if (!domRef.current) return;
+
+      const firstChildDesc = childDescriptors.current[0];
+
+      if (!viewDescRef.current) {
+        viewDescRef.current = new MarkViewDesc(
+          parentRef.current,
+          childDescriptors.current,
+          mark,
+          domRef.current,
+          firstChildDesc?.dom.parentElement ?? domRef.current
+        );
+      } else {
+        viewDescRef.current.parent = parentRef.current;
+        viewDescRef.current.dom = domRef.current;
+        viewDescRef.current.contentDOM =
+          firstChildDesc?.dom.parentElement ?? domRef.current;
+        viewDescRef.current.mark = mark;
       }
-    };
-  }, [siblingsRef]);
+      if (!siblingsRef.current.includes(viewDescRef.current)) {
+        siblingsRef.current.push(viewDescRef.current);
+      }
 
-  useLayoutEffect(() => {
-    if (!domRef.current) return;
+      for (const childDesc of childDescriptors.current) {
+        childDesc.parent = viewDescRef.current;
+      }
+    });
 
-    const firstChildDesc = childDescriptors.current[0];
+    const childContextValue = useMemo(
+      () => ({
+        parentRef: viewDescRef,
+        siblingsRef: childDescriptors,
+      }),
+      [childDescriptors, viewDescRef]
+    );
 
-    if (!viewDescRef.current) {
-      viewDescRef.current = new MarkViewDesc(
-        parentRef.current,
-        childDescriptors.current,
-        mark,
-        domRef.current,
-        firstChildDesc?.dom.parentElement ?? domRef.current
-      );
-    } else {
-      viewDescRef.current.parent = parentRef.current;
-      viewDescRef.current.dom = domRef.current;
-      viewDescRef.current.contentDOM =
-        firstChildDesc?.dom.parentElement ?? domRef.current;
-      viewDescRef.current.mark = mark;
-    }
-    if (!siblingsRef.current.includes(viewDescRef.current)) {
-      siblingsRef.current.push(viewDescRef.current);
-    }
-
-    for (const childDesc of childDescriptors.current) {
-      childDesc.parent = viewDescRef.current;
-    }
-  });
-
-  const childContextValue = useMemo(
-    () => ({
-      parentRef: viewDescRef,
-      siblingsRef: childDescriptors,
-    }),
-    [childDescriptors, viewDescRef]
-  );
-
-  return (
-    <OutputSpec ref={domRef} outputSpec={outputSpec}>
-      <ChildDescriptorsContext.Provider value={childContextValue}>
-        {children}
-      </ChildDescriptorsContext.Provider>
-    </OutputSpec>
-  );
-});
+    return (
+      <OutputSpec ref={domRef} outputSpec={outputSpec}>
+        <ChildDescriptorsContext.Provider value={childContextValue}>
+          {children}
+        </ChildDescriptorsContext.Provider>
+      </OutputSpec>
+    );
+  })
+);

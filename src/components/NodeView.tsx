@@ -1,5 +1,4 @@
 import { DOMOutputSpec, Node } from "prosemirror-model";
-import { NodeSelection } from "prosemirror-state";
 import {
   Decoration,
   DecorationSource,
@@ -10,6 +9,7 @@ import React, {
   RefAttributes,
   cloneElement,
   createElement,
+  memo,
   useContext,
   useLayoutEffect,
   useMemo,
@@ -21,7 +21,6 @@ import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js"
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { StopEventContext } from "../contexts/StopEventContext.js";
-import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
@@ -36,7 +35,7 @@ type NodeViewProps = {
   innerDeco: DecorationSource;
 };
 
-export function NodeView({
+export const NodeView = memo(function NodeView({
   outerDeco,
   pos,
   node,
@@ -55,7 +54,7 @@ export function NodeView({
   const customNodeViewRootRef = useRef<HTMLDivElement | null>(null);
   const customNodeViewRef = useRef<NodeViewT | null>(null);
 
-  const state = useEditorState();
+  // const state = useEditorState();
   const { nodeViews } = useContext(NodeViewContext);
   const { view } = useContext(EditorContext);
 
@@ -66,6 +65,11 @@ export function NodeView({
         NodeViewComponentProps & RefAttributes<HTMLElement>
       >
     | undefined = nodeViews[node.type.name];
+
+  const outputSpec: DOMOutputSpec | undefined = useMemo(
+    () => node.type.spec.toDOM?.(node),
+    [node]
+  );
 
   // TODO: Would be great to pull all of the custom node view stuff into
   // a hook
@@ -146,9 +150,9 @@ export function NodeView({
           pos: pos,
           decorations: outerDeco,
           innerDecorations: innerDeco,
-          isSelected:
-            state.selection instanceof NodeSelection &&
-            state.selection.node === node,
+          isSelected: false,
+          // state.selection instanceof NodeSelection &&
+          // state.selection.node === node,
         }}
       >
         <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
@@ -183,8 +187,6 @@ export function NodeView({
         )
     );
   } else {
-    const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
-
     if (outputSpec) {
       element = (
         <OutputSpec {...finalProps} ref={nodeDomRef} outputSpec={outputSpec}>
@@ -241,4 +243,4 @@ export function NodeView({
       </ChildDescriptorsContext.Provider>
     </StopEventContext.Provider>
   );
-}
+});

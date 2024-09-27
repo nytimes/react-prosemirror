@@ -7,6 +7,41 @@ import { CompositionViewDesc, TextViewDesc, ViewDesc } from "../viewdesc.js";
 
 import { wrapInDeco } from "./ChildNodeViews.js";
 
+function shallowEqual(
+  objA: Record<string, unknown>,
+  objB: Record<string, unknown>
+): boolean {
+  if (objA === objB) {
+    return true;
+  }
+
+  if (!objA || !objB) {
+    return false;
+  }
+
+  const aKeys = Object.keys(objA);
+  const bKeys = Object.keys(objB);
+  const len = aKeys.length;
+
+  if (bKeys.length !== len) {
+    return false;
+  }
+
+  for (let i = 0; i < len; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const key = aKeys[i]!;
+
+    if (
+      objA[key] !== objB[key] ||
+      !Object.prototype.hasOwnProperty.call(objB, key)
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 type Props = {
   view: EditorView | null;
   node: Node;
@@ -77,6 +112,10 @@ export class TextNodeView extends Component<Props> {
     if (!siblingsRef.current.includes(this.viewDescRef)) {
       siblingsRef.current.push(this.viewDescRef);
     }
+  }
+
+  shouldComponentUpdate(nextProps: Props): boolean {
+    return !shallowEqual(this.props, nextProps);
   }
 
   componentDidMount(): void {

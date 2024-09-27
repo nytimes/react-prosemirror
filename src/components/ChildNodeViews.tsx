@@ -4,6 +4,7 @@ import React, {
   ReactNode,
   cloneElement,
   createElement,
+  memo,
   useContext,
 } from "react";
 
@@ -11,7 +12,7 @@ import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js"
 import { EditorContext } from "../contexts/EditorContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
 import { iterDeco } from "../decorations/iterDeco.js";
-import { useEditorState } from "../hooks/useEditorState.js";
+// import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
 import { htmlAttrsToReactProps, mergeReactProps } from "../props.js";
 
@@ -79,9 +80,12 @@ type SharedMarksProps = {
   childViews: Child[];
 };
 
-function InlineView({ innerPos, childViews }: SharedMarksProps) {
+const InlineView = memo(function InlineView({
+  innerPos,
+  childViews,
+}: SharedMarksProps) {
   const { view } = useContext(EditorContext);
-  const editorState = useEditorState();
+  // const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
   const partitioned = childViews.reduce((acc, child) => {
@@ -153,7 +157,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
 
             return cloneElement(childElement, {
               key: createKey(
-                editorState.doc,
+                // editorState.doc,
                 innerPos,
                 child,
                 reactKeys?.posToKey
@@ -165,7 +169,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
         return (
           <MarkView
             key={createKey(
-              editorState?.doc,
+              // editorState?.doc,
               innerPos,
               firstChild,
               reactKeys?.posToKey
@@ -174,7 +178,7 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
           >
             <InlineView
               key={createKey(
-                editorState?.doc,
+                // editorState?.doc,
                 innerPos,
                 firstChild,
                 reactKeys?.posToKey
@@ -190,10 +194,10 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
       })}
     </>
   );
-}
+});
 
 function createKey(
-  doc: Node | undefined,
+  // doc: Node | undefined,
   innerPos: number,
   child: Child | ChildTrailingHack,
   posToKey: Map<number, string> | undefined
@@ -216,13 +220,13 @@ function createKey(
 
   if (key) return key;
 
-  if (!doc) return pos;
+  // if (!doc) return pos;
 
-  const parentPos = doc.resolve(pos).start() - 1;
+  // const parentPos = doc.resolve(pos).start() - 1;
 
-  const parentKey = posToKey?.get(parentPos);
+  // const parentKey = posToKey?.get(parentPos);
 
-  if (parentKey) return `${parentKey}-${child.offset}`;
+  // if (parentKey) return `${parentKey}-${child.offset}`;
 
   return pos;
 }
@@ -281,7 +285,7 @@ function adjustWidgetMarksBack(children: Child[]) {
 function createChildElements(
   children: Child[],
   innerPos: number,
-  doc: Node | undefined,
+  // doc: Node | undefined,
   posToKey: Map<number, string> | undefined
 ): ReactNode[] {
   if (!children.length) return [];
@@ -290,7 +294,7 @@ function createChildElements(
     return [
       <InlineView
         key={createKey(
-          doc,
+          // doc,
           innerPos,
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           children[0]!,
@@ -319,7 +323,7 @@ function createChildElements(
       return (
         <InlineView
           key={createKey(
-            doc,
+            // doc,
             innerPos,
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             child,
@@ -333,7 +337,7 @@ function createChildElements(
   });
 }
 
-export function ChildNodeViews({
+export const ChildNodeViews = memo(function ChildNodeViews({
   pos,
   node,
   innerDecorations,
@@ -342,7 +346,7 @@ export function ChildNodeViews({
   node: Node | undefined;
   innerDecorations: DecorationSource;
 }) {
-  const editorState = useEditorState();
+  // const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
   if (!node) return null;
@@ -391,7 +395,7 @@ export function ChildNodeViews({
   const childElements = createChildElements(
     children,
     innerPos,
-    editorState.doc,
+    // editorState.doc,
     reactKeys?.posToKey
   );
 
@@ -412,4 +416,4 @@ export function ChildNodeViews({
   }
 
   return <>{childElements}</>;
-}
+});
