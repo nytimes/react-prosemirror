@@ -14,7 +14,7 @@ type Props = HTMLProps<HTMLElement> & {
   children?: ReactNode;
 };
 
-export const OutputSpec = memo(
+const ForwardedOutputSpec = memo(
   forwardRef<HTMLElement, Props>(function OutputSpec(
     { outputSpec, children, ...propOverrides }: Props,
     ref
@@ -60,11 +60,11 @@ export const OutputSpec = memo(
         return createElement(tagName, props, children);
       }
       content.push(
-        <OutputSpec ref={undefined} outputSpec={child}>
-          {children}
-        </OutputSpec>
+        <ForwardedOutputSpec outputSpec={child}>{children}</ForwardedOutputSpec>
       );
     }
     return createElement(tagName, props, ...content);
   })
 );
+
+export { ForwardedOutputSpec as OutputSpec };
