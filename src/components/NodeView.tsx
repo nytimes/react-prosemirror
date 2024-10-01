@@ -6,6 +6,7 @@ import {
 } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
+  MutableRefObject,
   RefAttributes,
   cloneElement,
   createElement,
@@ -30,14 +31,14 @@ import { OutputSpec } from "./OutputSpec.js";
 
 type NodeViewProps = {
   outerDeco: readonly Decoration[];
-  pos: number;
+  getPos: MutableRefObject<() => number>;
   node: Node;
   innerDeco: DecorationSource;
 };
 
 export const NodeView = memo(function NodeView({
   outerDeco,
-  pos,
+  getPos,
   node,
   innerDeco,
   ...props
@@ -45,12 +46,11 @@ export const NodeView = memo(function NodeView({
   const domRef = useRef<HTMLElement | null>(null);
   const nodeDomRef = useRef<HTMLElement | null>(null);
   const contentDomRef = useRef<HTMLElement | null>(null);
+  const getPosFunc = useRef(() => getPos.current()).current;
   // this is ill-conceived; should revisit
   const initialNode = useRef(node);
   const initialOuterDeco = useRef(outerDeco);
   const initialInnerDeco = useRef(innerDeco);
-  const posRef = useRef(pos);
-  posRef.current = pos;
   const customNodeViewRootRef = useRef<HTMLDivElement | null>(null);
   const customNodeViewRef = useRef<NodeViewT | null>(null);
 
@@ -113,19 +113,19 @@ export const NodeView = memo(function NodeView({
       // this line if customNodeView is set
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       view!,
-      () => posRef.current,
+      () => getPos.current(),
       initialOuterDeco.current,
       initialInnerDeco.current
     );
     const { dom } = customNodeViewRef.current;
     nodeDomRef.current = customNodeViewRootRef.current;
     customNodeViewRootRef.current.appendChild(dom);
-  }, [customNodeView, view, innerDeco, node, outerDeco]);
+  }, [customNodeView, view, innerDeco, node, outerDeco, getPos]);
 
   const { hasContentDOM, childDescriptors, setStopEvent, nodeViewDescRef } =
     useNodeViewDescriptor(
       node,
-      pos,
+      () => getPos.current(),
       domRef,
       nodeDomRef,
       innerDeco,
@@ -141,22 +141,27 @@ export const NodeView = memo(function NodeView({
     }),
   };
 
+  const nodeProps = useMemo(
+    () => ({
+      node: node,
+      getPos: getPosFunc,
+      decorations: outerDeco,
+      innerDecorations: innerDeco,
+      isSelected: false,
+      // state.selection instanceof NodeSelection &&
+      // state.selection.node === node,
+    }),
+    [getPosFunc, innerDeco, node, outerDeco]
+  );
+
   if (Component) {
     element = (
-      <Component
-        {...finalProps}
-        ref={nodeDomRef}
-        nodeProps={{
-          node: node,
-          pos: pos,
-          decorations: outerDeco,
-          innerDecorations: innerDeco,
-          isSelected: false,
-          // state.selection instanceof NodeSelection &&
-          // state.selection.node === node,
-        }}
-      >
-        <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+      <Component {...finalProps} ref={nodeDomRef} nodeProps={nodeProps}>
+        <ChildNodeViews
+          getPos={getPos}
+          node={node}
+          innerDecorations={innerDeco}
+        />
       </Component>
     );
   } else if (customNodeView) {
@@ -167,7 +172,7 @@ export const NodeView = memo(function NodeView({
         // this line if customNodeView is set
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         view!,
-        () => posRef.current,
+        () => getPos.current(),
         initialOuterDeco.current,
         initialInnerDeco.current
       );
@@ -183,7 +188,11 @@ export const NodeView = memo(function NodeView({
       },
       contentDOM &&
         createPortal(
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />,
+          <ChildNodeViews
+            getPos={getPos}
+            node={node}
+            innerDecorations={innerDeco}
+          />,
           contentDOM
         )
     );
@@ -191,7 +200,11 @@ export const NodeView = memo(function NodeView({
     if (outputSpec) {
       element = (
         <OutputSpec {...finalProps} ref={nodeDomRef} outputSpec={outputSpec}>
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+          <ChildNodeViews
+            getPos={getPos}
+            node={node}
+            innerDecorations={innerDeco}
+          />
         </OutputSpec>
       );
     }
@@ -216,7 +229,7 @@ export const NodeView = memo(function NodeView({
   // already been wrapped in ChildNodeViews/InlineView?
   const markedElement = node.marks.reduce(
     (element, mark) => (
-      <MarkView pos={pos} mark={mark}>
+      <MarkView getPos={getPos} mark={mark}>
         {element}
       </MarkView>
     ),

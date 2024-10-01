@@ -198,7 +198,7 @@ const Footnote = forwardRef(function Footnote(
 });
 
 const TestWidget = forwardRef(function TestWidget(
-  { widget, pos, ...props }: WidgetViewComponentProps,
+  { widget, getPos, ...props }: WidgetViewComponentProps,
   ref: ForwardedRef<HTMLSpanElement>
 ) {
   return (

@@ -1,4 +1,9 @@
-import React, { useContext, useLayoutEffect, useRef } from "react";
+import React, {
+  MutableRefObject,
+  useContext,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
@@ -6,12 +11,13 @@ import { WidgetViewDesc } from "../viewdesc.js";
 
 type Props = {
   widget: ReactWidgetDecoration;
-  pos: number;
+  getPos: MutableRefObject<() => number>;
 };
 
-export function WidgetView({ widget, pos }: Props) {
+export function WidgetView({ widget, getPos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<WidgetViewDesc | null>(null);
+  const getPosFunc = useRef(() => getPos.current()).current;
 
   const domRef = useRef<HTMLElement | null>(null);
 
@@ -32,14 +38,14 @@ export function WidgetView({ widget, pos }: Props) {
     if (!viewDescRef.current) {
       viewDescRef.current = new WidgetViewDesc(
         parentRef.current,
-        pos,
+        getPos.current(),
         widget,
         domRef.current
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.widget = widget;
-      viewDescRef.current.pos = pos;
+      viewDescRef.current.pos = getPos.current();
       viewDescRef.current.dom = domRef.current;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
@@ -55,7 +61,7 @@ export function WidgetView({ widget, pos }: Props) {
       <Component
         ref={domRef}
         widget={widget}
-        pos={pos}
+        getPos={getPosFunc}
         contentEditable={false}
       />
     )

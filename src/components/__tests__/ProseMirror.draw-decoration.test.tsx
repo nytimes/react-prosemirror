@@ -36,13 +36,15 @@ import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
 
-const Widget = forwardRef<HTMLElement>(function Widget(props, ref) {
-  return (
-    <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
-      ω
-    </button>
-  );
-});
+const Widget = forwardRef<HTMLElement, WidgetViewComponentProps>(
+  function Widget({ widget, getPos, ...props }, ref) {
+    return (
+      <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
+        ω
+      </button>
+    );
+  }
+);
 
 function make(str: string | Decoration): Decoration {
   if (typeof str != "string") return str;
@@ -639,7 +641,7 @@ describe("Decoration drawing", () => {
           widget(
             7,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(
-              function Span(props, ref) {
+              function Span({ widget, getPos, ...props }, ref) {
                 return <span {...props} ref={ref} />;
               }
             ),
@@ -726,10 +728,10 @@ describe("Decoration drawing", () => {
             3,
             forwardRef<HTMLButtonElement, WidgetViewComponentProps>(
               function Widget(
-                { pos, ...props }: WidgetViewComponentProps,
+                { getPos, ...props }: WidgetViewComponentProps,
                 ref
               ) {
-                expect(pos).toBe(3);
+                expect(getPos()).toBe(3);
                 return (
                   <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
                     ω

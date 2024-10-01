@@ -45,7 +45,7 @@ function shallowEqual(
 type Props = {
   view: EditorView | null;
   node: Node;
-  pos: number;
+  getPos: MutableRefObject<() => number>;
   siblingsRef: MutableRefObject<ViewDesc[]>;
   parentRef: MutableRefObject<ViewDesc | undefined>;
   decorations: readonly Decoration[];
@@ -56,7 +56,8 @@ export class TextNodeView extends Component<Props> {
   private renderRef: null | JSX.Element = null;
 
   updateEffect() {
-    const { view, decorations, siblingsRef, parentRef, pos, node } = this.props;
+    const { view, decorations, siblingsRef, parentRef, getPos, node } =
+      this.props;
     // There simply is no other way to ref a text node
     // eslint-disable-next-line react/no-find-dom-node
     const dom = findDOMNode(this);
@@ -69,7 +70,7 @@ export class TextNodeView extends Component<Props> {
 
       this.viewDescRef = new CompositionViewDesc(
         parentRef.current,
-        pos,
+        getPos.current(),
         // These are just placeholders/dummies. We can't
         // actually find the correct DOM nodes from here,
         // so we let our parent do it.
@@ -92,7 +93,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef = new TextViewDesc(
         undefined,
         [],
-        pos,
+        getPos.current(),
         node,
         decorations,
         DecorationSet.empty,
@@ -103,7 +104,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.parent = parentRef.current;
       this.viewDescRef.children = [];
       this.viewDescRef.node = node;
-      this.viewDescRef.pos = pos;
+      this.viewDescRef.pos = getPos.current();
       this.viewDescRef.outerDeco = decorations;
       this.viewDescRef.innerDeco = DecorationSet.empty;
       this.viewDescRef.dom = dom;
@@ -141,7 +142,7 @@ export class TextNodeView extends Component<Props> {
   }
 
   render() {
-    const { view, pos, node, decorations } = this.props;
+    const { view, getPos, node, decorations } = this.props;
 
     // During a composition, it's crucial that we don't try to
     // update the DOM that the user is working in. If there's
@@ -150,8 +151,8 @@ export class TextNodeView extends Component<Props> {
     // interrupt the composition
     if (
       view?.composing &&
-      view.state.selection.from >= pos &&
-      view.state.selection.from <= pos + node.nodeSize
+      view.state.selection.from >= getPos.current() &&
+      view.state.selection.from <= getPos.current() + node.nodeSize
     ) {
       return this.renderRef;
     }

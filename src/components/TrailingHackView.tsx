@@ -1,13 +1,18 @@
-import React, { useContext, useLayoutEffect, useRef } from "react";
+import React, {
+  MutableRefObject,
+  useContext,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { TrailingHackViewDesc } from "../viewdesc.js";
 
 type Props = {
-  pos: number;
+  getPos: MutableRefObject<() => number>;
 };
 
-export function TrailingHackView({ pos }: Props) {
+export function TrailingHackView({ getPos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<TrailingHackViewDesc | null>(null);
 
@@ -31,14 +36,14 @@ export function TrailingHackView({ pos }: Props) {
       viewDescRef.current = new TrailingHackViewDesc(
         parentRef.current,
         [],
-        pos,
+        getPos.current(),
         ref.current,
         null
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.dom = ref.current;
-      viewDescRef.current.pos = pos;
+      viewDescRef.current.pos = getPos.current();
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);

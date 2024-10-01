@@ -1,5 +1,10 @@
 import { Decoration, EditorView } from "prosemirror-view";
-import React, { useContext, useLayoutEffect, useRef } from "react";
+import React, {
+  MutableRefObject,
+  useContext,
+  useLayoutEffect,
+  useRef,
+} from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
@@ -7,16 +12,14 @@ import { WidgetViewDesc } from "../viewdesc.js";
 
 type Props = {
   widget: Decoration;
-  pos: number;
+  getPos: MutableRefObject<() => number>;
 };
 
-export function NativeWidgetView({ widget, pos }: Props) {
+export function NativeWidgetView({ widget, getPos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<WidgetViewDesc | null>(null);
 
   const rootDomRef = useRef<HTMLDivElement | null>(null);
-  const posRef = useRef(pos);
-  posRef.current = pos;
 
   useLayoutEffect(() => {
     const siblings = siblingsRef.current;
@@ -37,7 +40,7 @@ export function NativeWidgetView({ widget, pos }: Props) {
       | HTMLElement
       | ((view: EditorView, getPos: () => number) => HTMLElement);
     let dom =
-      typeof toDOM === "function" ? toDOM(view, () => posRef.current) : toDOM;
+      typeof toDOM === "function" ? toDOM(view, () => getPos.current()) : toDOM;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!(widget as any).type.spec.raw) {
       if (dom.nodeType != 1) {
@@ -59,14 +62,14 @@ export function NativeWidgetView({ widget, pos }: Props) {
     if (!viewDescRef.current) {
       viewDescRef.current = new WidgetViewDesc(
         parentRef.current,
-        pos,
+        getPos.current(),
         widget,
         rootDomRef.current
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.widget = widget;
-      viewDescRef.current.pos = pos;
+      viewDescRef.current.pos = getPos.current();
       viewDescRef.current.dom = rootDomRef.current;
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {

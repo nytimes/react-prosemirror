@@ -23,6 +23,12 @@ import { NodeViewDesc } from "../viewdesc.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
 
+const getPos = {
+  current() {
+    return -1;
+  },
+};
+
 export type DocNodeViewProps = {
   className?: string;
   node: Node | undefined;
@@ -57,7 +63,7 @@ export const DocNodeView = memo(
 
     const { childDescriptors, nodeViewDescRef } = useNodeViewDescriptor(
       node,
-      -1,
+      () => getPos.current(),
       innerRef,
       innerRef,
       innerDeco,
@@ -85,14 +91,22 @@ export const DocNodeView = memo(
           as,
           props,
           <ChildDescriptorsContext.Provider value={childContextValue}>
-            <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
+            <ChildNodeViews
+              getPos={getPos}
+              node={node}
+              innerDecorations={innerDeco}
+            />
           </ChildDescriptorsContext.Provider>
         )
       : createElement(
           "div",
           props,
           <ChildDescriptorsContext.Provider value={childContextValue}>
-            <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
+            <ChildNodeViews
+              getPos={getPos}
+              node={node}
+              innerDecorations={innerDeco}
+            />
           </ChildDescriptorsContext.Provider>
         );
 

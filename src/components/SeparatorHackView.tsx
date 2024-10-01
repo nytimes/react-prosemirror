@@ -1,14 +1,20 @@
-import React, { useContext, useLayoutEffect, useRef, useState } from "react";
+import React, {
+  MutableRefObject,
+  useContext,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { browser } from "../browser.js";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { TrailingHackViewDesc } from "../viewdesc.js";
 
 type Props = {
-  pos: number;
+  getPos: MutableRefObject<() => number>;
 };
 
-export function SeparatorHackView({ pos }: Props) {
+export function SeparatorHackView({ getPos }: Props) {
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const viewDescRef = useRef<TrailingHackViewDesc | null>(null);
   const ref = useRef<HTMLImageElement | null>(null);
@@ -44,14 +50,14 @@ export function SeparatorHackView({ pos }: Props) {
       viewDescRef.current = new TrailingHackViewDesc(
         parentRef.current,
         [],
-        pos,
+        getPos.current(),
         ref.current,
         null
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.dom = ref.current;
-      viewDescRef.current.pos = pos;
+      viewDescRef.current.pos = getPos.current();
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
