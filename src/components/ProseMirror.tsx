@@ -1,4 +1,8 @@
-import { DecorationSet, NodeViewConstructor } from "prosemirror-view";
+import {
+  Decoration,
+  DecorationSet,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactNode,
@@ -36,6 +40,8 @@ export type Props = Omit<UseEditorOptions, "nodeViews"> & {
   };
 };
 
+const EMPTY_OUTER_DECOS: Decoration[] = [];
+
 function ProseMirrorInner({
   className,
   children,
@@ -50,18 +56,13 @@ function ProseMirrorInner({
     nodeViews: customNodeViews,
   });
 
-  const innerDecos = useMemo(
-    () =>
-      editor.view
-        ? viewDecorations(editor.view, editor.cursorWrapper)
-        : (DecorationSet.empty as unknown as DecorationSet),
-    [editor.cursorWrapper, editor.view]
-  );
+  const innerDecos = editor.view
+    ? viewDecorations(editor.view, editor.cursorWrapper)
+    : (DecorationSet.empty as unknown as DecorationSet);
 
-  const outerDecos = useMemo(
-    () => (editor.view ? computeDocDeco(editor.view) : []),
-    [editor.view]
-  );
+  const outerDecos = editor.view
+    ? computeDocDeco(editor.view)
+    : EMPTY_OUTER_DECOS;
 
   const nodeViewContextValue = useMemo(
     () => ({
