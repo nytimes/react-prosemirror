@@ -1,11 +1,11 @@
 # Compiled code
-/dist/*
+# /dist/*
 
 # We need to check in the package.json for /dist/cjs so that
 # consumers know to treat it as cjs
-!/dist/cjs
-/dist/cjs/*
-!/dist/cjs/package.json
+# !/dist/cjs
+# /dist/cjs/*
+# !/dist/cjs/package.json
 
 # Yarn PnP artifacts
 .pnp.*
