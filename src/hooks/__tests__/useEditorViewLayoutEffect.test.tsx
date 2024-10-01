@@ -16,7 +16,8 @@ function TestComponent({
   effect: () => void;
   dependencies?: unknown[];
 }) {
-  useEditorEffect(effect, [effect, ...dependencies]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEditorEffect(effect, dependencies);
   return null;
 }
 
@@ -55,16 +56,15 @@ describe("useEditorViewLayoutEffect", () => {
     const registerEventListener = () => {};
     const unregisterEventListener = () => {};
 
+    const contextValue = {
+      view: editorView,
+      registerEventListener,
+      unregisterEventListener,
+    };
+
     const { rerender } = render(
       <LayoutGroup>
-        <EditorContext.Provider
-          value={{
-            view: editorView,
-            registerEventListener,
-            unregisterEventListener,
-          }}
-        >
-          {" "}
+        <EditorContext.Provider value={contextValue}>
           <EditorStateContext.Provider value={editorState}>
             <TestComponent effect={effect} dependencies={[]} />
           </EditorStateContext.Provider>{" "}
@@ -74,13 +74,7 @@ describe("useEditorViewLayoutEffect", () => {
 
     rerender(
       <LayoutGroup>
-        <EditorContext.Provider
-          value={{
-            view: editorView,
-            registerEventListener,
-            unregisterEventListener,
-          }}
-        >
+        <EditorContext.Provider value={contextValue}>
           <EditorStateContext.Provider value={editorState}>
             <TestComponent effect={effect} dependencies={[]} />
           </EditorStateContext.Provider>
