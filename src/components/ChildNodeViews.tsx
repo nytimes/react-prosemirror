@@ -168,7 +168,7 @@ const InlineView = memo(function InlineView({
 
         return (
           <MarkView
-            pos={innerPos}
+            pos={innerPos + firstChild.offset}
             key={createKey(
               // editorState?.doc,
               innerPos,
