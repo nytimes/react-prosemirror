@@ -329,35 +329,56 @@ function adjustWidgetMarksBack(children: Child[]) {
   }
 }
 
-const ChildElement = memo(function ChildElement({
-  child,
-  getInnerPos,
-  posToKey,
-}: {
-  child: Child;
-  getInnerPos: MutableRefObject<() => number>;
-  posToKey: Map<number, string> | undefined;
-}) {
-  const getNodePos = useRef(() => getInnerPos.current() + child.offset);
-  getNodePos.current = () => getInnerPos.current() + child.offset;
+const ChildElement = memo(
+  function ChildElement({
+    child,
+    getInnerPos,
+    posToKey,
+  }: {
+    child: Child;
+    getInnerPos: MutableRefObject<() => number>;
+    posToKey: Map<number, string> | undefined;
+  }) {
+    const getNodePos = useRef(() => getInnerPos.current() + child.offset);
+    getNodePos.current = () => getInnerPos.current() + child.offset;
 
-  const key = createKey(getInnerPos.current(), child, posToKey);
-  if (child.type === "node") {
-    return (
-      <NodeView
-        key={key}
-        outerDeco={child.outerDeco}
-        node={child.node}
-        innerDeco={child.innerDeco}
-        getPos={getNodePos}
-      />
-    );
-  } else {
-    return (
-      <InlineView key={key} childViews={[child]} getInnerPos={getInnerPos} />
-    );
-  }
-});
+    const key = createKey(getInnerPos.current(), child, posToKey);
+    if (child.type === "node") {
+      return (
+        <NodeView
+          key={key}
+          outerDeco={child.outerDeco}
+          node={child.node}
+          innerDeco={child.innerDeco}
+          getPos={getNodePos}
+        />
+      );
+    } else {
+      return (
+        <InlineView key={key} childViews={[child]} getInnerPos={getInnerPos} />
+      );
+    }
+  },
+  /**
+   * It's safe to skip re-rendering a ChildElement component as long
+   * as its child prop is shallowly equivalent to the previous render.
+   * posToKey will be updated on every doc update, but if the child
+   * hasn't changed, it will still have the same key.
+   */
+  (prevProps, nextProps) =>
+    prevProps.child.type === nextProps.child.type &&
+    prevProps.child.marks.every((mark) =>
+      mark.isInSet(nextProps.child.marks)
+    ) &&
+    nextProps.child.marks.every((mark) =>
+      mark.isInSet(prevProps.child.marks)
+    ) &&
+    prevProps.child.offset === nextProps.child.offset &&
+    // @ts-expect-error It's fine if these are undefined
+    prevProps.child.node === nextProps.child.node &&
+    // @ts-expect-error It's fine if these are undefined
+    prevProps.child.widget === nextProps.child.widget
+);
 
 function createChildElements(
   children: Child[],
