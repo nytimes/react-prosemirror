@@ -26,7 +26,7 @@ let didWarnValueDefaultValue = false;
 export interface UseEditorViewOptions extends EditorProps {
   defaultState?: EditorState;
   state?: EditorState;
-  setState?: EditorContextValue['setEditorState'];
+  setState?: EditorContextValue["setEditorState"];
   plugins?: Plugin[];
   dispatchTransaction?(this: EditorView, tr: Transaction): void;
 }

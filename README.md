@@ -420,10 +420,13 @@ function MyProseMirrorField() {
 ### `useEditorState`
 
 ```tsx
-type useEditorState = () => EditorState;
+type useEditorState = () => [
+  EditorState, 
+  React.Dispatch<ReactSetStateAction<EditorState>>
+];
 ```
 
-Provides access to the current EditorState value.
+Provides access to the current EditorState value and a method to update it.
 
 ### `useEditorEventCallback`
 
