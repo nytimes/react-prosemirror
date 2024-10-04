@@ -206,7 +206,7 @@ function useEditor(mount, options) {
         options.state
     ]);
     const tempDom = document.createElement("div");
-    const docViewDescRef = (0, _react.useRef)(new _viewdescJs.NodeViewDesc(undefined, [], -1, state.doc, [], _prosemirrorView.DecorationSet.empty, tempDom, null, tempDom, ()=>false));
+    const docViewDescRef = (0, _react.useRef)(new _viewdescJs.NodeViewDesc(undefined, [], ()=>-1, state.doc, [], _prosemirrorView.DecorationSet.empty, tempDom, null, tempDom, ()=>false));
     const directEditorProps = {
         ...options,
         state,

@@ -31,15 +31,16 @@ export function SeparatorHackView(param) {
         }
         if (!ref.current) return;
         if (!viewDescRef.current) {
-            viewDescRef.current = new TrailingHackViewDesc(parentRef.current, [], getPos.current(), ref.current, null);
+            viewDescRef.current = new TrailingHackViewDesc(parentRef.current, [], ()=>getPos.current(), ref.current, null);
         } else {
             viewDescRef.current.parent = parentRef.current;
             viewDescRef.current.dom = ref.current;
-            viewDescRef.current.pos = getPos.current();
+            viewDescRef.current.getPos = ()=>getPos.current();
         }
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
     });
     return shouldRender ? /*#__PURE__*/ React.createElement("img", {
         ref: ref,

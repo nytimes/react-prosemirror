@@ -69,17 +69,17 @@ function WidgetView(param) {
     (0, _react.useLayoutEffect)(()=>{
         if (!domRef.current) return;
         if (!viewDescRef.current) {
-            viewDescRef.current = new _viewdescJs.WidgetViewDesc(parentRef.current, getPos.current(), widget, domRef.current);
+            viewDescRef.current = new _viewdescJs.WidgetViewDesc(parentRef.current, ()=>getPos.current(), widget, domRef.current);
         } else {
             viewDescRef.current.parent = parentRef.current;
             viewDescRef.current.widget = widget;
-            viewDescRef.current.pos = getPos.current();
+            viewDescRef.current.getPos = ()=>getPos.current();
             viewDescRef.current.dom = domRef.current;
         }
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
     });
     const { Component  } = widget.type;
     return Component && /*#__PURE__*/ _react.default.createElement(Component, {

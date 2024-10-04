@@ -36,7 +36,7 @@ export class TextNodeView extends Component {
         // Otherwise we just rely on re-rendering the renderRef
         if (!dom) {
             if (!view?.composing) return;
-            this.viewDescRef = new CompositionViewDesc(parentRef.current, getPos.current(), // These are just placeholders/dummies. We can't
+            this.viewDescRef = new CompositionViewDesc(parentRef.current, ()=>getPos.current(), // These are just placeholders/dummies. We can't
             // actually find the correct DOM nodes from here,
             // so we let our parent do it.
             // Passing a valid element here just so that the
@@ -49,12 +49,12 @@ export class TextNodeView extends Component {
             textNode = textNode.firstChild;
         }
         if (!this.viewDescRef || this.viewDescRef instanceof CompositionViewDesc) {
-            this.viewDescRef = new TextViewDesc(undefined, [], getPos.current(), node, decorations, DecorationSet.empty, dom, textNode);
+            this.viewDescRef = new TextViewDesc(undefined, [], ()=>getPos.current(), node, decorations, DecorationSet.empty, dom, textNode);
         } else {
             this.viewDescRef.parent = parentRef.current;
             this.viewDescRef.children = [];
             this.viewDescRef.node = node;
-            this.viewDescRef.pos = getPos.current();
+            this.viewDescRef.getPos = ()=>getPos.current();
             this.viewDescRef.outerDeco = decorations;
             this.viewDescRef.innerDeco = DecorationSet.empty;
             this.viewDescRef.dom = dom;
@@ -65,7 +65,7 @@ export class TextNodeView extends Component {
         if (!siblingsRef.current.includes(this.viewDescRef)) {
             siblingsRef.current.push(this.viewDescRef);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
     }
     shouldComponentUpdate(nextProps) {
         return !shallowEqual(this.props, nextProps);

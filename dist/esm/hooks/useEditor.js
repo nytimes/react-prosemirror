@@ -201,7 +201,7 @@ let didWarnValueDefaultValue = false;
         options.state
     ]);
     const tempDom = document.createElement("div");
-    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], -1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false));
+    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], ()=>-1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false));
     const directEditorProps = {
         ...options,
         state,

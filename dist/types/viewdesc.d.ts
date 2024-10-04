@@ -4,12 +4,12 @@ import { DOMNode } from "./dom.js";
 export declare class ViewDesc {
     parent: ViewDesc | undefined;
     children: ViewDesc[];
-    pos: number;
+    getPos: () => number;
     dom: DOMNode;
     contentDOM: HTMLElement | null;
     dirty: number;
     node: Node | null;
-    constructor(parent: ViewDesc | undefined, children: ViewDesc[], pos: number, dom: DOMNode, contentDOM: HTMLElement | null);
+    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, dom: DOMNode, contentDOM: HTMLElement | null);
     matchesWidget(_widget: Decoration): boolean;
     matchesMark(_mark: Mark): boolean;
     matchesNode(_node: Node, _outerDeco: readonly Decoration[], _innerDeco: DecorationSource): boolean;
@@ -54,7 +54,7 @@ export declare class ViewDesc {
 }
 export declare class WidgetViewDesc extends ViewDesc {
     widget: Decoration;
-    constructor(parent: ViewDesc | undefined, pos: number, widget: Decoration, dom: DOMNode);
+    constructor(parent: ViewDesc | undefined, getPos: () => number, widget: Decoration, dom: DOMNode);
     matchesWidget(widget: Decoration): any;
     parseRule(): {
         ignore: boolean;
@@ -67,7 +67,7 @@ export declare class WidgetViewDesc extends ViewDesc {
 export declare class CompositionViewDesc extends ViewDesc {
     textDOM: Text;
     text: string;
-    constructor(parent: ViewDesc | undefined, pos: number, dom: DOMNode, textDOM: Text, text: string);
+    constructor(parent: ViewDesc | undefined, getPos: () => number, dom: DOMNode, textDOM: Text, text: string);
     get size(): number;
     localPosFromDOM(dom: DOMNode, offset: number): number;
     domFromPos(pos: number): {
@@ -78,7 +78,7 @@ export declare class CompositionViewDesc extends ViewDesc {
 }
 export declare class MarkViewDesc extends ViewDesc {
     mark: Mark;
-    constructor(parent: ViewDesc | undefined, children: ViewDesc[], pos: number, mark: Mark, dom: DOMNode, contentDOM: HTMLElement);
+    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, mark: Mark, dom: DOMNode, contentDOM: HTMLElement);
     parseRule(): {
         mark: string;
         attrs: import("prosemirror-model").Attrs;
@@ -93,19 +93,19 @@ export declare class NodeViewDesc extends ViewDesc {
     innerDeco: DecorationSource;
     nodeDOM: DOMNode;
     stopEvent: (event: Event) => boolean;
-    constructor(parent: ViewDesc | undefined, children: ViewDesc[], pos: number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, contentDOM: HTMLElement | null, nodeDOM: DOMNode, stopEvent: (event: Event) => boolean);
+    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, contentDOM: HTMLElement | null, nodeDOM: DOMNode, stopEvent: (event: Event) => boolean);
     updateOuterDeco(): void;
     parseRule(): Omit<TagParseRule, "tag"> | null;
     matchesNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource): boolean;
     get size(): number;
-    get border(): 1 | 0;
+    get border(): 0 | 1;
     update(_node: Node, _outerDeco: readonly Decoration[], _innerDeco: DecorationSource, _view: EditorView): boolean;
     selectNode(): void;
     deselectNode(): void;
     get domAtom(): boolean;
 }
 export declare class TextViewDesc extends NodeViewDesc {
-    constructor(parent: ViewDesc | undefined, children: ViewDesc[], pos: number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, nodeDOM: DOMNode);
+    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, nodeDOM: DOMNode);
     parseRule(): {
         skip: any;
     };
