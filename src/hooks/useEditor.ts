@@ -290,7 +290,7 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     new NodeViewDesc(
       undefined,
       [],
-      -1,
+      () => -1,
       state.doc,
       [],
       DecorationSet.empty,

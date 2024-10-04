@@ -50,18 +50,19 @@ export function SeparatorHackView({ getPos }: Props) {
       viewDescRef.current = new TrailingHackViewDesc(
         parentRef.current,
         [],
-        getPos.current(),
+        () => getPos.current(),
         ref.current,
         null
       );
     } else {
       viewDescRef.current.parent = parentRef.current;
       viewDescRef.current.dom = ref.current;
-      viewDescRef.current.pos = getPos.current();
+      viewDescRef.current.getPos = () => getPos.current();
     }
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
+    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
   });
 
   return shouldRender ? (

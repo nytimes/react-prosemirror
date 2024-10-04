@@ -70,7 +70,7 @@ export class TextNodeView extends Component<Props> {
 
       this.viewDescRef = new CompositionViewDesc(
         parentRef.current,
-        getPos.current(),
+        () => getPos.current(),
         // These are just placeholders/dummies. We can't
         // actually find the correct DOM nodes from here,
         // so we let our parent do it.
@@ -93,7 +93,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef = new TextViewDesc(
         undefined,
         [],
-        getPos.current(),
+        () => getPos.current(),
         node,
         decorations,
         DecorationSet.empty,
@@ -104,7 +104,7 @@ export class TextNodeView extends Component<Props> {
       this.viewDescRef.parent = parentRef.current;
       this.viewDescRef.children = [];
       this.viewDescRef.node = node;
-      this.viewDescRef.pos = getPos.current();
+      this.viewDescRef.getPos = () => getPos.current();
       this.viewDescRef.outerDeco = decorations;
       this.viewDescRef.innerDeco = DecorationSet.empty;
       this.viewDescRef.dom = dom;
@@ -117,7 +117,7 @@ export class TextNodeView extends Component<Props> {
       siblingsRef.current.push(this.viewDescRef);
     }
 
-    siblingsRef.current.sort((a, b) => a.pos - b.pos);
+    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
   }
 
   shouldComponentUpdate(nextProps: Props): boolean {

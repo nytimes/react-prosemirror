@@ -35,7 +35,7 @@ export class ViewDesc {
   constructor(
     public parent: ViewDesc | undefined,
     public children: ViewDesc[],
-    public pos: number,
+    public getPos: () => number,
     public dom: DOMNode,
     // This is the node that holds the child views. It may be null for
     // descs that don't have children.
@@ -629,11 +629,11 @@ export class ViewDesc {
 export class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    pos: number,
+    getPos: () => number,
     public widget: Decoration,
     dom: DOMNode
   ) {
-    super(parent, [], pos, dom, null);
+    super(parent, [], getPos, dom, null);
     this.widget = widget;
   }
 
@@ -671,12 +671,12 @@ export class WidgetViewDesc extends ViewDesc {
 export class CompositionViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    pos: number,
+    getPos: () => number,
     dom: DOMNode,
     public textDOM: Text,
     public text: string
   ) {
-    super(parent, [], pos, dom, null);
+    super(parent, [], getPos, dom, null);
   }
 
   get size() {
@@ -706,12 +706,12 @@ export class MarkViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
-    pos: number,
+    getPos: () => number,
     public mark: Mark,
     dom: DOMNode,
     contentDOM: HTMLElement
   ) {
-    super(parent, children, pos, dom, contentDOM);
+    super(parent, children, getPos, dom, contentDOM);
   }
 
   parseRule() {
@@ -747,7 +747,7 @@ export class NodeViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
-    pos: number,
+    getPos: () => number,
     public node: Node,
     public outerDeco: readonly Decoration[],
     public innerDeco: DecorationSource,
@@ -756,7 +756,7 @@ export class NodeViewDesc extends ViewDesc {
     public nodeDOM: DOMNode,
     public stopEvent: (event: Event) => boolean
   ) {
-    super(parent, children, pos, dom, contentDOM);
+    super(parent, children, getPos, dom, contentDOM);
   }
 
   updateOuterDeco() {
@@ -857,7 +857,7 @@ export class TextViewDesc extends NodeViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
-    pos: number,
+    getPos: () => number,
     node: Node,
     outerDeco: readonly Decoration[],
     innerDeco: DecorationSource,
@@ -867,7 +867,7 @@ export class TextViewDesc extends NodeViewDesc {
     super(
       parent,
       children,
-      pos,
+      getPos,
       node,
       outerDeco,
       innerDeco,

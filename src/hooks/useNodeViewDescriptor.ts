@@ -57,7 +57,7 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current = new NodeViewDesc(
         parentRef.current,
         childDescriptors.current,
-        getPos(),
+        getPos,
         node,
         outerDecorations,
         innerDecorations,
@@ -70,7 +70,7 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current.parent = parentRef.current;
       nodeViewDescRef.current.children = childDescriptors.current;
       nodeViewDescRef.current.node = node;
-      nodeViewDescRef.current.pos = getPos();
+      nodeViewDescRef.current.getPos = getPos;
       nodeViewDescRef.current.outerDeco = outerDecorations;
       nodeViewDescRef.current.innerDeco = innerDecorations;
       nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
@@ -93,7 +93,7 @@ export function useNodeViewDescriptor(
       siblingsRef.current.push(nodeViewDescRef.current);
     }
 
-    siblingsRef.current.sort((a, b) => a.pos - b.pos);
+    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
 
     for (const childDesc of childDescriptors.current) {
       childDesc.parent = nodeViewDescRef.current;
