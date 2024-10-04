@@ -262,7 +262,14 @@ const ChildElement = /*#__PURE__*/ (0, _react.memo)(function ChildElement(param)
             getInnerPos: getInnerPos
         });
     }
-});
+}, /**
+   * It's safe to skip re-rendering a ChildElement component as long
+   * as its child prop is shallowly equivalent to the previous render.
+   * posToKey will be updated on every doc update, but if the child
+   * hasn't changed, it will still have the same key.
+   */ (prevProps, nextProps)=>prevProps.child.type === nextProps.child.type && prevProps.child.marks.every((mark)=>mark.isInSet(nextProps.child.marks)) && nextProps.child.marks.every((mark)=>mark.isInSet(prevProps.child.marks)) && prevProps.child.offset === nextProps.child.offset && // @ts-expect-error It's fine if these are undefined
+    prevProps.child.node === nextProps.child.node && // @ts-expect-error It's fine if these are undefined
+    prevProps.child.widget === nextProps.child.widget);
 function createChildElements(children, getInnerPos, // doc: Node | undefined,
 posToKey) {
     if (!children.length) return [];
