@@ -405,10 +405,10 @@ export class ViewDesc {
     get ignoreForCoords() {
         return false;
     }
-    constructor(parent, children, pos, dom, contentDOM){
+    constructor(parent, children, getPos, dom, contentDOM){
         this.parent = parent;
         this.children = children;
-        this.pos = pos;
+        this.getPos = getPos;
         this.dom = dom;
         this.contentDOM = contentDOM;
         this.dirty = NOT_DIRTY;
@@ -443,8 +443,8 @@ export class WidgetViewDesc extends ViewDesc {
     get side() {
         return this.widget.type.side;
     }
-    constructor(parent, pos, widget, dom){
-        super(parent, [], pos, dom, null);
+    constructor(parent, getPos, widget, dom){
+        super(parent, [], getPos, dom, null);
         this.widget = widget;
         this.widget = widget;
     }
@@ -466,8 +466,8 @@ export class CompositionViewDesc extends ViewDesc {
     ignoreMutation(mut) {
         return mut.type === "characterData" && mut.target.nodeValue == mut.oldValue;
     }
-    constructor(parent, pos, dom, textDOM, text){
-        super(parent, [], pos, dom, null);
+    constructor(parent, getPos, dom, textDOM, text){
+        super(parent, [], getPos, dom, null);
         this.textDOM = textDOM;
         this.text = text;
     }
@@ -499,8 +499,8 @@ export class MarkViewDesc extends ViewDesc {
             this.dirty = NOT_DIRTY;
         }
     }
-    constructor(parent, children, pos, mark, dom, contentDOM){
-        super(parent, children, pos, dom, contentDOM);
+    constructor(parent, children, getPos, mark, dom, contentDOM){
+        super(parent, children, getPos, dom, contentDOM);
         this.mark = mark;
     }
 }
@@ -573,8 +573,8 @@ export class NodeViewDesc extends ViewDesc {
     get domAtom() {
         return this.node.isAtom;
     }
-    constructor(parent, children, pos, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent){
-        super(parent, children, pos, dom, contentDOM);
+    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent){
+        super(parent, children, getPos, dom, contentDOM);
         this.node = node;
         this.outerDeco = outerDeco;
         this.innerDeco = innerDeco;
@@ -618,8 +618,8 @@ export class TextViewDesc extends NodeViewDesc {
     get domAtom() {
         return false;
     }
-    constructor(parent, children, pos, node, outerDeco, innerDeco, dom, nodeDOM){
-        super(parent, children, pos, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false);
+    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, nodeDOM){
+        super(parent, children, getPos, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false);
     }
 }
 // A dummy desc used to tag trailing BR or IMG nodes created to work

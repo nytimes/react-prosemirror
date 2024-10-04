@@ -40,17 +40,17 @@ export function NativeWidgetView(param) {
     useLayoutEffect(()=>{
         if (!rootDomRef.current) return;
         if (!viewDescRef.current) {
-            viewDescRef.current = new WidgetViewDesc(parentRef.current, getPos.current(), widget, rootDomRef.current);
+            viewDescRef.current = new WidgetViewDesc(parentRef.current, ()=>getPos.current(), widget, rootDomRef.current);
         } else {
             viewDescRef.current.parent = parentRef.current;
             viewDescRef.current.widget = widget;
-            viewDescRef.current.pos = getPos.current();
+            viewDescRef.current.getPos = ()=>getPos.current();
             viewDescRef.current.dom = rootDomRef.current;
         }
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
     });
     return /*#__PURE__*/ React.createElement("span", {
         ref: rootDomRef

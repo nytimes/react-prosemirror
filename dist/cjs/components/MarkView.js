@@ -78,18 +78,18 @@ const MarkView = /*#__PURE__*/ (0, _react.memo)(/*#__PURE__*/ (0, _react.forward
         if (!domRef.current) return;
         const firstChildDesc = childDescriptors.current[0];
         if (!viewDescRef.current) {
-            viewDescRef.current = new _viewdescJs.MarkViewDesc(parentRef.current, childDescriptors.current, getPos.current(), mark, domRef.current, firstChildDesc?.dom.parentElement ?? domRef.current);
+            viewDescRef.current = new _viewdescJs.MarkViewDesc(parentRef.current, childDescriptors.current, ()=>getPos.current(), mark, domRef.current, firstChildDesc?.dom.parentElement ?? domRef.current);
         } else {
             viewDescRef.current.parent = parentRef.current;
             viewDescRef.current.dom = domRef.current;
             viewDescRef.current.contentDOM = firstChildDesc?.dom.parentElement ?? domRef.current;
             viewDescRef.current.mark = mark;
-            viewDescRef.current.pos = getPos.current();
+            viewDescRef.current.getPos = ()=>getPos.current();
         }
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
         for (const childDesc of childDescriptors.current){
             childDesc.parent = viewDescRef.current;
         }

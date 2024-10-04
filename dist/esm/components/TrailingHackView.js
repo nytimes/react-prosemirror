@@ -21,16 +21,16 @@ export function TrailingHackView(param) {
     useLayoutEffect(()=>{
         if (!ref.current) return;
         if (!viewDescRef.current) {
-            viewDescRef.current = new TrailingHackViewDesc(parentRef.current, [], getPos.current(), ref.current, null);
+            viewDescRef.current = new TrailingHackViewDesc(parentRef.current, [], ()=>getPos.current(), ref.current, null);
         } else {
             viewDescRef.current.parent = parentRef.current;
             viewDescRef.current.dom = ref.current;
-            viewDescRef.current.pos = getPos.current();
+            viewDescRef.current.getPos = ()=>getPos.current();
         }
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
     });
     return /*#__PURE__*/ React.createElement("br", {
         ref: ref,

@@ -37,12 +37,12 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
         if (!node || !nodeDomRef.current) return;
         const firstChildDesc = childDescriptors.current[0];
         if (!nodeViewDescRef.current) {
-            nodeViewDescRef.current = new _viewdescJs.NodeViewDesc(parentRef.current, childDescriptors.current, getPos(), node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event));
+            nodeViewDescRef.current = new _viewdescJs.NodeViewDesc(parentRef.current, childDescriptors.current, getPos, node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event));
         } else {
             nodeViewDescRef.current.parent = parentRef.current;
             nodeViewDescRef.current.children = childDescriptors.current;
             nodeViewDescRef.current.node = node;
-            nodeViewDescRef.current.pos = getPos();
+            nodeViewDescRef.current.getPos = getPos;
             nodeViewDescRef.current.outerDeco = outerDecorations;
             nodeViewDescRef.current.innerDeco = innerDecorations;
             nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
@@ -59,7 +59,7 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
         if (!siblingsRef.current.includes(nodeViewDescRef.current)) {
             siblingsRef.current.push(nodeViewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.pos - b.pos);
+        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
         for (const childDesc of childDescriptors.current){
             childDesc.parent = nodeViewDescRef.current;
             // Because TextNodeViews can't locate the DOM nodes
