@@ -108,35 +108,35 @@ const schema = new Schema({
 const editorState = EditorState.create({
   schema,
   doc: schema.nodes.doc.create({}, [
-    // schema.nodes.paragraph.create({}, [
-    //   schema.text("This ", [schema.marks.em.create()]),
-    //   schema.text("is", [
-    //     schema.marks.em.create(),
-    //     schema.marks.strong.create(),
-    //   ]),
-    //   schema.text(" the first paragraph"),
-    // ]),
-    // schema.nodes.paragraph.create({}, [
-    //   schema.text("This is the second paragraph"),
-    //   schema.nodes.footnote.create({ number: 1 }, schema.text("Footnote")),
-    // ]),
+    schema.nodes.paragraph.create({}, [
+      schema.text("This ", [schema.marks.em.create()]),
+      schema.text("is", [
+        schema.marks.em.create(),
+        schema.marks.strong.create(),
+      ]),
+      schema.text(" the first paragraph"),
+    ]),
+    schema.nodes.paragraph.create({}, [
+      schema.text("This is the second paragraph"),
+      schema.nodes.footnote.create({ number: 1 }, schema.text("Footnote")),
+    ]),
     schema.nodes.paragraph.create(),
-    // schema.nodes.image.create(),
-    // schema.nodes.image.create(),
-    // schema.nodes.paragraph.create(
-    //   {},
-    //   schema.text("This is the third paragraph 🫵")
-    // ),
-    // schema.nodes.table.create({}, [
-    //   schema.nodes.table_row.create({}, [
-    //     schema.nodes.table_header.create({}, schema.text("h1")),
-    //     schema.nodes.table_header.create({}, schema.text("h2")),
-    //   ]),
-    //   schema.nodes.table_row.create({}, [
-    //     schema.nodes.table_cell.create({}, schema.text("c1")),
-    //     schema.nodes.table_cell.create({}, schema.text("c2")),
-    //   ]),
-    // ]),
+    schema.nodes.image.create(),
+    schema.nodes.image.create(),
+    schema.nodes.paragraph.create(
+      {},
+      schema.text("This is the third paragraph 🫵")
+    ),
+    schema.nodes.table.create({}, [
+      schema.nodes.table_row.create({}, [
+        schema.nodes.table_header.create({}, schema.text("h1")),
+        schema.nodes.table_header.create({}, schema.text("h2")),
+      ]),
+      schema.nodes.table_row.create({}, [
+        schema.nodes.table_cell.create({}, schema.text("c1")),
+        schema.nodes.table_cell.create({}, schema.text("c2")),
+      ]),
+    ]),
   ]),
   plugins: [
     reactKeys(),
@@ -309,7 +309,7 @@ function DemoEditor() {
     () =>
       showReactNodeViews
         ? {
-            // paragraph: Paragraph,
+            paragraph: Paragraph,
             list: List,
             list_item: ListItem,
             footnote: Footnote,

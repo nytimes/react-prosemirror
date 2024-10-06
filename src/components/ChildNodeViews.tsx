@@ -13,6 +13,7 @@ import React, {
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
+import { InternalDecorationSource } from "../decorations/internalTypes.js";
 import { iterDeco } from "../decorations/iterDeco.js";
 // import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
@@ -374,10 +375,26 @@ const ChildElement = memo(
       mark.isInSet(prevProps.child.marks)
     ) &&
     prevProps.child.offset === nextProps.child.offset &&
-    // @ts-expect-error It's fine if these are undefined
-    prevProps.child.node === nextProps.child.node &&
-    // @ts-expect-error It's fine if these are undefined
-    prevProps.child.widget === nextProps.child.widget
+    (prevProps.child.type === "node"
+      ? prevProps.child.outerDeco?.length ===
+          (nextProps.child as ChildNode).outerDeco?.length &&
+        prevProps.child.outerDeco?.every((prevDeco) =>
+          (nextProps.child as ChildNode).outerDeco?.some(
+            (nextDeco) =>
+              prevDeco.from === nextDeco.from &&
+              prevDeco.to &&
+              nextDeco.to &&
+              (prevDeco as any).type.eq((nextDeco as any).type)
+          )
+        ) &&
+        (prevProps.child.innerDeco as InternalDecorationSource).eq(
+          (nextProps.child as ChildNode).innerDeco
+        )
+      : true) &&
+    (prevProps.child as ChildNode).node ===
+      (nextProps.child as ChildNode).node &&
+    (prevProps.child as ChildWidget).widget ===
+      (nextProps.child as ChildWidget).widget
 );
 
 function createChildElements(
