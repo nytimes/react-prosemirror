@@ -117,7 +117,7 @@ import { ProseMirror } from "@nytimes/react-prosemirror";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [state, setState] = useState(EditorState.create({ schema }));
+  const [state, setState] = useState(() => EditorState.create({ schema }));
 
   return (
     <ProseMirror
@@ -187,7 +187,7 @@ import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [state, setState] = useState(EditorState.create({ schema }))
+  const [state, setState] = useState(() => EditorState.create({ schema }))
 
   return (
     <ProseMirror
@@ -242,7 +242,7 @@ import { BoldButton } from "./BoldButton.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [state, setState] = useState(EditorState.create({ schema }));
+  const [state, setState] = useState(() => EditorState.create({ schema }));
 
   return (
     <ProseMirror
