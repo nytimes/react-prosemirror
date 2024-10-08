@@ -37,7 +37,7 @@ export function Button(props: {
 }
 
 export default function Menu() {
-  const state = useEditorState();
+  const [state] = useEditorState();
 
   const toggleBold = useEditorEventCallback((view) => {
     const toggleBoldMark = toggleMark(view.state.schema.marks["strong"]);
