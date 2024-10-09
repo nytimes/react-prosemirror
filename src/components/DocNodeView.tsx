@@ -11,7 +11,9 @@ import React, {
   cloneElement,
   createElement,
   forwardRef,
+  memo,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from "react";
 
@@ -20,6 +22,12 @@ import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
+
+const getPos = {
+  current() {
+    return -1;
+  },
+};
 
 export type DocNodeViewProps = {
   className?: string;
@@ -30,68 +38,87 @@ export type DocNodeViewProps = {
   viewDesc?: NodeViewDesc;
 } & Omit<DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref">;
 
-export const DocNodeView = forwardRef(function DocNodeView(
-  {
-    className,
-    node,
-    innerDeco,
-    outerDeco,
-    as,
-    viewDesc,
-    ...elementProps
-  }: DocNodeViewProps,
-  ref: ForwardedRef<HTMLDivElement | null>
-) {
-  const innerRef = useRef<HTMLDivElement | null>(null);
+export const DocNodeView = memo(
+  forwardRef(function DocNodeView(
+    {
+      className,
+      node,
+      innerDeco,
+      outerDeco,
+      as,
+      viewDesc,
+      ...elementProps
+    }: DocNodeViewProps,
+    ref: ForwardedRef<HTMLDivElement | null>
+  ) {
+    const innerRef = useRef<HTMLDivElement | null>(null);
 
-  useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
-    ref,
-    () => {
-      return innerRef.current;
-    },
-    []
-  );
+    useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
+      ref,
+      () => {
+        return innerRef.current;
+      },
+      []
+    );
 
-  const { childDescriptors } = useNodeViewDescriptor(
-    node,
-    innerRef,
-    innerRef,
-    innerDeco,
-    outerDeco,
-    viewDesc
-  );
+    const { childDescriptors, nodeViewDescRef } = useNodeViewDescriptor(
+      node,
+      () => getPos.current(),
+      innerRef,
+      innerRef,
+      innerDeco,
+      outerDeco,
+      viewDesc
+    );
 
-  const props = {
-    ...elementProps,
-    ref: innerRef,
-    className,
-    suppressContentEditableWarning: true,
-  };
+    const childContextValue = useMemo(
+      () => ({
+        parentRef: nodeViewDescRef,
+        siblingsRef: childDescriptors,
+      }),
+      [childDescriptors, nodeViewDescRef]
+    );
 
-  const element = as
-    ? cloneElement(
-        as,
-        props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
-          <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
-        </ChildDescriptorsContext.Provider>
-      )
-    : createElement(
-        "div",
-        props,
-        <ChildDescriptorsContext.Provider value={childDescriptors}>
-          <ChildNodeViews pos={-1} node={node} innerDecorations={innerDeco} />
-        </ChildDescriptorsContext.Provider>
-      );
+    const props = {
+      ...elementProps,
+      ref: innerRef,
+      className,
+      suppressContentEditableWarning: true,
+    };
 
-  if (!node) return element;
+    const element = as
+      ? cloneElement(
+          as,
+          props,
+          <ChildDescriptorsContext.Provider value={childContextValue}>
+            <ChildNodeViews
+              getPos={getPos}
+              node={node}
+              innerDecorations={innerDeco}
+            />
+          </ChildDescriptorsContext.Provider>
+        )
+      : createElement(
+          "div",
+          props,
+          <ChildDescriptorsContext.Provider value={childContextValue}>
+            <ChildNodeViews
+              getPos={getPos}
+              node={node}
+              innerDecorations={innerDeco}
+            />
+          </ChildDescriptorsContext.Provider>
+        );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const nodeDecorations = outerDeco.filter((deco) => !(deco as any).inline);
-  if (!nodeDecorations.length) {
-    return element;
-  }
+    if (!node) return element;
 
-  const wrapped = nodeDecorations.reduce(wrapInDeco, element);
-  return wrapped;
-});
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodeDecorations = outerDeco.filter((deco) => !(deco as any).inline);
+    if (!nodeDecorations.length) {
+      return element;
+    }
+
+    const wrapped = nodeDecorations.reduce(wrapInDeco, element);
+    return wrapped;
+  })
+);

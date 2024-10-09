@@ -15,6 +15,7 @@ import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
+  getPos: () => number,
   domRef: undefined | MutableRefObject<HTMLElement | null>,
   nodeDomRef: MutableRefObject<HTMLElement | null>,
   innerDecorations: DecorationSource,
@@ -32,18 +33,31 @@ export function useNodeViewDescriptor(
     },
     []
   );
-  const siblingDescriptors = useContext(ChildDescriptorsContext);
-  const childDescriptors: ViewDesc[] = [];
+  const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
+  const childDescriptors = useRef<ViewDesc[]>([]);
 
+  useLayoutEffect(() => {
+    const siblings = siblingsRef.current;
+    return () => {
+      if (!nodeViewDescRef.current) return;
+      if (siblings.includes(nodeViewDescRef.current)) {
+        const index = siblings.indexOf(nodeViewDescRef.current);
+        siblings.splice(index, 1);
+      }
+    };
+  }, [siblingsRef]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (!node || !nodeDomRef.current) return;
 
-    const firstChildDesc = childDescriptors[0];
+    const firstChildDesc = childDescriptors.current[0];
 
     if (!nodeViewDescRef.current) {
       nodeViewDescRef.current = new NodeViewDesc(
-        undefined,
-        childDescriptors,
+        parentRef.current,
+        childDescriptors.current,
+        getPos,
         node,
         outerDecorations,
         innerDecorations,
@@ -53,9 +67,10 @@ export function useNodeViewDescriptor(
         (event) => !!stopEvent.current(event)
       );
     } else {
-      nodeViewDescRef.current.parent = undefined;
-      nodeViewDescRef.current.children = childDescriptors;
+      nodeViewDescRef.current.parent = parentRef.current;
+      nodeViewDescRef.current.children = childDescriptors.current;
       nodeViewDescRef.current.node = node;
+      nodeViewDescRef.current.getPos = getPos;
       nodeViewDescRef.current.outerDeco = outerDecorations;
       nodeViewDescRef.current.innerDeco = innerDecorations;
       nodeViewDescRef.current.dom = domRef?.current ?? nodeDomRef.current;
@@ -73,9 +88,14 @@ export function useNodeViewDescriptor(
       nodeViewDescRef.current.nodeDOM = nodeDomRef.current;
     }
     setHasContentDOM(nodeViewDescRef.current.contentDOM !== null);
-    siblingDescriptors.push(nodeViewDescRef.current);
 
-    for (const childDesc of childDescriptors) {
+    if (!siblingsRef.current.includes(nodeViewDescRef.current)) {
+      siblingsRef.current.push(nodeViewDescRef.current);
+    }
+
+    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+
+    for (const childDesc of childDescriptors.current) {
       childDesc.parent = nodeViewDescRef.current;
 
       // Because TextNodeViews can't locate the DOM nodes
@@ -121,5 +141,5 @@ export function useNodeViewDescriptor(
     };
   });
 
-  return { hasContentDOM, childDescriptors, setStopEvent };
+  return { hasContentDOM, childDescriptors, nodeViewDescRef, setStopEvent };
 }

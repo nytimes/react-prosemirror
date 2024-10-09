@@ -1,5 +1,13 @@
-import { createContext } from "react";
+import { MutableRefObject, createContext } from "react";
 
 import { ViewDesc } from "../viewdesc.js";
 
-export const ChildDescriptorsContext = createContext<ViewDesc[]>([]);
+export const ChildDescriptorsContext = createContext<{
+  parentRef: MutableRefObject<ViewDesc | undefined>;
+  siblingsRef: MutableRefObject<ViewDesc[]>;
+}>({
+  parentRef: { current: undefined },
+  siblingsRef: {
+    current: [],
+  },
+});
