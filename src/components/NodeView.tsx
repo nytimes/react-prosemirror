@@ -21,6 +21,7 @@ import { createPortal } from "react-dom";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
+import { SelectNodeContext } from "../contexts/SelectNodeContext.js";
 import { StopEventContext } from "../contexts/StopEventContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
@@ -122,17 +123,22 @@ export const NodeView = memo(function NodeView({
     customNodeViewRootRef.current.appendChild(dom);
   }, [customNodeView, view, innerDeco, node, outerDeco, getPos]);
 
-  const { hasContentDOM, childDescriptors, setStopEvent, nodeViewDescRef } =
-    useNodeViewDescriptor(
-      node,
-      () => getPos.current(),
-      domRef,
-      nodeDomRef,
-      innerDeco,
-      outerDeco,
-      undefined,
-      contentDomRef
-    );
+  const {
+    hasContentDOM,
+    childDescriptors,
+    setStopEvent,
+    setSelectNode,
+    nodeViewDescRef,
+  } = useNodeViewDescriptor(
+    node,
+    () => getPos.current(),
+    domRef,
+    nodeDomRef,
+    innerDeco,
+    outerDeco,
+    undefined,
+    contentDomRef
+  );
 
   const finalProps = {
     ...props,
@@ -147,9 +153,6 @@ export const NodeView = memo(function NodeView({
       getPos: getPosFunc,
       decorations: outerDeco,
       innerDecorations: innerDeco,
-      isSelected: false,
-      // state.selection instanceof NodeSelection &&
-      // state.selection.node === node,
     }),
     [getPosFunc, innerDeco, node, outerDeco]
   );
@@ -245,20 +248,22 @@ export const NodeView = memo(function NodeView({
   );
 
   return (
-    <StopEventContext.Provider value={setStopEvent}>
-      <ChildDescriptorsContext.Provider value={childContextValue}>
-        {cloneElement(
-          markedElement,
-          node.marks.length ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            outerDeco.some((d) => (d as any).type.attrs.nodeName)
-            ? { ref: domRef }
-            : // If all of the node decorations were attr-only, then
-              // we've already passed the domRef to the NodeView component
-              // as a prop
-              undefined
-        )}
-      </ChildDescriptorsContext.Provider>
-    </StopEventContext.Provider>
+    <SelectNodeContext.Provider value={setSelectNode}>
+      <StopEventContext.Provider value={setStopEvent}>
+        <ChildDescriptorsContext.Provider value={childContextValue}>
+          {cloneElement(
+            markedElement,
+            node.marks.length ||
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outerDeco.some((d) => (d as any).type.attrs.nodeName)
+              ? { ref: domRef }
+              : // If all of the node decorations were attr-only, then
+                // we've already passed the domRef to the NodeView component
+                // as a prop
+                undefined
+          )}
+        </ChildDescriptorsContext.Provider>
+      </StopEventContext.Provider>
+    </SelectNodeContext.Provider>
   );
 });

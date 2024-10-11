@@ -33,6 +33,30 @@ export function useNodeViewDescriptor(
     },
     []
   );
+  const selectNode = useRef<() => void>(() => {
+    if (!nodeDomRef.current || !node) return;
+    if (nodeDomRef.current.nodeType == 1)
+      nodeDomRef.current.classList.add("ProseMirror-selectednode");
+    if (contentDOMRef?.current || !node.type.spec.draggable)
+      (domRef?.current ?? nodeDomRef.current).draggable = true;
+  });
+  const deselectNode = useRef<() => void>(() => {
+    if (!nodeDomRef.current || !node) return;
+    if (nodeDomRef.current.nodeType == 1) {
+      (nodeDomRef.current as HTMLElement).classList.remove(
+        "ProseMirror-selectednode"
+      );
+      if (contentDOMRef?.current || !node.type.spec.draggable)
+        (domRef?.current ?? nodeDomRef.current).removeAttribute("draggable");
+    }
+  });
+  const setSelectNode = useCallback(
+    (newSelectNode: () => void, newDeselectNode: () => void) => {
+      selectNode.current = newSelectNode;
+      deselectNode.current = newDeselectNode;
+    },
+    []
+  );
   const { siblingsRef, parentRef } = useContext(ChildDescriptorsContext);
   const childDescriptors = useRef<ViewDesc[]>([]);
 
@@ -64,7 +88,9 @@ export function useNodeViewDescriptor(
         domRef?.current ?? nodeDomRef.current,
         firstChildDesc?.dom.parentElement ?? null,
         nodeDomRef.current,
-        (event) => !!stopEvent.current(event)
+        (event) => !!stopEvent.current(event),
+        () => selectNode.current(),
+        () => deselectNode.current()
       );
     } else {
       nodeViewDescRef.current.parent = parentRef.current;
@@ -141,5 +167,11 @@ export function useNodeViewDescriptor(
     };
   });
 
-  return { hasContentDOM, childDescriptors, nodeViewDescRef, setStopEvent };
+  return {
+    hasContentDOM,
+    childDescriptors,
+    nodeViewDescRef,
+    setStopEvent,
+    setSelectNode,
+  };
 }

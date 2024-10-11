@@ -297,7 +297,13 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
       tempDom,
       null,
       tempDom,
-      () => false
+      () => false,
+      () => {
+        /* The doc node can't have a node selection*/
+      },
+      () => {
+        /* The doc node can't have a node selection*/
+      }
     )
   );
 
