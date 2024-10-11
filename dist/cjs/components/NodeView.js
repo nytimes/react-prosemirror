@@ -11,6 +11,7 @@ const _reactDom = require("react-dom");
 const _childDescriptorsContextJs = require("../contexts/ChildDescriptorsContext.js");
 const _editorContextJs = require("../contexts/EditorContext.js");
 const _nodeViewContextJs = require("../contexts/NodeViewContext.js");
+const _selectNodeContextJs = require("../contexts/SelectNodeContext.js");
 const _stopEventContextJs = require("../contexts/StopEventContext.js");
 const _useNodeViewDescriptorJs = require("../hooks/useNodeViewDescriptor.js");
 const _childNodeViewsJs = require("./ChildNodeViews.js");
@@ -126,7 +127,7 @@ const NodeView = /*#__PURE__*/ (0, _react.memo)(function NodeView(param) {
         outerDeco,
         getPos
     ]);
-    const { hasContentDOM , childDescriptors , setStopEvent , nodeViewDescRef  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, ()=>getPos.current(), domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
+    const { hasContentDOM , childDescriptors , setStopEvent , setSelectNode , nodeViewDescRef  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, ()=>getPos.current(), domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
     const finalProps = {
         ...props,
         ...!hasContentDOM && {
@@ -137,8 +138,7 @@ const NodeView = /*#__PURE__*/ (0, _react.memo)(function NodeView(param) {
             node: node,
             getPos: getPosFunc,
             decorations: outerDeco,
-            innerDecorations: innerDeco,
-            isSelected: false
+            innerDecorations: innerDeco
         }), [
         getPosFunc,
         innerDeco,
@@ -206,7 +206,9 @@ const NodeView = /*#__PURE__*/ (0, _react.memo)(function NodeView(param) {
         childDescriptors,
         nodeViewDescRef
     ]);
-    return /*#__PURE__*/ _react.default.createElement(_stopEventContextJs.StopEventContext.Provider, {
+    return /*#__PURE__*/ _react.default.createElement(_selectNodeContextJs.SelectNodeContext.Provider, {
+        value: setSelectNode
+    }, /*#__PURE__*/ _react.default.createElement(_stopEventContextJs.StopEventContext.Provider, {
         value: setStopEvent
     }, /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
         value: childContextValue
@@ -215,5 +217,5 @@ const NodeView = /*#__PURE__*/ (0, _react.memo)(function NodeView(param) {
         ref: domRef
     } : // we've already passed the domRef to the NodeView component
     // as a prop
-    undefined)));
+    undefined))));
 });

@@ -201,7 +201,9 @@ let didWarnValueDefaultValue = false;
         options.state
     ]);
     const tempDom = document.createElement("div");
-    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], ()=>-1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false));
+    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], ()=>-1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false, ()=>{
+    /* The doc node can't have a node selection*/ }, ()=>{
+    /* The doc node can't have a node selection*/ }));
     const directEditorProps = {
         ...options,
         state,

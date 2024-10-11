@@ -948,7 +948,7 @@ export declare function mergeReactProps(a: HTMLProps<HTMLElement>, b: HTMLProps<
     results?: number | undefined;
     security?: string | undefined;
     unselectable?: "on" | "off" | undefined;
-    inputMode?: "text" | "search" | "none" | "tel" | "url" | "email" | "numeric" | "decimal" | undefined;
+    inputMode?: "text" | "none" | "search" | "email" | "tel" | "url" | "numeric" | "decimal" | undefined;
     is?: string | undefined;
     'aria-activedescendant'?: string | undefined;
     'aria-atomic'?: (boolean | "false" | "true") | undefined;
@@ -959,7 +959,7 @@ export declare function mergeReactProps(a: HTMLProps<HTMLElement>, b: HTMLProps<
     'aria-colindex'?: number | undefined;
     'aria-colspan'?: number | undefined;
     'aria-controls'?: string | undefined;
-    'aria-current'?: boolean | "false" | "time" | "step" | "true" | "date" | "page" | "location" | undefined;
+    'aria-current'?: boolean | "false" | "time" | "true" | "step" | "date" | "page" | "location" | undefined;
     'aria-describedby'?: string | undefined;
     'aria-details'?: string | undefined;
     'aria-disabled'?: (boolean | "false" | "true") | undefined;
@@ -968,7 +968,7 @@ export declare function mergeReactProps(a: HTMLProps<HTMLElement>, b: HTMLProps<
     'aria-expanded'?: (boolean | "false" | "true") | undefined;
     'aria-flowto'?: string | undefined;
     'aria-grabbed'?: (boolean | "false" | "true") | undefined;
-    'aria-haspopup'?: boolean | "false" | "dialog" | "menu" | "grid" | "listbox" | "tree" | "true" | undefined;
+    'aria-haspopup'?: boolean | "false" | "dialog" | "menu" | "true" | "grid" | "listbox" | "tree" | undefined;
     'aria-hidden'?: (boolean | "false" | "true") | undefined;
     'aria-invalid'?: boolean | "false" | "true" | "grammar" | "spelling" | undefined;
     'aria-keyshortcuts'?: string | undefined;

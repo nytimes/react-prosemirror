@@ -6,5 +6,6 @@ export { useEditorEventCallback } from "./hooks/useEditorEventCallback.js";
 export { useEditorEventListener } from "./hooks/useEditorEventListener.js";
 export { useEditorState } from "./hooks/useEditorState.js";
 export { useStopEvent } from "./hooks/useStopEvent.js";
+export { useSelectNode } from "./hooks/useSelectNode.js";
 export { reactKeys } from "./plugins/reactKeys.js";
 export { widget } from "./decorations/ReactWidgetType.js";

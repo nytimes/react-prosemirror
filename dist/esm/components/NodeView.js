@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
+import { SelectNodeContext } from "../contexts/SelectNodeContext.js";
 import { StopEventContext } from "../contexts/StopEventContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
@@ -79,7 +80,7 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
         outerDeco,
         getPos
     ]);
-    const { hasContentDOM , childDescriptors , setStopEvent , nodeViewDescRef  } = useNodeViewDescriptor(node, ()=>getPos.current(), domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
+    const { hasContentDOM , childDescriptors , setStopEvent , setSelectNode , nodeViewDescRef  } = useNodeViewDescriptor(node, ()=>getPos.current(), domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
     const finalProps = {
         ...props,
         ...!hasContentDOM && {
@@ -90,8 +91,7 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
             node: node,
             getPos: getPosFunc,
             decorations: outerDeco,
-            innerDecorations: innerDeco,
-            isSelected: false
+            innerDecorations: innerDeco
         }), [
         getPosFunc,
         innerDeco,
@@ -159,7 +159,9 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
         childDescriptors,
         nodeViewDescRef
     ]);
-    return /*#__PURE__*/ React.createElement(StopEventContext.Provider, {
+    return /*#__PURE__*/ React.createElement(SelectNodeContext.Provider, {
+        value: setSelectNode
+    }, /*#__PURE__*/ React.createElement(StopEventContext.Provider, {
         value: setStopEvent
     }, /*#__PURE__*/ React.createElement(ChildDescriptorsContext.Provider, {
         value: childContextValue
@@ -168,5 +170,5 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
         ref: domRef
     } : // we've already passed the domRef to the NodeView component
     // as a prop
-    undefined)));
+    undefined))));
 });

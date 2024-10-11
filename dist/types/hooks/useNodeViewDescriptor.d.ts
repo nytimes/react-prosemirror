@@ -7,4 +7,5 @@ export declare function useNodeViewDescriptor(node: Node | undefined, getPos: ()
     childDescriptors: MutableRefObject<ViewDesc[]>;
     nodeViewDescRef: MutableRefObject<NodeViewDesc | undefined>;
     setStopEvent: (newStopEvent: (event: Event) => boolean | undefined) => void;
+    setSelectNode: (newSelectNode: () => void, newDeselectNode: () => void) => void;
 };

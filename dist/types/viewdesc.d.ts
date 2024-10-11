@@ -93,15 +93,15 @@ export declare class NodeViewDesc extends ViewDesc {
     innerDeco: DecorationSource;
     nodeDOM: DOMNode;
     stopEvent: (event: Event) => boolean;
-    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, contentDOM: HTMLElement | null, nodeDOM: DOMNode, stopEvent: (event: Event) => boolean);
+    selectNode: () => void;
+    deselectNode: () => void;
+    constructor(parent: ViewDesc | undefined, children: ViewDesc[], getPos: () => number, node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource, dom: DOMNode, contentDOM: HTMLElement | null, nodeDOM: DOMNode, stopEvent: (event: Event) => boolean, selectNode: () => void, deselectNode: () => void);
     updateOuterDeco(): void;
     parseRule(): Omit<TagParseRule, "tag"> | null;
     matchesNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource): boolean;
     get size(): number;
     get border(): 0 | 1;
     update(_node: Node, _outerDeco: readonly Decoration[], _innerDeco: DecorationSource, _view: EditorView): boolean;
-    selectNode(): void;
-    deselectNode(): void;
     get domAtom(): boolean;
 }
 export declare class TextViewDesc extends NodeViewDesc {

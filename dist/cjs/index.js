@@ -16,6 +16,7 @@ _export(exports, {
     useEditorEventListener: ()=>_useEditorEventListenerJs.useEditorEventListener,
     useEditorState: ()=>_useEditorStateJs.useEditorState,
     useStopEvent: ()=>_useStopEventJs.useStopEvent,
+    useSelectNode: ()=>_useSelectNodeJs.useSelectNode,
     reactKeys: ()=>_reactKeysJs.reactKeys,
     widget: ()=>_reactWidgetTypeJs.widget
 });
@@ -26,6 +27,7 @@ const _useEditorEventCallbackJs = require("./hooks/useEditorEventCallback.js");
 const _useEditorEventListenerJs = require("./hooks/useEditorEventListener.js");
 const _useEditorStateJs = require("./hooks/useEditorState.js");
 const _useStopEventJs = require("./hooks/useStopEvent.js");
+const _useSelectNodeJs = require("./hooks/useSelectNode.js");
 const _reactKeysJs = require("./plugins/reactKeys.js");
 const _reactWidgetTypeJs = require("./decorations/ReactWidgetType.js");
 "use client";

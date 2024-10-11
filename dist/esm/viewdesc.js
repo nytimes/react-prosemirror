@@ -558,28 +558,18 @@ export class NodeViewDesc extends ViewDesc {
     update(_node, _outerDeco, _innerDeco, _view) {
         return true;
     }
-    // Mark this node as being the selected node.
-    selectNode() {
-        if (this.nodeDOM.nodeType == 1) this.nodeDOM.classList.add("ProseMirror-selectednode");
-        if (this.contentDOM || !this.node.type.spec.draggable) this.dom.draggable = true;
-    }
-    // Remove selected node marking from this node.
-    deselectNode() {
-        if (this.nodeDOM.nodeType == 1) {
-            this.nodeDOM.classList.remove("ProseMirror-selectednode");
-            if (this.contentDOM || !this.node.type.spec.draggable) this.dom.removeAttribute("draggable");
-        }
-    }
     get domAtom() {
         return this.node.isAtom;
     }
-    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent){
+    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent, selectNode, deselectNode){
         super(parent, children, getPos, dom, contentDOM);
         this.node = node;
         this.outerDeco = outerDeco;
         this.innerDeco = innerDeco;
         this.nodeDOM = nodeDOM;
         this.stopEvent = stopEvent;
+        this.selectNode = selectNode;
+        this.deselectNode = deselectNode;
     }
 }
 export class TextViewDesc extends NodeViewDesc {
@@ -619,7 +609,9 @@ export class TextViewDesc extends NodeViewDesc {
         return false;
     }
     constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, nodeDOM){
-        super(parent, children, getPos, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false);
+        super(parent, children, getPos, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false, ()=>{
+        /* Text nodes can't have node selections */ }, ()=>{
+        /* Text nodes can't have node selections */ });
     }
 }
 // A dummy desc used to tag trailing BR or IMG nodes created to work

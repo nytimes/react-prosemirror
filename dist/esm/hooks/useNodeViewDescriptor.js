@@ -10,6 +10,22 @@ export function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDec
     const setStopEvent = useCallback((newStopEvent)=>{
         stopEvent.current = newStopEvent;
     }, []);
+    const selectNode = useRef(()=>{
+        if (!nodeDomRef.current || !node) return;
+        if (nodeDomRef.current.nodeType == 1) nodeDomRef.current.classList.add("ProseMirror-selectednode");
+        if (contentDOMRef?.current || !node.type.spec.draggable) (domRef?.current ?? nodeDomRef.current).draggable = true;
+    });
+    const deselectNode = useRef(()=>{
+        if (!nodeDomRef.current || !node) return;
+        if (nodeDomRef.current.nodeType == 1) {
+            nodeDomRef.current.classList.remove("ProseMirror-selectednode");
+            if (contentDOMRef?.current || !node.type.spec.draggable) (domRef?.current ?? nodeDomRef.current).removeAttribute("draggable");
+        }
+    });
+    const setSelectNode = useCallback((newSelectNode, newDeselectNode)=>{
+        selectNode.current = newSelectNode;
+        deselectNode.current = newDeselectNode;
+    }, []);
     const { siblingsRef , parentRef  } = useContext(ChildDescriptorsContext);
     const childDescriptors = useRef([]);
     useLayoutEffect(()=>{
@@ -29,7 +45,7 @@ export function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDec
         if (!node || !nodeDomRef.current) return;
         const firstChildDesc = childDescriptors.current[0];
         if (!nodeViewDescRef.current) {
-            nodeViewDescRef.current = new NodeViewDesc(parentRef.current, childDescriptors.current, getPos, node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event));
+            nodeViewDescRef.current = new NodeViewDesc(parentRef.current, childDescriptors.current, getPos, node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event), ()=>selectNode.current(), ()=>deselectNode.current());
         } else {
             nodeViewDescRef.current.parent = parentRef.current;
             nodeViewDescRef.current.children = childDescriptors.current;
@@ -83,6 +99,7 @@ export function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDec
         hasContentDOM,
         childDescriptors,
         nodeViewDescRef,
-        setStopEvent
+        setStopEvent,
+        setSelectNode
     };
 }

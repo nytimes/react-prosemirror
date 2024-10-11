@@ -18,6 +18,22 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
     const setStopEvent = (0, _react.useCallback)((newStopEvent)=>{
         stopEvent.current = newStopEvent;
     }, []);
+    const selectNode = (0, _react.useRef)(()=>{
+        if (!nodeDomRef.current || !node) return;
+        if (nodeDomRef.current.nodeType == 1) nodeDomRef.current.classList.add("ProseMirror-selectednode");
+        if (contentDOMRef?.current || !node.type.spec.draggable) (domRef?.current ?? nodeDomRef.current).draggable = true;
+    });
+    const deselectNode = (0, _react.useRef)(()=>{
+        if (!nodeDomRef.current || !node) return;
+        if (nodeDomRef.current.nodeType == 1) {
+            nodeDomRef.current.classList.remove("ProseMirror-selectednode");
+            if (contentDOMRef?.current || !node.type.spec.draggable) (domRef?.current ?? nodeDomRef.current).removeAttribute("draggable");
+        }
+    });
+    const setSelectNode = (0, _react.useCallback)((newSelectNode, newDeselectNode)=>{
+        selectNode.current = newSelectNode;
+        deselectNode.current = newDeselectNode;
+    }, []);
     const { siblingsRef , parentRef  } = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
     const childDescriptors = (0, _react.useRef)([]);
     (0, _react.useLayoutEffect)(()=>{
@@ -37,7 +53,7 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
         if (!node || !nodeDomRef.current) return;
         const firstChildDesc = childDescriptors.current[0];
         if (!nodeViewDescRef.current) {
-            nodeViewDescRef.current = new _viewdescJs.NodeViewDesc(parentRef.current, childDescriptors.current, getPos, node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event));
+            nodeViewDescRef.current = new _viewdescJs.NodeViewDesc(parentRef.current, childDescriptors.current, getPos, node, outerDecorations, innerDecorations, domRef?.current ?? nodeDomRef.current, firstChildDesc?.dom.parentElement ?? null, nodeDomRef.current, (event)=>!!stopEvent.current(event), ()=>selectNode.current(), ()=>deselectNode.current());
         } else {
             nodeViewDescRef.current.parent = parentRef.current;
             nodeViewDescRef.current.children = childDescriptors.current;
@@ -91,6 +107,7 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
         hasContentDOM,
         childDescriptors,
         nodeViewDescRef,
-        setStopEvent
+        setStopEvent,
+        setSelectNode
     };
 }

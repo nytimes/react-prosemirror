@@ -7,7 +7,6 @@ export type NodeViewComponentProps = {
         innerDecorations: DecorationSource;
         node: Node;
         children?: ReactNode | ReactNode[];
-        isSelected: boolean;
         getPos: () => number;
     };
 } & HTMLAttributes<HTMLElement>;
