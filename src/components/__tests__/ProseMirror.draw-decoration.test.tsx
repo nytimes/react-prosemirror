@@ -95,9 +95,13 @@ describe("Decoration drawing", () => {
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["2-5-foo"])],
     });
+    console.log("SMOORESLOG: created view");
     const found = view.dom.querySelector(".foo")!;
-    expect(found).not.toBeNull();
-    expect(found.textContent).toBe("oob");
+    console.log("SMOORESLOG: found .foo");
+    await expect(found).not.toBeNull();
+    console.log("SMOORESLOG: found is not false");
+    await expect(found.textContent).toBe("oob");
+    console.log("SMOORESLOG: found has correct content");
   });
 
   it("draws wrapping decorations", async () => {
