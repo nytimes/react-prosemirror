@@ -49,6 +49,10 @@ jobs:
         run: yarn
 
       - uses: browser-actions/setup-chrome@v1
+        with:
+          install-dependencies: true
+          install-chromedriver: true
+
       - uses: browser-actions/setup-firefox@v1
 
       - name: Test
