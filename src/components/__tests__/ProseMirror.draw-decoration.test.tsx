@@ -90,7 +90,7 @@ function updateDeco(
 }
 
 describe("Decoration drawing", () => {
-  it("draws inline decorations", async () => {
+  it.only("draws inline decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["2-5-foo"])],

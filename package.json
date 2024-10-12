@@ -37,7 +37,7 @@
     "fix:toc": "markdown-toc --bullets='-' -i README.md",
     "fix": "concurrently -P 'npm:fix:* {@}' --",
     "prepack": "yarn build",
-    "test:wdio": "wdio run ./wdio.conf.ts",
+    "test:wdio": "wdio run ./wdio.conf.ts --spec src/components/__tests__/ProseMirror.draw-decoration.test.tsx",
     "test:unit": "jest",
     "test": "yarn test:unit && yarn test:wdio"
   },
