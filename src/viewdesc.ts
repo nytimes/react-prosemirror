@@ -35,6 +35,7 @@ export class ViewDesc {
   constructor(
     public parent: ViewDesc | undefined,
     public children: ViewDesc[],
+    public getPos: () => number,
     public dom: DOMNode,
     // This is the node that holds the child views. It may be null for
     // descs that don't have children.
@@ -628,10 +629,11 @@ export class ViewDesc {
 export class WidgetViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
-    readonly widget: Decoration,
+    getPos: () => number,
+    public widget: Decoration,
     dom: DOMNode
   ) {
-    super(parent, [], dom, null);
+    super(parent, [], getPos, dom, null);
     this.widget = widget;
   }
 
@@ -669,11 +671,12 @@ export class WidgetViewDesc extends ViewDesc {
 export class CompositionViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
+    getPos: () => number,
     dom: DOMNode,
     public textDOM: Text,
     public text: string
   ) {
-    super(parent, [], dom, null);
+    super(parent, [], getPos, dom, null);
   }
 
   get size() {
@@ -703,11 +706,12 @@ export class MarkViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
-    readonly mark: Mark,
+    getPos: () => number,
+    public mark: Mark,
     dom: DOMNode,
     contentDOM: HTMLElement
   ) {
-    super(parent, children, dom, contentDOM);
+    super(parent, children, getPos, dom, contentDOM);
   }
 
   parseRule() {
@@ -743,15 +747,18 @@ export class NodeViewDesc extends ViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
+    getPos: () => number,
     public node: Node,
     public outerDeco: readonly Decoration[],
     public innerDeco: DecorationSource,
     dom: DOMNode,
     contentDOM: HTMLElement | null,
     public nodeDOM: DOMNode,
-    public stopEvent: (event: Event) => boolean
+    public stopEvent: (event: Event) => boolean,
+    public selectNode: () => void,
+    public deselectNode: () => void
   ) {
-    super(parent, children, dom, contentDOM);
+    super(parent, children, getPos, dom, contentDOM);
   }
 
   updateOuterDeco() {
@@ -824,25 +831,6 @@ export class NodeViewDesc extends ViewDesc {
     return true;
   }
 
-  // Mark this node as being the selected node.
-  selectNode() {
-    if (this.nodeDOM.nodeType == 1)
-      (this.nodeDOM as HTMLElement).classList.add("ProseMirror-selectednode");
-    if (this.contentDOM || !this.node.type.spec.draggable)
-      (this.dom as HTMLElement).draggable = true;
-  }
-
-  // Remove selected node marking from this node.
-  deselectNode() {
-    if (this.nodeDOM.nodeType == 1) {
-      (this.nodeDOM as HTMLElement).classList.remove(
-        "ProseMirror-selectednode"
-      );
-      if (this.contentDOM || !this.node.type.spec.draggable)
-        (this.dom as HTMLElement).removeAttribute("draggable");
-    }
-  }
-
   get domAtom() {
     return this.node.isAtom;
   }
@@ -852,6 +840,7 @@ export class TextViewDesc extends NodeViewDesc {
   constructor(
     parent: ViewDesc | undefined,
     children: ViewDesc[],
+    getPos: () => number,
     node: Node,
     outerDeco: readonly Decoration[],
     innerDeco: DecorationSource,
@@ -861,13 +850,20 @@ export class TextViewDesc extends NodeViewDesc {
     super(
       parent,
       children,
+      getPos,
       node,
       outerDeco,
       innerDeco,
       dom,
       null,
       nodeDOM,
-      () => false
+      () => false,
+      () => {
+        /* Text nodes can't have node selections */
+      },
+      () => {
+        /* Text nodes can't have node selections */
+      }
     );
   }
 

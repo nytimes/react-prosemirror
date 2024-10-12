@@ -1,17 +1,21 @@
 import { Mark, Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
 import React, {
+  MutableRefObject,
   ReactNode,
   cloneElement,
   createElement,
+  memo,
   useContext,
+  useRef,
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
+import { InternalDecorationSource } from "../decorations/internalTypes.js";
 import { iterDeco } from "../decorations/iterDeco.js";
-import { useEditorState } from "../hooks/useEditorState.js";
+// import { useEditorState } from "../hooks/useEditorState.js";
 import { useReactKeys } from "../hooks/useReactKeys.js";
 import { htmlAttrsToReactProps, mergeReactProps } from "../props.js";
 
@@ -75,13 +79,121 @@ type ChildTrailingHack = {
 type Child = ChildNode | ChildWidget | ChildNativeWidget;
 
 type SharedMarksProps = {
-  innerPos: number;
+  getInnerPos: MutableRefObject<() => number>;
   childViews: Child[];
 };
 
-function InlineView({ innerPos, childViews }: SharedMarksProps) {
+const ChildView = memo(function ChildView({
+  child,
+  getInnerPos,
+}: {
+  child: Child;
+  getInnerPos: MutableRefObject<() => number>;
+}) {
   const { view } = useContext(EditorContext);
-  const editorState = useEditorState();
+  const getChildPos = useRef(() => getInnerPos.current() + child.offset);
+  getChildPos.current = () => getInnerPos.current() + child.offset;
+  const reactKeys = useReactKeys();
+
+  const key = createKey(getInnerPos.current(), child, reactKeys?.posToKey);
+
+  return child.type === "widget" ? (
+    <WidgetView
+      key={key}
+      widget={child.widget as unknown as ReactWidgetDecoration}
+      getPos={getChildPos}
+    />
+  ) : child.type === "native-widget" ? (
+    <NativeWidgetView key={key} widget={child.widget} getPos={getChildPos} />
+  ) : child.node.isText ? (
+    <ChildDescriptorsContext.Consumer key={key}>
+      {({ siblingsRef, parentRef }) => (
+        <TextNodeView
+          view={view}
+          node={child.node}
+          getPos={getChildPos}
+          siblingsRef={siblingsRef}
+          parentRef={parentRef}
+          decorations={child.outerDeco}
+        />
+      )}
+    </ChildDescriptorsContext.Consumer>
+  ) : (
+    <NodeView
+      key={key}
+      node={child.node}
+      getPos={getChildPos}
+      outerDeco={child.outerDeco}
+      innerDeco={child.innerDeco}
+    />
+  );
+});
+
+const InlinePartition = memo(function InlinePartition({
+  childViews,
+  getInnerPos,
+}: {
+  childViews: [Child, ...Child[]];
+  getInnerPos: MutableRefObject<() => number>;
+}) {
+  const reactKeys = useReactKeys();
+  const firstChild = childViews[0];
+  const getFirstChildPos = useRef(
+    () => getInnerPos.current() + firstChild.offset
+  );
+  getFirstChildPos.current = () => getInnerPos.current() + firstChild.offset;
+
+  const firstMark = firstChild.marks[0];
+  if (!firstMark) {
+    return (
+      <>
+        {childViews.map((child) => {
+          const key = createKey(
+            getInnerPos.current(),
+            child,
+            reactKeys?.posToKey
+          );
+          return (
+            <ChildView key={key} child={child} getInnerPos={getInnerPos} />
+          );
+        })}
+      </>
+    );
+  }
+
+  return (
+    <MarkView
+      getPos={getFirstChildPos}
+      key={createKey(
+        // editorState?.doc,
+        getInnerPos.current(),
+        firstChild,
+        reactKeys?.posToKey
+      )}
+      mark={firstMark}
+    >
+      <InlineView
+        key={createKey(
+          // editorState?.doc,
+          getInnerPos.current(),
+          firstChild,
+          reactKeys?.posToKey
+        )}
+        getInnerPos={getInnerPos}
+        childViews={childViews.map((child) => ({
+          ...child,
+          marks: child.marks.slice(1),
+        }))}
+      />
+    </MarkView>
+  );
+});
+
+const InlineView = memo(function InlineView({
+  getInnerPos,
+  childViews,
+}: SharedMarksProps) {
+  // const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
   const partitioned = childViews.reduce((acc, child) => {
@@ -115,84 +227,25 @@ function InlineView({ innerPos, childViews }: SharedMarksProps) {
       {partitioned.map((childViews) => {
         const firstChild = childViews[0];
         if (!firstChild) return null;
-
-        const firstMark = firstChild.marks[0];
-        if (!firstMark) {
-          return childViews.map((child) => {
-            const childPos = innerPos + child.offset;
-
-            const childElement =
-              child.type === "widget" ? (
-                <WidgetView
-                  widget={child.widget as unknown as ReactWidgetDecoration}
-                  pos={childPos}
-                />
-              ) : child.type === "native-widget" ? (
-                <NativeWidgetView widget={child.widget} pos={childPos} />
-              ) : child.node.isText ? (
-                <ChildDescriptorsContext.Consumer>
-                  {(siblingDescriptors) => (
-                    <TextNodeView
-                      view={view}
-                      node={child.node}
-                      pos={childPos}
-                      siblingDescriptors={siblingDescriptors}
-                      decorations={child.outerDeco}
-                    />
-                  )}
-                </ChildDescriptorsContext.Consumer>
-              ) : (
-                <NodeView
-                  node={child.node}
-                  pos={childPos}
-                  outerDeco={child.outerDeco}
-                  innerDeco={child.innerDeco}
-                />
-              );
-
-            return cloneElement(childElement, {
-              key: createKey(
-                editorState.doc,
-                innerPos,
-                child,
-                reactKeys?.posToKey
-              ),
-            });
-          });
-        }
-
+        const key = createKey(
+          getInnerPos.current(),
+          firstChild,
+          reactKeys?.posToKey
+        );
         return (
-          <MarkView
-            key={createKey(
-              editorState?.doc,
-              innerPos,
-              firstChild,
-              reactKeys?.posToKey
-            )}
-            mark={firstMark}
-          >
-            <InlineView
-              key={createKey(
-                editorState?.doc,
-                innerPos,
-                firstChild,
-                reactKeys?.posToKey
-              )}
-              innerPos={innerPos}
-              childViews={childViews.map((child) => ({
-                ...child,
-                marks: child.marks.slice(1),
-              }))}
-            />
-          </MarkView>
+          <InlinePartition
+            key={key}
+            childViews={childViews as [Child, ...Child[]]}
+            getInnerPos={getInnerPos}
+          />
         );
       })}
     </>
   );
-}
+});
 
 function createKey(
-  doc: Node | undefined,
+  // doc: Node | undefined,
   innerPos: number,
   child: Child | ChildTrailingHack,
   posToKey: Map<number, string> | undefined
@@ -215,13 +268,13 @@ function createKey(
 
   if (key) return key;
 
-  if (!doc) return pos;
+  // if (!doc) return pos;
 
-  const parentPos = doc.resolve(pos).start() - 1;
+  // const parentPos = doc.resolve(pos).start() - 1;
 
-  const parentKey = posToKey?.get(parentPos);
+  // const parentKey = posToKey?.get(parentPos);
 
-  if (parentKey) return `${parentKey}-${child.offset}`;
+  // if (parentKey) return `${parentKey}-${child.offset}`;
 
   return pos;
 }
@@ -277,10 +330,77 @@ function adjustWidgetMarksBack(children: Child[]) {
   }
 }
 
+const ChildElement = memo(
+  function ChildElement({
+    child,
+    getInnerPos,
+    posToKey,
+  }: {
+    child: Child;
+    getInnerPos: MutableRefObject<() => number>;
+    posToKey: Map<number, string> | undefined;
+  }) {
+    const getNodePos = useRef(() => getInnerPos.current() + child.offset);
+    getNodePos.current = () => getInnerPos.current() + child.offset;
+
+    const key = createKey(getInnerPos.current(), child, posToKey);
+    if (child.type === "node") {
+      return (
+        <NodeView
+          key={key}
+          outerDeco={child.outerDeco}
+          node={child.node}
+          innerDeco={child.innerDeco}
+          getPos={getNodePos}
+        />
+      );
+    } else {
+      return (
+        <InlineView key={key} childViews={[child]} getInnerPos={getInnerPos} />
+      );
+    }
+  },
+  /**
+   * It's safe to skip re-rendering a ChildElement component as long
+   * as its child prop is shallowly equivalent to the previous render.
+   * posToKey will be updated on every doc update, but if the child
+   * hasn't changed, it will still have the same key.
+   */
+  (prevProps, nextProps) =>
+    prevProps.child.type === nextProps.child.type &&
+    prevProps.child.marks.every((mark) =>
+      mark.isInSet(nextProps.child.marks)
+    ) &&
+    nextProps.child.marks.every((mark) =>
+      mark.isInSet(prevProps.child.marks)
+    ) &&
+    prevProps.child.offset === nextProps.child.offset &&
+    (prevProps.child.type === "node"
+      ? prevProps.child.outerDeco?.length ===
+          (nextProps.child as ChildNode).outerDeco?.length &&
+        prevProps.child.outerDeco?.every((prevDeco) =>
+          (nextProps.child as ChildNode).outerDeco?.some(
+            (nextDeco) =>
+              prevDeco.from === nextDeco.from &&
+              prevDeco.to &&
+              nextDeco.to &&
+              (prevDeco as any).type.eq((nextDeco as any).type)
+          )
+        ) &&
+        (prevProps.child.innerDeco as InternalDecorationSource).eq(
+          (nextProps.child as ChildNode).innerDeco
+        )
+      : true) &&
+    (prevProps.child as ChildNode).node ===
+      (nextProps.child as ChildNode).node &&
+    (prevProps.child as ChildWidget).widget ===
+      (nextProps.child as ChildWidget).widget
+);
+
 function createChildElements(
   children: Child[],
-  innerPos: number,
-  doc: Node | undefined,
+  getInnerPos: MutableRefObject<() => number>,
+  // doc: Node | undefined,
   posToKey: Map<number, string> | undefined
 ): ReactNode[] {
   if (!children.length) return [];
@@ -289,63 +409,46 @@ function createChildElements(
     return [
       <InlineView
         key={createKey(
-          doc,
-          innerPos,
+          // doc,
+          getInnerPos.current(),
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           children[0]!,
           posToKey
         )}
         childViews={children}
-        innerPos={innerPos}
+        getInnerPos={getInnerPos}
       />,
     ];
   }
 
   return children.map((child) => {
-    if (child.type === "node") {
-      const pos = innerPos + child.offset;
-      const key = posToKey?.get(pos) ?? pos;
-      return (
-        <NodeView
-          key={key}
-          outerDeco={child.outerDeco}
-          node={child.node}
-          innerDeco={child.innerDeco}
-          pos={pos}
-        />
-      );
-    } else {
-      return (
-        <InlineView
-          key={createKey(
-            doc,
-            innerPos,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            child,
-            posToKey
-          )}
-          childViews={[child]}
-          innerPos={innerPos}
-        />
-      );
-    }
+    const key = createKey(getInnerPos.current(), child, posToKey);
+    return (
+      <ChildElement
+        key={key}
+        child={child}
+        posToKey={posToKey}
+        getInnerPos={getInnerPos}
+      />
+    );
   });
 }
 
-export function ChildNodeViews({
-  pos,
+export const ChildNodeViews = memo(function ChildNodeViews({
+  getPos,
   node,
   innerDecorations,
 }: {
-  pos: number;
+  getPos: MutableRefObject<() => number>;
   node: Node | undefined;
   innerDecorations: DecorationSource;
 }) {
-  const editorState = useEditorState();
+  // const editorState = useEditorState();
   const reactKeys = useReactKeys();
 
+  const getInnerPos = useRef(() => getPos.current() + 1);
+
   if (!node) return null;
-  const innerPos = pos + 1;
 
   const children: Child[] = [];
 
@@ -389,8 +492,8 @@ export function ChildNodeViews({
 
   const childElements = createChildElements(
     children,
-    innerPos,
-    editorState.doc,
+    getInnerPos,
+    // editorState.doc,
     reactKeys?.posToKey
   );
 
@@ -405,10 +508,10 @@ export function ChildNodeViews({
     /\n$/.test(lastChild.node.text!)
   ) {
     childElements.push(
-      <SeparatorHackView key="trailing-hack-img" />,
-      <TrailingHackView key="trailing-hack-br" />
+      <SeparatorHackView getPos={getInnerPos} key="trailing-hack-img" />,
+      <TrailingHackView getPos={getInnerPos} key="trailing-hack-br" />
     );
   }
 
   return <>{childElements}</>;
-}
+});

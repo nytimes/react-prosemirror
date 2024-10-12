@@ -1,5 +1,4 @@
 import { DOMOutputSpec, Node } from "prosemirror-model";
-import { NodeSelection } from "prosemirror-state";
 import {
   Decoration,
   DecorationSource,
@@ -7,11 +6,14 @@ import {
 } from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
+  MutableRefObject,
   RefAttributes,
   cloneElement,
   createElement,
+  memo,
   useContext,
   useLayoutEffect,
+  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
@@ -19,8 +21,8 @@ import { createPortal } from "react-dom";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
+import { SelectNodeContext } from "../contexts/SelectNodeContext.js";
 import { StopEventContext } from "../contexts/StopEventContext.js";
-import { useEditorState } from "../hooks/useEditorState.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
@@ -30,14 +32,14 @@ import { OutputSpec } from "./OutputSpec.js";
 
 type NodeViewProps = {
   outerDeco: readonly Decoration[];
-  pos: number;
+  getPos: MutableRefObject<() => number>;
   node: Node;
   innerDeco: DecorationSource;
 };
 
-export function NodeView({
+export const NodeView = memo(function NodeView({
   outerDeco,
-  pos,
+  getPos,
   node,
   innerDeco,
   ...props
@@ -45,16 +47,15 @@ export function NodeView({
   const domRef = useRef<HTMLElement | null>(null);
   const nodeDomRef = useRef<HTMLElement | null>(null);
   const contentDomRef = useRef<HTMLElement | null>(null);
+  const getPosFunc = useRef(() => getPos.current()).current;
   // this is ill-conceived; should revisit
   const initialNode = useRef(node);
   const initialOuterDeco = useRef(outerDeco);
   const initialInnerDeco = useRef(innerDeco);
-  const posRef = useRef(pos);
-  posRef.current = pos;
   const customNodeViewRootRef = useRef<HTMLDivElement | null>(null);
   const customNodeViewRef = useRef<NodeViewT | null>(null);
 
-  const state = useEditorState();
+  // const state = useEditorState();
   const { nodeViews } = useContext(NodeViewContext);
   const { view } = useContext(EditorContext);
 
@@ -65,6 +66,11 @@ export function NodeView({
         NodeViewComponentProps & RefAttributes<HTMLElement>
       >
     | undefined = nodeViews[node.type.name];
+
+  const outputSpec: DOMOutputSpec | undefined = useMemo(
+    () => node.type.spec.toDOM?.(node),
+    [node]
+  );
 
   // TODO: Would be great to pull all of the custom node view stuff into
   // a hook
@@ -108,25 +114,31 @@ export function NodeView({
       // this line if customNodeView is set
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       view!,
-      () => posRef.current,
+      () => getPos.current(),
       initialOuterDeco.current,
       initialInnerDeco.current
     );
     const { dom } = customNodeViewRef.current;
     nodeDomRef.current = customNodeViewRootRef.current;
     customNodeViewRootRef.current.appendChild(dom);
-  }, [customNodeView, view, innerDeco, node, outerDeco]);
+  }, [customNodeView, view, innerDeco, node, outerDeco, getPos]);
 
-  const { hasContentDOM, childDescriptors, setStopEvent } =
-    useNodeViewDescriptor(
-      node,
-      domRef,
-      nodeDomRef,
-      innerDeco,
-      outerDeco,
-      undefined,
-      contentDomRef
-    );
+  const {
+    hasContentDOM,
+    childDescriptors,
+    setStopEvent,
+    setSelectNode,
+    nodeViewDescRef,
+  } = useNodeViewDescriptor(
+    node,
+    () => getPos.current(),
+    domRef,
+    nodeDomRef,
+    innerDeco,
+    outerDeco,
+    undefined,
+    contentDomRef
+  );
 
   const finalProps = {
     ...props,
@@ -135,22 +147,24 @@ export function NodeView({
     }),
   };
 
+  const nodeProps = useMemo(
+    () => ({
+      node: node,
+      getPos: getPosFunc,
+      decorations: outerDeco,
+      innerDecorations: innerDeco,
+    }),
+    [getPosFunc, innerDeco, node, outerDeco]
+  );
+
   if (Component) {
     element = (
-      <Component
-        {...finalProps}
-        ref={nodeDomRef}
-        nodeProps={{
-          node: node,
-          pos: pos,
-          decorations: outerDeco,
-          innerDecorations: innerDeco,
-          isSelected:
-            state.selection instanceof NodeSelection &&
-            state.selection.node === node,
-        }}
-      >
-        <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+      <Component {...finalProps} ref={nodeDomRef} nodeProps={nodeProps}>
+        <ChildNodeViews
+          getPos={getPos}
+          node={node}
+          innerDecorations={innerDeco}
+        />
       </Component>
     );
   } else if (customNodeView) {
@@ -161,7 +175,7 @@ export function NodeView({
         // this line if customNodeView is set
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         view!,
-        () => posRef.current,
+        () => getPos.current(),
         initialOuterDeco.current,
         initialInnerDeco.current
       );
@@ -177,17 +191,23 @@ export function NodeView({
       },
       contentDOM &&
         createPortal(
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />,
+          <ChildNodeViews
+            getPos={getPos}
+            node={node}
+            innerDecorations={innerDeco}
+          />,
           contentDOM
         )
     );
   } else {
-    const outputSpec: DOMOutputSpec | undefined = node.type.spec.toDOM?.(node);
-
     if (outputSpec) {
       element = (
         <OutputSpec {...finalProps} ref={nodeDomRef} outputSpec={outputSpec}>
-          <ChildNodeViews pos={pos} node={node} innerDecorations={innerDeco} />
+          <ChildNodeViews
+            getPos={getPos}
+            node={node}
+            innerDecorations={innerDeco}
+          />
         </OutputSpec>
       );
     }
@@ -211,25 +231,39 @@ export function NodeView({
   // TODO: Should we only be wrapping non-inline elements? Inline elements have
   // already been wrapped in ChildNodeViews/InlineView?
   const markedElement = node.marks.reduce(
-    (element, mark) => <MarkView mark={mark}>{element}</MarkView>,
+    (element, mark) => (
+      <MarkView getPos={getPos} mark={mark}>
+        {element}
+      </MarkView>
+    ),
     decoratedElement
   );
 
-  return (
-    <StopEventContext.Provider value={setStopEvent}>
-      <ChildDescriptorsContext.Provider value={childDescriptors}>
-        {cloneElement(
-          markedElement,
-          node.marks.length ||
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            outerDeco.some((d) => (d as any).type.attrs.nodeName)
-            ? { ref: domRef }
-            : // If all of the node decorations were attr-only, then
-              // we've already passed the domRef to the NodeView component
-              // as a prop
-              undefined
-        )}
-      </ChildDescriptorsContext.Provider>
-    </StopEventContext.Provider>
+  const childContextValue = useMemo(
+    () => ({
+      parentRef: nodeViewDescRef,
+      siblingsRef: childDescriptors,
+    }),
+    [childDescriptors, nodeViewDescRef]
   );
-}
+
+  return (
+    <SelectNodeContext.Provider value={setSelectNode}>
+      <StopEventContext.Provider value={setStopEvent}>
+        <ChildDescriptorsContext.Provider value={childContextValue}>
+          {cloneElement(
+            markedElement,
+            node.marks.length ||
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              outerDeco.some((d) => (d as any).type.attrs.nodeName)
+              ? { ref: domRef }
+              : // If all of the node decorations were attr-only, then
+                // we've already passed the domRef to the NodeView component
+                // as a prop
+                undefined
+          )}
+        </ChildDescriptorsContext.Provider>
+      </StopEventContext.Provider>
+    </SelectNodeContext.Provider>
+  );
+});

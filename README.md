@@ -40,6 +40,8 @@ yarn add @nytimes/react-prosemirror
   - [`useEditorEventListener`](#useeditoreventlistener-1)
   - [`useEditorEffect`](#useeditoreffect-1)
   - [`NodeViewComponentProps`](#nodeviewcomponentprops)
+  - [`useStopEvent`](#usestopevent)
+  - [`useSelectNode`](#useselectnode)
   - [`widget`](#widget)
 
 <!-- tocstop -->
@@ -573,12 +575,13 @@ export function SelectionWidget() {
 
 ```tsx
 type NodeViewComponentProps = {
-  decorations: readonly Decoration[];
-  innerDecorations: DecorationSource;
-  node: Node;
-  children?: ReactNode | ReactNode[];
-  isSelected: boolean;
-  pos: number;
+  nodeProps: {
+    decorations: readonly Decoration[];
+    innerDecorations: DecorationSource;
+    node: Node;
+    children?: ReactNode | ReactNode[];
+    getPos: () => number;
+  };
 } & HTMLAttributes<HTMLElement>;
 ```
 
@@ -593,6 +596,27 @@ and should pass them through to their top-level DOM element.
 
 In addition to accepting these props, all node view components _must_ forward
 their ref to their top-level DOM element.
+
+### `useStopEvent`
+
+```tsx
+type useStopEvent = (stopEvent: (view: EditorView, event: Event) => boolean): void
+```
+
+This hook can be used within a node view component to register a
+[stopEvent handler](https://prosemirror.net/docs/ref/#view.NodeView.stopEvent).
+Events for which this returns true are not handled by the editor.
+
+### `useSelectNode`
+
+```tsx
+type useSelectNode = (selectNode: () => void, deselectNode?: () => void): void
+```
+
+This hook can be used within a node view component to register
+[selectNode and deselectNode handlers](https://prosemirror.net/docs/ref/#view.NodeView.selectNode).
+The selectNode handler will only be called when a NodeSelection is created whose
+node is this one.
 
 ### `widget`
 

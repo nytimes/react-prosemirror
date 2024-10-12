@@ -1,4 +1,3 @@
-import type { EditorState } from "prosemirror-state";
 import type { DOMEventMap, EditorView } from "prosemirror-view";
 import { createContext } from "react";
 
@@ -6,7 +5,6 @@ import type { EventHandler } from "../plugins/componentEventListeners";
 
 export interface EditorContextValue {
   view: EditorView | null;
-  state: EditorState;
   registerEventListener<EventType extends keyof DOMEventMap>(
     eventType: EventType,
     handler: EventHandler<EventType>
