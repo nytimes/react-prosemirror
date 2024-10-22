@@ -90,18 +90,14 @@ function updateDeco(
 }
 
 describe("Decoration drawing", () => {
-  it.only("draws inline decorations", async () => {
+  it("draws inline decorations", async () => {
     const { view } = tempEditor({
       doc: doc(p("foobar")),
       plugins: [decoPlugin(["2-5-foo"])],
     });
-    console.log("SMOORESLOG: created view");
     const found = view.dom.querySelector(".foo")!;
-    console.log("SMOORESLOG: found .foo");
     await expect(found).not.toBeNull();
-    console.log("SMOORESLOG: found is not false");
     await expect(found.textContent).toBe("oob");
-    console.log("SMOORESLOG: found has correct content");
   });
 
   it("draws wrapping decorations", async () => {

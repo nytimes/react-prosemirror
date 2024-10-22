@@ -3,7 +3,12 @@ import { Decoration, DecorationSet, EditorView } from "prosemirror-view";
 import { Component, MutableRefObject } from "react";
 import { findDOMNode } from "react-dom";
 
-import { CompositionViewDesc, TextViewDesc, ViewDesc } from "../viewdesc.js";
+import {
+  CompositionViewDesc,
+  TextViewDesc,
+  ViewDesc,
+  sortViewDescs,
+} from "../viewdesc.js";
 
 import { wrapInDeco } from "./ChildNodeViews.js";
 
@@ -117,7 +122,7 @@ export class TextNodeView extends Component<Props> {
       siblingsRef.current.push(this.viewDescRef);
     }
 
-    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+    siblingsRef.current.sort(sortViewDescs);
   }
 
   shouldComponentUpdate(nextProps: Props): boolean {
