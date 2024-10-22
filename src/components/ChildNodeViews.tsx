@@ -281,55 +281,46 @@ function createKey(
   return pos;
 }
 
-function adjustWidgetMarksForward(childMap: Map<string, Child>) {
-  const children = Array.from(childMap.values()).sort(
-    (a, b) => a.offset - b.offset
-  );
-  const lastChild = children[children.length - 1];
+function adjustWidgetMarksForward(
+  lastNodeChild: ChildNode | null,
+  widgetChild: ChildWidget | ChildNativeWidget | null
+) {
   if (
-    (lastChild?.type !== "widget" && lastChild?.type !== "native-widget") ||
+    !widgetChild ||
     // Using internal Decoration property, "type"
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (lastChild.widget as any).type.side >= 0
+    (widgetChild.widget as any).type.side >= 0
   )
     return;
-
-  let lastNodeChild: ChildNode | null = null;
-  for (let i = children.length - 2; i >= 0; i--) {
-    const child = children[i];
-    if (child?.type === "node") {
-      lastNodeChild = child;
-      break;
-    }
-  }
 
   if (!lastNodeChild || !lastNodeChild.node.isInline) return;
 
   const marksToSpread = lastNodeChild.marks;
 
-  lastChild.marks = lastChild.marks.reduce(
+  widgetChild.marks = widgetChild.marks.reduce(
     (acc, mark) => mark.addToSet(acc),
     marksToSpread
   );
 }
 
-function adjustWidgetMarksBack(childMap: Map<string, Child>) {
-  const children = Array.from(childMap.values()).sort(
-    (a, b) => a.offset - b.offset
-  );
-  const lastChild = children[children.length - 1];
-  if (lastChild?.type !== "node" || !lastChild.node.isInline) return;
+function adjustWidgetMarksBack(
+  widgetChildren: Array<ChildNativeWidget | ChildWidget>,
+  nodeChild: ChildNode
+) {
+  if (!nodeChild.node.isInline) return;
 
-  const marksToSpread = lastChild.marks;
-  for (let i = children.length - 2; i >= 0; i--) {
-    const child = children[i];
+  const marksToSpread = nodeChild.marks;
+  for (let i = widgetChildren.length - 1; i >= 0; i--) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const child = widgetChildren[i]!;
+
     if (
-      (child?.type !== "widget" && child?.type !== "native-widget") ||
       // Using internal Decoration property, "type"
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (child.widget as any).type.side < 0
-    )
-      break;
+    ) {
+      continue;
+    }
 
     child.marks = child.marks.reduce(
       (acc, mark) => mark.addToSet(acc),
@@ -422,14 +413,18 @@ export const ChildNodeViews = memo(function ChildNodeViews({
 
   const keysSeen = new Set<string>();
 
+  let widgetChildren: Array<ChildNativeWidget | ChildWidget> = [];
+  let lastNodeChild: ChildNode | null = null;
+
   iterDeco(
     node,
     innerDecorations,
     (widget, isNative, offset, index) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const widgetMarks = ((widget as any).type.spec.marks as Mark[]) ?? [];
+      let key;
       if (isNative) {
-        const key = createKey(
+        key = createKey(
           getInnerPos.current(),
           offset,
           "native-widget",
@@ -453,7 +448,7 @@ export const ChildNodeViews = memo(function ChildNodeViews({
         }
         keysSeen.add(key);
       } else {
-        const key = createKey(
+        key = createKey(
           getInnerPos.current(),
           offset,
           "widget",
@@ -477,7 +472,12 @@ export const ChildNodeViews = memo(function ChildNodeViews({
         }
         keysSeen.add(key);
       }
-      adjustWidgetMarksForward(childMap);
+      const child = childMap.get(key) as ChildWidget | ChildNativeWidget;
+      widgetChildren.push(child);
+      adjustWidgetMarksForward(
+        lastNodeChild,
+        childMap.get(key) as ChildWidget | ChildNativeWidget
+      );
     },
     (childNode, outerDeco, innerDeco, offset) => {
       const key = createKey(
@@ -498,11 +498,14 @@ export const ChildNodeViews = memo(function ChildNodeViews({
       const prevChild = childMap.get(key);
       if (prevChild && areChildrenEqual(prevChild, child)) {
         prevChild.offset = offset;
+        lastNodeChild = prevChild as ChildNode;
       } else {
         childMap.set(key, child);
+        lastNodeChild = child;
       }
       keysSeen.add(key);
-      adjustWidgetMarksBack(childMap);
+      adjustWidgetMarksBack(widgetChildren, lastNodeChild);
+      widgetChildren = [];
     }
   );
 
