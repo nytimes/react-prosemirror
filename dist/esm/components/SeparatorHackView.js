@@ -1,7 +1,7 @@
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { browser } from "../browser.js";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { TrailingHackViewDesc } from "../viewdesc.js";
+import { TrailingHackViewDesc, sortViewDescs } from "../viewdesc.js";
 export function SeparatorHackView(param) {
     let { getPos  } = param;
     const { siblingsRef , parentRef  } = useContext(ChildDescriptorsContext);
@@ -40,7 +40,7 @@ export function SeparatorHackView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
     });
     return shouldRender ? /*#__PURE__*/ React.createElement("img", {
         ref: ref,

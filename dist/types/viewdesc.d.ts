@@ -1,6 +1,7 @@
 import { Mark, Node, TagParseRule } from "prosemirror-model";
 import { Decoration, DecorationSource, EditorView } from "prosemirror-view";
 import { DOMNode } from "./dom.js";
+export declare function sortViewDescs(a: ViewDesc, b: ViewDesc): number;
 export declare class ViewDesc {
     parent: ViewDesc | undefined;
     children: ViewDesc[];
@@ -100,7 +101,7 @@ export declare class NodeViewDesc extends ViewDesc {
     parseRule(): Omit<TagParseRule, "tag"> | null;
     matchesNode(node: Node, outerDeco: readonly Decoration[], innerDeco: DecorationSource): boolean;
     get size(): number;
-    get border(): 0 | 1;
+    get border(): 1 | 0;
     update(_node: Node, _outerDeco: readonly Decoration[], _innerDeco: DecorationSource, _view: EditorView): boolean;
     get domAtom(): boolean;
 }

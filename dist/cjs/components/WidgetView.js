@@ -79,7 +79,7 @@ function WidgetView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     });
     const { Component  } = widget.type;
     return Component && /*#__PURE__*/ _react.default.createElement(Component, {

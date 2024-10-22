@@ -89,7 +89,7 @@ const MarkView = /*#__PURE__*/ (0, _react.memo)(/*#__PURE__*/ (0, _react.forward
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
         for (const childDesc of childDescriptors.current){
             childDesc.parent = viewDescRef.current;
         }

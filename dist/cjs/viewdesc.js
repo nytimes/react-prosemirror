@@ -9,6 +9,7 @@ function _export(target, all) {
     });
 }
 _export(exports, {
+    sortViewDescs: ()=>sortViewDescs,
     ViewDesc: ()=>ViewDesc,
     WidgetViewDesc: ()=>WidgetViewDesc,
     CompositionViewDesc: ()=>CompositionViewDesc,
@@ -20,18 +21,11 @@ _export(exports, {
 const _prosemirrorModel = require("prosemirror-model");
 const _browserJs = require("./browser.js");
 const _selectionToDOMJs = require("./selection/selectionToDOM.js");
-// View descriptions are data structures that describe the DOM that is
-// used to represent the editor's content. They are used for:
-//
-// - Incremental redrawing when the document changes
-//
-// - Figuring out what part of the document a given DOM position
-//   corresponds to
-//
-// - Wiring in custom implementations of the editing interface for a
-//   given node
-//
-// They form a doubly-linked mutable tree, starting at `view.docView`.
+function sortViewDescs(a, b) {
+    if (a instanceof TrailingHackViewDesc) return 1;
+    if (b instanceof TrailingHackViewDesc) return -1;
+    return a.getPos() - b.getPos();
+}
 const NOT_DIRTY = 0, CHILD_DIRTY = 1, CONTENT_DIRTY = 2, NODE_DIRTY = 3;
 let ViewDesc = class ViewDesc {
     // Used to check whether a given description corresponds to a

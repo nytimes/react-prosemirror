@@ -1,7 +1,7 @@
 import React, { useContext, useLayoutEffect, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
-import { WidgetViewDesc } from "../viewdesc.js";
+import { WidgetViewDesc, sortViewDescs } from "../viewdesc.js";
 export function NativeWidgetView(param) {
     let { widget , getPos  } = param;
     const { siblingsRef , parentRef  } = useContext(ChildDescriptorsContext);
@@ -50,7 +50,7 @@ export function NativeWidgetView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
     });
     return /*#__PURE__*/ React.createElement("span", {
         ref: rootDomRef

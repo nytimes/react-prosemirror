@@ -1,7 +1,7 @@
 import { DecorationSet } from "prosemirror-view";
 import { Component } from "react";
 import { findDOMNode } from "react-dom";
-import { CompositionViewDesc, TextViewDesc } from "../viewdesc.js";
+import { CompositionViewDesc, TextViewDesc, sortViewDescs } from "../viewdesc.js";
 import { wrapInDeco } from "./ChildNodeViews.js";
 function shallowEqual(objA, objB) {
     if (objA === objB) {
@@ -65,7 +65,7 @@ export class TextNodeView extends Component {
         if (!siblingsRef.current.includes(this.viewDescRef)) {
             siblingsRef.current.push(this.viewDescRef);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
     }
     shouldComponentUpdate(nextProps) {
         return !shallowEqual(this.props, nextProps);

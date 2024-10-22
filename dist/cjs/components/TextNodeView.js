@@ -73,7 +73,7 @@ let TextNodeView = class TextNodeView extends _react.Component {
         if (!siblingsRef.current.includes(this.viewDescRef)) {
             siblingsRef.current.push(this.viewDescRef);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     }
     shouldComponentUpdate(nextProps) {
         return !shallowEqual(this.props, nextProps);

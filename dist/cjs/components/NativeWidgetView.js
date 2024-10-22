@@ -97,7 +97,7 @@ function NativeWidgetView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     });
     return /*#__PURE__*/ _react.default.createElement("span", {
         ref: rootDomRef

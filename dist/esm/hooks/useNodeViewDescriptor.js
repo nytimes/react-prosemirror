@@ -1,7 +1,7 @@
 import { useCallback, useContext, useLayoutEffect, useRef, useState } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
-import { CompositionViewDesc, NodeViewDesc } from "../viewdesc.js";
+import { CompositionViewDesc, NodeViewDesc, sortViewDescs } from "../viewdesc.js";
 export function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecorations, outerDecorations, viewDesc, contentDOMRef) {
     const { view  } = useContext(EditorContext);
     const [hasContentDOM, setHasContentDOM] = useState(true);
@@ -67,7 +67,7 @@ export function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDec
         if (!siblingsRef.current.includes(nodeViewDescRef.current)) {
             siblingsRef.current.push(nodeViewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
         for (const childDesc of childDescriptors.current){
             childDesc.parent = nodeViewDescRef.current;
             // Because TextNodeViews can't locate the DOM nodes

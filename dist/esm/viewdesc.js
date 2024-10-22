@@ -13,6 +13,11 @@ import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
 //   given node
 //
 // They form a doubly-linked mutable tree, starting at `view.docView`.
+export function sortViewDescs(a, b) {
+    if (a instanceof TrailingHackViewDesc) return 1;
+    if (b instanceof TrailingHackViewDesc) return -1;
+    return a.getPos() - b.getPos();
+}
 const NOT_DIRTY = 0, CHILD_DIRTY = 1, CONTENT_DIRTY = 2, NODE_DIRTY = 3;
 // Superclass for the various kinds of descriptions. Defines their
 // basic structure and shared methods.

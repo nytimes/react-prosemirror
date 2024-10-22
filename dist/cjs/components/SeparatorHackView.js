@@ -87,7 +87,7 @@ function SeparatorHackView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     });
     return shouldRender ? /*#__PURE__*/ _react.default.createElement("img", {
         ref: ref,

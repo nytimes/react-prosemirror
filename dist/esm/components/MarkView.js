@@ -1,6 +1,6 @@
 import React, { forwardRef, memo, useContext, useImperativeHandle, useLayoutEffect, useMemo, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { MarkViewDesc } from "../viewdesc.js";
+import { MarkViewDesc, sortViewDescs } from "../viewdesc.js";
 import { OutputSpec } from "./OutputSpec.js";
 export const MarkView = /*#__PURE__*/ memo(/*#__PURE__*/ forwardRef(function MarkView(param, ref) {
     let { mark , getPos , children  } = param;
@@ -42,7 +42,7 @@ export const MarkView = /*#__PURE__*/ memo(/*#__PURE__*/ forwardRef(function Mar
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
         for (const childDesc of childDescriptors.current){
             childDesc.parent = viewDescRef.current;
         }

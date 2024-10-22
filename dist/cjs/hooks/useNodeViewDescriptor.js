@@ -75,7 +75,7 @@ function useNodeViewDescriptor(node, getPos, domRef, nodeDomRef, innerDecoration
         if (!siblingsRef.current.includes(nodeViewDescRef.current)) {
             siblingsRef.current.push(nodeViewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
         for (const childDesc of childDescriptors.current){
             childDesc.parent = nodeViewDescRef.current;
             // Because TextNodeViews can't locate the DOM nodes

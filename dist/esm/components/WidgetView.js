@@ -1,6 +1,6 @@
 import React, { useContext, useLayoutEffect, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { WidgetViewDesc } from "../viewdesc.js";
+import { WidgetViewDesc, sortViewDescs } from "../viewdesc.js";
 export function WidgetView(param) {
     let { widget , getPos  } = param;
     const { siblingsRef , parentRef  } = useContext(ChildDescriptorsContext);
@@ -32,7 +32,7 @@ export function WidgetView(param) {
         if (!siblingsRef.current.includes(viewDescRef.current)) {
             siblingsRef.current.push(viewDescRef.current);
         }
-        siblingsRef.current.sort((a, b)=>a.getPos() - b.getPos());
+        siblingsRef.current.sort(sortViewDescs);
     });
     const { Component  } = widget.type;
     return Component && /*#__PURE__*/ React.createElement(Component, {
