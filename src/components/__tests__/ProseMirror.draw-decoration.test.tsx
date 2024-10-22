@@ -36,13 +36,15 @@ import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
 import { WidgetViewComponentProps } from "../WidgetViewComponentProps.js";
 
-const Widget = forwardRef<HTMLElement>(function Widget(props, ref) {
-  return (
-    <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
-      ω
-    </button>
-  );
-});
+const Widget = forwardRef<HTMLElement, WidgetViewComponentProps>(
+  function Widget({ widget, getPos, ...props }, ref) {
+    return (
+      <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
+        ω
+      </button>
+    );
+  }
+);
 
 function make(str: string | Decoration): Decoration {
   if (typeof str != "string") return str;
@@ -94,8 +96,8 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin(["2-5-foo"])],
     });
     const found = view.dom.querySelector(".foo")!;
-    expect(found).not.toBeNull();
-    expect(found.textContent).toBe("oob");
+    await expect(found).not.toBeNull();
+    await expect(found.textContent).toBe("oob");
   });
 
   it("draws wrapping decorations", async () => {
@@ -183,7 +185,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function B(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -197,7 +199,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function A(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -211,7 +213,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function C(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -254,8 +256,8 @@ describe("Decoration drawing", () => {
 
   it("calls widget destroy methods", async () => {
     let destroyed = false;
-    const DestroyableWidget = forwardRef<HTMLElement>(
-      function DestroyableWidget(props, ref) {
+    const DestroyableWidget = forwardRef<HTMLElement, WidgetViewComponentProps>(
+      function DestroyableWidget({ widget, getPos, ...props }, ref) {
         useEffect(() => {
           destroyed = true;
         });
@@ -587,7 +589,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -613,7 +615,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -627,7 +629,7 @@ describe("Decoration drawing", () => {
           widget(
             4,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(function BR(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return <br {...props} ref={ref as LegacyRef<HTMLBRElement>} />;
@@ -639,7 +641,7 @@ describe("Decoration drawing", () => {
           widget(
             7,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(
-              function Span(props, ref) {
+              function Span({ widget, getPos, ...props }, ref) {
                 return <span {...props} ref={ref} />;
               }
             ),
@@ -674,7 +676,7 @@ describe("Decoration drawing", () => {
           widget(
             2,
             forwardRef<HTMLImageElement, WidgetViewComponentProps>(function Img(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               return (
@@ -697,7 +699,7 @@ describe("Decoration drawing", () => {
           widget(
             3,
             forwardRef<HTMLSpanElement, WidgetViewComponentProps>(function Span(
-              props,
+              { widget, getPos, ...props },
               ref
             ) {
               useEditorEffect((view) => {
@@ -726,10 +728,10 @@ describe("Decoration drawing", () => {
             3,
             forwardRef<HTMLButtonElement, WidgetViewComponentProps>(
               function Widget(
-                { pos, ...props }: WidgetViewComponentProps,
+                { widget, getPos, ...props }: WidgetViewComponentProps,
                 ref
               ) {
-                expect(pos).toBe(3);
+                expect(getPos()).toBe(3);
                 return (
                   <button ref={ref as LegacyRef<HTMLButtonElement>} {...props}>
                     ω

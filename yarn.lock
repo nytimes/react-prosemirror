@@ -1944,7 +1944,9 @@ __metadata:
     "@vitejs/plugin-react": ^4.3.1
     "@wdio/browser-runner": ^9.0.9
     "@wdio/cli": ^9.0.9
+    "@wdio/dot-reporter": ^9.1.0
     "@wdio/mocha-framework": ^9.0.8
+    "@wdio/spec-reporter": ^9.1.0
     "@wdio/types": ^9.0.8
     "@yarnpkg/sdks": ^3.0.0-rc.38
     classnames: ^2.3.2
@@ -3251,6 +3253,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wdio/dot-reporter@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@wdio/dot-reporter@npm:9.1.0"
+  dependencies:
+    "@wdio/reporter": 9.1.0
+    "@wdio/types": 9.1.0
+    chalk: ^5.0.1
+  checksum: 7bea6e022b8de1fd4509f4bd34d0460923628bed68928fd383f4bcb7d2005e4476cafa186ca609756035f338ba83ffbc48602f3173dd11c9200e2d0698a1451f
+  languageName: node
+  linkType: hard
+
 "@wdio/globals@npm:9.0.9":
   version: 9.0.9
   resolution: "@wdio/globals@npm:9.0.9"
@@ -3291,6 +3304,18 @@ __metadata:
     loglevel-plugin-prefix: ^0.8.4
     strip-ansi: ^7.1.0
   checksum: ab62da85785344284fdf2be229bc07f6c11351e5b7eec773cac0d59c845fb0a0fcbf17ed628c28df3fb7d27b7e493b6c21128f3c789b2f0de4db5f619f4b4e1f
+  languageName: node
+  linkType: hard
+
+"@wdio/logger@npm:9.1.0":
+  version: 9.1.0
+  resolution: "@wdio/logger@npm:9.1.0"
+  dependencies:
+    chalk: ^5.1.2
+    loglevel: ^1.6.0
+    loglevel-plugin-prefix: ^0.8.4
+    strip-ansi: ^7.1.0
+  checksum: 52c3574c644fbc623565e913d0cb943bd45284148f4c93b378b3dc835a8d9e263680310f190ab240e76f60f00d6254e1063cc3a7db38ec7cfcf6dc7797a9e434
   languageName: node
   linkType: hard
 
@@ -3336,6 +3361,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wdio/reporter@npm:9.1.0":
+  version: 9.1.0
+  resolution: "@wdio/reporter@npm:9.1.0"
+  dependencies:
+    "@types/node": ^20.1.0
+    "@wdio/logger": 9.1.0
+    "@wdio/types": 9.1.0
+    diff: ^7.0.0
+    object-inspect: ^1.12.0
+  checksum: 6afb1984c8f437e5c88e213fc1c857c29c873599f9375c4e859c86fe97a85cd95050ee363db039a5b55e1598f6ab13a3577db4775698215ba1b748fe8fa236c6
+  languageName: node
+  linkType: hard
+
 "@wdio/runner@npm:9.0.9":
   version: 9.0.9
   resolution: "@wdio/runner@npm:9.0.9"
@@ -3355,12 +3393,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@wdio/spec-reporter@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@wdio/spec-reporter@npm:9.1.0"
+  dependencies:
+    "@wdio/reporter": 9.1.0
+    "@wdio/types": 9.1.0
+    chalk: ^5.1.2
+    easy-table: ^1.2.0
+    pretty-ms: ^9.0.0
+  checksum: 9c74032d8ec9259e89e057dc310f71f8af84d50ecada98e29fb8ccea4643c1a1a746c4873d5365475e79749bbe4ccbe443f9d24bf31ae8f22dfdabc1f0cdcc72
+  languageName: node
+  linkType: hard
+
 "@wdio/types@npm:9.0.8, @wdio/types@npm:^9.0.8":
   version: 9.0.8
   resolution: "@wdio/types@npm:9.0.8"
   dependencies:
     "@types/node": ^20.1.0
   checksum: d5ba8e18d34ad64d3b728aa0a1171ee4105364b6819455a4c061775dc94b66d5b055dc54eadb2d16471cfd116a14f5520110489f522a0c06d84c28b38055e921
+  languageName: node
+  linkType: hard
+
+"@wdio/types@npm:9.1.0":
+  version: 9.1.0
+  resolution: "@wdio/types@npm:9.1.0"
+  dependencies:
+    "@types/node": ^20.1.0
+  checksum: 14632e3b4dd041d5ccacace3e333ddc1854853ddae853dc6a846601fb7da1d31003f3a1b66afda45e943af0b42537f80e30375def810e946318343f15769f3f4
   languageName: node
   linkType: hard
 
@@ -4368,7 +4428,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^5.1.2, chalk@npm:^5.2.0":
+"chalk@npm:^5.0.1, chalk@npm:^5.1.2, chalk@npm:^5.2.0":
   version: 5.3.0
   resolution: "chalk@npm:5.3.0"
   checksum: 623922e077b7d1e9dedaea6f8b9e9352921f8ae3afe739132e0e00c275971bdd331268183b2628cf4ab1727c45ea1f28d7e24ac23ce1db1eb653c414ca8a5a80
@@ -4567,6 +4627,13 @@ __metadata:
   dependencies:
     mimic-response: ^1.0.0
   checksum: 4e671cac39b11c60aa8ba0a450657194a5d6504df51bca3fac5b3bd0145c4f8e8464898f87c8406b83232e3bc5cca555f51c1f9c8ac023969ebfbf7f6bdabb2e
+  languageName: node
+  linkType: hard
+
+"clone@npm:^1.0.2":
+  version: 1.0.4
+  resolution: "clone@npm:1.0.4"
+  checksum: d06418b7335897209e77bdd430d04f882189582e67bd1f75a04565f3f07f5b3f119a9d670c943b6697d0afb100f03b866b3b8a1f91d4d02d72c4ecf2bb64b5dd
   languageName: node
   linkType: hard
 
@@ -5046,6 +5113,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"defaults@npm:^1.0.3":
+  version: 1.0.4
+  resolution: "defaults@npm:1.0.4"
+  dependencies:
+    clone: ^1.0.2
+  checksum: 3a88b7a587fc076b84e60affad8b85245c01f60f38fc1d259e7ac1d89eb9ce6abb19e27215de46b98568dd5bc48471730b327637e6f20b0f1bc85cf00440c80a
+  languageName: node
+  linkType: hard
+
 "defer-to-connect@npm:^2.0.0":
   version: 2.0.1
   resolution: "defer-to-connect@npm:2.0.1"
@@ -5172,6 +5248,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"diff@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "diff@npm:7.0.0"
+  checksum: 5db0d339476b18dfbc8a08a7504fbcc74789eec626c8d20cf2cdd1871f1448962888128f4447c8f50a1e41a80decfe5e8489c375843b8cf1d42b7c2b611da4e1
+  languageName: node
+  linkType: hard
+
 "dir-glob@npm:^3.0.1":
   version: 3.0.1
   resolution: "dir-glob@npm:3.0.1"
@@ -5264,6 +5347,19 @@ __metadata:
   version: 0.2.0
   resolution: "eastasianwidth@npm:0.2.0"
   checksum: 7d00d7cd8e49b9afa762a813faac332dee781932d6f2c848dc348939c4253f1d4564341b7af1d041853bc3f32c2ef141b58e0a4d9862c17a7f08f68df1e0f1ed
+  languageName: node
+  linkType: hard
+
+"easy-table@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "easy-table@npm:1.2.0"
+  dependencies:
+    ansi-regex: ^5.0.1
+    wcwidth: ^1.0.1
+  dependenciesMeta:
+    wcwidth:
+      optional: true
+  checksum: 66961b19751a68d2d30ce9b74ef750c374cc3112bbcac3d1ed5a939e43c035ecf6b1954098df2d5b05f1e853ab2b67de893794390dcbf0abe1f157fddeb52174
   languageName: node
   linkType: hard
 
@@ -10109,6 +10205,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"object-inspect@npm:^1.12.0":
+  version: 1.13.2
+  resolution: "object-inspect@npm:1.13.2"
+  checksum: 9f850b3c045db60e0e97746e809ee4090d6ce62195af17dd1e9438ac761394a7d8ec4f7906559aea5424eaf61e35d3e53feded2ccd5f62fcc7d9670d3c8eb353
+  languageName: node
+  linkType: hard
+
 "object-inspect@npm:^1.12.2, object-inspect@npm:^1.9.0":
   version: 1.12.3
   resolution: "object-inspect@npm:1.12.3"
@@ -13133,6 +13236,15 @@ __metadata:
   dependencies:
     makeerror: 1.0.12
   checksum: ad7a257ea1e662e57ef2e018f97b3c02a7240ad5093c392186ce0bcf1f1a60bbadd520d073b9beb921ed99f64f065efb63dfc8eec689a80e569f93c1c5d5e16c
+  languageName: node
+  linkType: hard
+
+"wcwidth@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "wcwidth@npm:1.0.1"
+  dependencies:
+    defaults: ^1.0.3
+  checksum: 814e9d1ddcc9798f7377ffa448a5a3892232b9275ebb30a41b529607691c0491de47cba426e917a4d08ded3ee7e9ba2f3fe32e62ee3cd9c7d3bafb7754bd553c
   languageName: node
   linkType: hard
 
