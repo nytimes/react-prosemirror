@@ -51,7 +51,7 @@ function areChildrenEqual(a: Child, b: Child) {
     a.type === b.type &&
     a.marks.every((mark) => mark.isInSet(b.marks)) &&
     b.marks.every((mark) => mark.isInSet(a.marks)) &&
-    a.offset === b.offset &&
+    a.key === b.key &&
     (a.type === "node"
       ? a.outerDeco?.length === (b as ChildNode).outerDeco?.length &&
         a.outerDeco?.every((prevDeco) =>
@@ -281,7 +281,10 @@ function createKey(
   return pos;
 }
 
-function adjustWidgetMarksForward(children: Child[]) {
+function adjustWidgetMarksForward(childMap: Map<string, Child>) {
+  const children = Array.from(childMap.values()).sort(
+    (a, b) => a.offset - b.offset
+  );
   const lastChild = children[children.length - 1];
   if (
     (lastChild?.type !== "widget" && lastChild?.type !== "native-widget") ||
@@ -310,7 +313,10 @@ function adjustWidgetMarksForward(children: Child[]) {
   );
 }
 
-function adjustWidgetMarksBack(children: Child[]) {
+function adjustWidgetMarksBack(childMap: Map<string, Child>) {
+  const children = Array.from(childMap.values()).sort(
+    (a, b) => a.offset - b.offset
+  );
   const lastChild = children[children.length - 1];
   if (lastChild?.type !== "node" || !lastChild.node.isInline) return;
 
@@ -362,14 +368,14 @@ const ChildElement = memo(
         />
       );
     }
-  },
+  }
   /**
    * It's safe to skip re-rendering a ChildElement component as long
    * as its child prop is shallowly equivalent to the previous render.
    * posToKey will be updated on every doc update, but if the child
    * hasn't changed, it will still have the same key.
    */
-  (prevProps, nextProps) => areChildrenEqual(prevProps.child, nextProps.child)
+  // (prevProps, nextProps) => areChildrenEqual(prevProps.child, nextProps.child)
 );
 
 function createChildElements(
@@ -410,9 +416,11 @@ export const ChildNodeViews = memo(function ChildNodeViews({
 
   const getInnerPos = useRef(() => getPos.current() + 1);
 
+  const childMap = useRef(new Map<string, Child>()).current;
+
   if (!node) return null;
 
-  const children: Child[] = [];
+  const keysSeen = new Set<string>();
 
   iterDeco(
     node,
@@ -421,57 +429,91 @@ export const ChildNodeViews = memo(function ChildNodeViews({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const widgetMarks = ((widget as any).type.spec.marks as Mark[]) ?? [];
       if (isNative) {
-        children.push({
+        const key = createKey(
+          getInnerPos.current(),
+          offset,
+          "native-widget",
+          reactKeys?.posToKey,
+          widget,
+          index
+        );
+        const child = {
           type: "native-widget",
           widget,
           marks: widgetMarks,
           offset,
           index,
-          key: createKey(
-            getInnerPos.current(),
-            offset,
-            "native-widget",
-            reactKeys?.posToKey,
-            widget,
-            index
-          ),
-        });
+          key,
+        } as const;
+        const prevChild = childMap.get(key);
+        if (prevChild && areChildrenEqual(prevChild, child)) {
+          prevChild.offset = offset;
+        } else {
+          childMap.set(key, child);
+        }
+        keysSeen.add(key);
       } else {
-        children.push({
+        const key = createKey(
+          getInnerPos.current(),
+          offset,
+          "widget",
+          reactKeys?.posToKey,
+          widget,
+          index
+        );
+        const child = {
           type: "widget",
           widget: widget as ReactWidgetDecoration,
           marks: widgetMarks,
           offset,
           index,
-          key: createKey(
-            getInnerPos.current(),
-            offset,
-            "widget",
-            reactKeys?.posToKey,
-            widget,
-            index
-          ),
-        });
+          key,
+        } as const;
+        const prevChild = childMap.get(key);
+        if (prevChild && areChildrenEqual(prevChild, child)) {
+          prevChild.offset = offset;
+        } else {
+          childMap.set(key, child);
+        }
+        keysSeen.add(key);
       }
-      adjustWidgetMarksForward(children);
+      adjustWidgetMarksForward(childMap);
     },
     (childNode, outerDeco, innerDeco, offset) => {
-      children.push({
+      const key = createKey(
+        getInnerPos.current(),
+        offset,
+        "node",
+        reactKeys?.posToKey
+      );
+      const child = {
         type: "node",
         node: childNode,
         marks: childNode.marks,
         innerDeco,
         outerDeco,
         offset,
-        key: createKey(
-          getInnerPos.current(),
-          offset,
-          "node",
-          reactKeys?.posToKey
-        ),
-      });
-      adjustWidgetMarksBack(children);
+        key,
+      } as const;
+      const prevChild = childMap.get(key);
+      if (prevChild && areChildrenEqual(prevChild, child)) {
+        prevChild.offset = offset;
+      } else {
+        childMap.set(key, child);
+      }
+      keysSeen.add(key);
+      adjustWidgetMarksBack(childMap);
     }
+  );
+
+  for (const key of childMap.keys()) {
+    if (!keysSeen.has(key)) {
+      childMap.delete(key);
+    }
+  }
+
+  const children = Array.from(childMap.values()).sort(
+    (a, b) => a.offset - b.offset
   );
 
   const childElements = createChildElements(children, getInnerPos);
