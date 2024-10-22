@@ -21,6 +21,12 @@ import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
 //
 // They form a doubly-linked mutable tree, starting at `view.docView`.
 
+export function sortViewDescs(a: ViewDesc, b: ViewDesc) {
+  if (a instanceof TrailingHackViewDesc) return 1;
+  if (b instanceof TrailingHackViewDesc) return -1;
+  return a.getPos() - b.getPos();
+}
+
 const NOT_DIRTY = 0,
   CHILD_DIRTY = 1,
   CONTENT_DIRTY = 2,

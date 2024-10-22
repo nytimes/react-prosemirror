@@ -6,7 +6,7 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { TrailingHackViewDesc } from "../viewdesc.js";
+import { TrailingHackViewDesc, sortViewDescs } from "../viewdesc.js";
 
 type Props = {
   getPos: MutableRefObject<() => number>;
@@ -48,7 +48,7 @@ export function TrailingHackView({ getPos }: Props) {
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
-    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+    siblingsRef.current.sort(sortViewDescs);
   });
 
   return <br ref={ref} className="ProseMirror-trailingBreak" />;

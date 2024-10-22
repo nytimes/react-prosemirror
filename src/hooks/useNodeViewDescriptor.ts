@@ -11,7 +11,12 @@ import {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
-import { CompositionViewDesc, NodeViewDesc, ViewDesc } from "../viewdesc.js";
+import {
+  CompositionViewDesc,
+  NodeViewDesc,
+  ViewDesc,
+  sortViewDescs,
+} from "../viewdesc.js";
 
 export function useNodeViewDescriptor(
   node: Node | undefined,
@@ -119,7 +124,7 @@ export function useNodeViewDescriptor(
       siblingsRef.current.push(nodeViewDescRef.current);
     }
 
-    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+    siblingsRef.current.sort(sortViewDescs);
 
     for (const childDesc of childDescriptors.current) {
       childDesc.parent = nodeViewDescRef.current;

@@ -96,8 +96,8 @@ describe("Decoration drawing", () => {
       plugins: [decoPlugin(["2-5-foo"])],
     });
     const found = view.dom.querySelector(".foo")!;
-    expect(found).not.toBeNull();
-    expect(found.textContent).toBe("oob");
+    await expect(found).not.toBeNull();
+    await expect(found.textContent).toBe("oob");
   });
 
   it("draws wrapping decorations", async () => {

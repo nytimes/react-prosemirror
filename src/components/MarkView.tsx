@@ -12,7 +12,7 @@ import React, {
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { MarkViewDesc, ViewDesc } from "../viewdesc.js";
+import { MarkViewDesc, ViewDesc, sortViewDescs } from "../viewdesc.js";
 
 import { OutputSpec } from "./OutputSpec.js";
 
@@ -82,7 +82,7 @@ export const MarkView = memo(
         siblingsRef.current.push(viewDescRef.current);
       }
 
-      siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+      siblingsRef.current.sort(sortViewDescs);
 
       for (const childDesc of childDescriptors.current) {
         childDesc.parent = viewDescRef.current;

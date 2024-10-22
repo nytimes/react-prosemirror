@@ -7,7 +7,7 @@ import React, {
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { ReactWidgetDecoration } from "../decorations/ReactWidgetType.js";
-import { WidgetViewDesc } from "../viewdesc.js";
+import { WidgetViewDesc, sortViewDescs } from "../viewdesc.js";
 
 type Props = {
   widget: ReactWidgetDecoration;
@@ -51,7 +51,7 @@ export function WidgetView({ widget, getPos }: Props) {
     if (!siblingsRef.current.includes(viewDescRef.current)) {
       siblingsRef.current.push(viewDescRef.current);
     }
-    siblingsRef.current.sort((a, b) => a.getPos() - b.getPos());
+    siblingsRef.current.sort(sortViewDescs);
   });
 
   const { Component } = widget.type;
