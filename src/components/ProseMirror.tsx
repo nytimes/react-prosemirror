@@ -45,7 +45,7 @@ const EMPTY_OUTER_DECOS: Decoration[] = [];
 function ProseMirrorInner({
   className,
   children,
-  nodeViews = {},
+  nodeViews,
   customNodeViews,
   ...props
 }: Props) {
@@ -66,7 +66,7 @@ function ProseMirrorInner({
 
   const nodeViewContextValue = useMemo(
     () => ({
-      nodeViews,
+      nodeViews: nodeViews ?? {},
     }),
     [nodeViews]
   );
