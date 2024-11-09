@@ -355,6 +355,8 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
       setView(null);
       return;
     } else {
+      // @ts-expect-error Internal property - domObserver
+      view?.domObserver.selectionToDOM();
       view?.runPendingEffects();
     }
   });
