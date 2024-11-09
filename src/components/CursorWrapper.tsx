@@ -13,7 +13,7 @@ import { WidgetViewComponentProps } from "./WidgetViewComponentProps.js";
 export const CursorWrapper = forwardRef<
   HTMLImageElement,
   WidgetViewComponentProps
->(function CursorWrapper({ widget, pos, ...props }, ref) {
+>(function CursorWrapper({ widget, getPos, ...props }, ref) {
   const [shouldRender, setShouldRender] = useState(true);
   const innerRef = useRef<HTMLImageElement | null>(null);
 

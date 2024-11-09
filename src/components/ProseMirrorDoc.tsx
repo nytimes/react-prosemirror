@@ -7,10 +7,12 @@ import React, {
   forwardRef,
   useContext,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from "react";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
+import { ViewDesc } from "../viewdesc.js";
 
 import { DocNodeView, DocNodeViewProps } from "./DocNodeView.js";
 
@@ -30,8 +32,10 @@ function ProseMirrorDoc(
   { as, ...props }: Props,
   ref: ForwardedRef<HTMLDivElement | null>
 ) {
+  const childDescriptors = useRef<ViewDesc[]>([]);
   const innerRef = useRef<HTMLDivElement | null>(null);
   const { setMount, ...docProps } = useContext(DocNodeViewContext);
+  const viewDescRef = useRef(undefined);
 
   useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
     ref,
@@ -41,8 +45,16 @@ function ProseMirrorDoc(
     []
   );
 
+  const childContextValue = useMemo(
+    () => ({
+      parentRef: viewDescRef,
+      siblingsRef: childDescriptors,
+    }),
+    [childDescriptors, viewDescRef]
+  );
+
   return (
-    <ChildDescriptorsContext.Provider value={[]}>
+    <ChildDescriptorsContext.Provider value={childContextValue}>
       <DocNodeView
         ref={(el) => {
           innerRef.current = el;

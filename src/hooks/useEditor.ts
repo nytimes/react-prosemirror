@@ -290,13 +290,20 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     new NodeViewDesc(
       undefined,
       [],
+      () => -1,
       state.doc,
       [],
       DecorationSet.empty,
       tempDom,
       null,
       tempDom,
-      () => false
+      () => false,
+      () => {
+        /* The doc node can't have a node selection*/
+      },
+      () => {
+        /* The doc node can't have a node selection*/
+      }
     )
   );
 
@@ -356,15 +363,16 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
 
   view?.pureSetProps(directEditorProps);
 
-  return useMemo(
+  const editor = useMemo(
     () => ({
       view: view as EditorView | null,
-      state: state,
       registerEventListener,
       unregisterEventListener,
       cursorWrapper,
       docViewDescRef,
     }),
-    [view, state, registerEventListener, unregisterEventListener, cursorWrapper]
+    [view, registerEventListener, unregisterEventListener, cursorWrapper]
   );
+
+  return { editor, state };
 }
