@@ -1,12 +1,18 @@
-import { DecorationSet, NodeViewConstructor } from "prosemirror-view";
+import {
+  Decoration,
+  DecorationSet,
+  NodeViewConstructor,
+} from "prosemirror-view";
 import React, {
   ForwardRefExoticComponent,
   ReactNode,
   RefAttributes,
+  useMemo,
   useState,
 } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
+import { EditorStateContext } from "../contexts/EditorStateContext.js";
 import { NodeViewContext } from "../contexts/NodeViewContext.js";
 import { computeDocDeco } from "../decorations/computeDocDeco.js";
 import { viewDecorations } from "../decorations/viewDecorations.js";
@@ -34,16 +40,18 @@ export type Props = Omit<UseEditorOptions, "nodeViews"> & {
   };
 };
 
+const EMPTY_OUTER_DECOS: Decoration[] = [];
+
 function ProseMirrorInner({
   className,
   children,
-  nodeViews = {},
+  nodeViews,
   customNodeViews,
   ...props
 }: Props) {
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
-  const editor = useEditor(mount, {
+  const { editor, state } = useEditor(mount, {
     ...props,
     nodeViews: customNodeViews,
   });
@@ -52,28 +60,44 @@ function ProseMirrorInner({
     ? viewDecorations(editor.view, editor.cursorWrapper)
     : (DecorationSet.empty as unknown as DecorationSet);
 
-  const outerDecos = editor.view ? computeDocDeco(editor.view) : [];
+  const outerDecos = editor.view
+    ? computeDocDeco(editor.view)
+    : EMPTY_OUTER_DECOS;
+
+  const nodeViewContextValue = useMemo(
+    () => ({
+      nodeViews: nodeViews ?? {},
+    }),
+    [nodeViews]
+  );
+
+  const docNodeViewContextValue = useMemo(
+    () => ({
+      className: className,
+      setMount: setMount,
+      node: editor.view?.state.doc,
+      innerDeco: innerDecos,
+      outerDeco: outerDecos,
+      viewDesc: editor.docViewDescRef.current,
+    }),
+    [
+      className,
+      editor.docViewDescRef,
+      editor.view?.state.doc,
+      innerDecos,
+      outerDecos,
+    ]
+  );
 
   return (
     <EditorContext.Provider value={editor}>
-      <NodeViewContext.Provider
-        value={{
-          nodeViews,
-        }}
-      >
-        <DocNodeViewContext.Provider
-          value={{
-            className: className,
-            setMount: setMount,
-            node: editor.view?.state.doc,
-            innerDeco: innerDecos,
-            outerDeco: outerDecos,
-            viewDesc: editor.docViewDescRef.current,
-          }}
-        >
-          {children}
-        </DocNodeViewContext.Provider>
-      </NodeViewContext.Provider>
+      <EditorStateContext.Provider value={state}>
+        <NodeViewContext.Provider value={nodeViewContextValue}>
+          <DocNodeViewContext.Provider value={docNodeViewContextValue}>
+            {children}
+          </DocNodeViewContext.Provider>
+        </NodeViewContext.Provider>
+      </EditorStateContext.Provider>
     </EditorContext.Provider>
   );
 }

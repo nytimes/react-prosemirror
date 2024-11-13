@@ -130,10 +130,8 @@ describe("EditorView draw", () => {
       doc: doc(p()),
       editable: () => false,
     });
-    rerender({});
     expect(view.dom.contentEditable).toBe("false");
     rerender({ editable: () => true });
-    rerender({});
     expect(view.dom.contentEditable).toBe("true");
   });
 

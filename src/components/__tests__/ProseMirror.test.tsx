@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
 import {
@@ -17,6 +17,7 @@ import { EditorView } from "prosemirror-view";
 import React, { forwardRef, useEffect, useState } from "react";
 
 import { useEditorEffect } from "../../hooks/useEditorEffect.js";
+import { useStopEvent } from "../../hooks/useStopEvent.js";
 import { reactKeys } from "../../plugins/reactKeys.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { NodeViewComponentProps } from "../NodeViewComponentProps.js";
@@ -79,9 +80,7 @@ describe("ProseMirror", () => {
       return (
         <ProseMirror
           state={editorState}
-          dispatchTransaction={(tr) =>
-            act(() => setEditorState(editorState.apply(tr)))
-          }
+          dispatchTransaction={(tr) => setEditorState(editorState.apply(tr))}
         >
           <ProseMirrorDoc data-testid="editor" />
         </ProseMirror>
@@ -346,5 +345,29 @@ describe("ProseMirror", () => {
     expect(firstView).not.toBeNull();
     expect(secondView).not.toBeNull();
     expect(firstView === secondView).toBeFalsy();
+  });
+
+  it("supports focusing interactive controls", async () => {
+    tempEditor({
+      doc: doc(hr()),
+      nodeViews: {
+        horizontal_rule: forwardRef<HTMLButtonElement, NodeViewComponentProps>(
+          function Button({ nodeProps, ...props }, ref) {
+            useStopEvent(() => {
+              return true;
+            });
+            return (
+              <button id="button" ref={ref} type="button" {...props}>
+                Click me
+              </button>
+            );
+          }
+        ),
+      },
+    });
+
+    const button = screen.getByText("Click me");
+    await $("#button").click();
+    expect(document.activeElement === button).toBeTruthy();
   });
 });
