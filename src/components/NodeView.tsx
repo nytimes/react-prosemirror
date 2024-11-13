@@ -228,16 +228,18 @@ export const NodeView = memo(function NodeView({
         undefined
   );
 
-  // TODO: Should we only be wrapping non-inline elements? Inline elements have
-  // already been wrapped in ChildNodeViews/InlineView?
-  const markedElement = node.marks.reduce(
-    (element, mark) => (
-      <MarkView getPos={getPos} mark={mark}>
-        {element}
-      </MarkView>
-    ),
-    decoratedElement
-  );
+  // Inline nodes will already be wrapped in marks
+  // via the ChildNodeViews component
+  const markedElement = node.isInline
+    ? decoratedElement
+    : node.marks.reduce(
+        (element, mark) => (
+          <MarkView getPos={getPos} mark={mark}>
+            {element}
+          </MarkView>
+        ),
+        decoratedElement
+      );
 
   const childContextValue = useMemo(
     () => ({
@@ -253,7 +255,7 @@ export const NodeView = memo(function NodeView({
         <ChildDescriptorsContext.Provider value={childContextValue}>
           {cloneElement(
             markedElement,
-            node.marks.length ||
+            (node.marks.length && !node.isInline) ||
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               outerDeco.some((d) => (d as any).type.attrs.nodeName)
               ? { ref: domRef }
