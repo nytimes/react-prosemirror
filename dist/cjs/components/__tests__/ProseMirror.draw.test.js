@@ -323,4 +323,15 @@ describe("EditorView draw", ()=>{
         while(sameAtEnd < currentChildren.length && sameAtEnd < initialChildren.length && currentChildren[currentChildren.length - sameAtEnd - 1] == initialChildren[initialChildren.length - sameAtEnd - 1])sameAtEnd++;
         expect(sameAtEnd).toBe(9);
     });
+    it("correctly wraps inline nodes with marks", async ()=>{
+        const { view  } = (0, _editorViewTestHelpersJs.tempEditor)({
+            doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)((0, _prosemirrorTestBuilder.strong)((0, _prosemirrorTestBuilder.img)(), " two")))
+        });
+        const docDom = view.dom;
+        const paragraphDom = docDom.firstElementChild;
+        const strongDom = paragraphDom.firstElementChild;
+        expect(strongDom?.tagName).toBe("STRONG");
+        expect(strongDom?.firstElementChild?.tagName).toBe("IMG");
+        expect(strongDom?.childNodes.item(1).textContent).toBe(" two");
+    });
 });

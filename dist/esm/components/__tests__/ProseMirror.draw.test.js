@@ -14,7 +14,7 @@
 }
 import { Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
-import { doc, h1, hr, p, pre, schema, strong } from "prosemirror-test-builder";
+import { doc, h1, hr, img, p, pre, schema, strong } from "prosemirror-test-builder";
 import React, { forwardRef } from "react";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 describe("EditorView draw", ()=>{
@@ -279,5 +279,16 @@ describe("EditorView draw", ()=>{
         let sameAtEnd = 0;
         while(sameAtEnd < currentChildren.length && sameAtEnd < initialChildren.length && currentChildren[currentChildren.length - sameAtEnd - 1] == initialChildren[initialChildren.length - sameAtEnd - 1])sameAtEnd++;
         expect(sameAtEnd).toBe(9);
+    });
+    it("correctly wraps inline nodes with marks", async ()=>{
+        const { view  } = tempEditor({
+            doc: doc(p(strong(img(), " two")))
+        });
+        const docDom = view.dom;
+        const paragraphDom = docDom.firstElementChild;
+        const strongDom = paragraphDom.firstElementChild;
+        expect(strongDom?.tagName).toBe("STRONG");
+        expect(strongDom?.firstElementChild?.tagName).toBe("IMG");
+        expect(strongDom?.childNodes.item(1).textContent).toBe(" two");
     });
 });

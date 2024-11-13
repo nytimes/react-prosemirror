@@ -146,9 +146,9 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
     } : // we've already passed the domRef to the NodeView component
     // as a prop
     undefined);
-    // TODO: Should we only be wrapping non-inline elements? Inline elements have
-    // already been wrapped in ChildNodeViews/InlineView?
-    const markedElement = node.marks.reduce((element, mark)=>/*#__PURE__*/ React.createElement(MarkView, {
+    // Inline nodes will already be wrapped in marks
+    // via the ChildNodeViews component
+    const markedElement = node.isInline ? decoratedElement : node.marks.reduce((element, mark)=>/*#__PURE__*/ React.createElement(MarkView, {
             getPos: getPos,
             mark: mark
         }, element), decoratedElement);
@@ -165,7 +165,7 @@ export const NodeView = /*#__PURE__*/ memo(function NodeView(param) {
         value: setStopEvent
     }, /*#__PURE__*/ React.createElement(ChildDescriptorsContext.Provider, {
         value: childContextValue
-    }, /*#__PURE__*/ cloneElement(markedElement, node.marks.length || // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }, /*#__PURE__*/ cloneElement(markedElement, node.marks.length && !node.isInline || // eslint-disable-next-line @typescript-eslint/no-explicit-any
     outerDeco.some((d)=>d.type.attrs.nodeName) ? {
         ref: domRef
     } : // we've already passed the domRef to the NodeView component
