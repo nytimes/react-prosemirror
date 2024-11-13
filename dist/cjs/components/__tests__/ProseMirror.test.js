@@ -8,6 +8,7 @@ const _prosemirrorState = require("prosemirror-state");
 const _prosemirrorTestBuilder = require("prosemirror-test-builder");
 const _react1 = /*#__PURE__*/ _interopRequireWildcard(require("react"));
 const _useEditorEffectJs = require("../../hooks/useEditorEffect.js");
+const _useStopEventJs = require("../../hooks/useStopEvent.js");
 const _reactKeysJs = require("../../plugins/reactKeys.js");
 const _editorViewTestHelpersJs = require("../../testing/editorViewTestHelpers.js");
 const _proseMirrorJs = require("../ProseMirror.js");
@@ -124,7 +125,7 @@ describe("ProseMirror", ()=>{
             ]);
             return /*#__PURE__*/ _react1.default.createElement(_proseMirrorJs.ProseMirror, {
                 state: editorState,
-                dispatchTransaction: (tr)=>(0, _react.act)(()=>setEditorState(editorState.apply(tr)))
+                dispatchTransaction: (tr)=>setEditorState(editorState.apply(tr))
             }, /*#__PURE__*/ _react1.default.createElement(_proseMirrorDocJs.ProseMirrorDoc, {
                 "data-testid": "editor"
             }));
@@ -356,5 +357,26 @@ describe("ProseMirror", ()=>{
         expect(firstView).not.toBeNull();
         expect(secondView).not.toBeNull();
         expect(firstView === secondView).toBeFalsy();
+    });
+    it("supports focusing interactive controls", async ()=>{
+        (0, _editorViewTestHelpersJs.tempEditor)({
+            doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.hr)()),
+            nodeViews: {
+                horizontal_rule: /*#__PURE__*/ (0, _react1.forwardRef)(function Button(param, ref) {
+                    let { nodeProps , ...props } = param;
+                    (0, _useStopEventJs.useStopEvent)(()=>{
+                        return true;
+                    });
+                    return /*#__PURE__*/ _react1.default.createElement("button", _extends({
+                        id: "button",
+                        ref: ref,
+                        type: "button"
+                    }, props), "Click me");
+                })
+            }
+        });
+        const button = _react.screen.getByText("Click me");
+        await $("#button").click();
+        expect(document.activeElement === button).toBeTruthy();
     });
 });

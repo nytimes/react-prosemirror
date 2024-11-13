@@ -41,6 +41,15 @@ function changedNodeViews(a, b) {
     for(const _ in b)nB++;
     return nA != nB;
 }
+function changedProps(a, b) {
+    for (const prop of Object.keys(a)){
+        if (a[prop] !== b[prop]) return true;
+    }
+    return false;
+}
+function getEditable(view) {
+    return !view.someProp("editable", (value)=>value(view.state) === false);
+}
 let ReactEditorView = class ReactEditorView extends _prosemirrorView.EditorView {
     /**
    * Whether the EditorView's updateStateInner method thinks that the
@@ -73,15 +82,18 @@ let ReactEditorView = class ReactEditorView extends _prosemirrorView.EditorView 
             ...props
         };
         this.state = this._props.state;
+        this.editable = getEditable(this);
     }
     /**
    * Triggers any side effects that have been queued by previous
    * calls to pureSetProps.
    */ runPendingEffects() {
-        const newProps = this.props;
-        this._props = this.oldProps;
-        this.state = this._props.state;
-        this.update(newProps);
+        if (changedProps(this.props, this.oldProps)) {
+            const newProps = this.props;
+            this._props = this.oldProps;
+            this.state = this._props.state;
+            this.update(newProps);
+        }
     }
     update(props) {
         super.update(props);
@@ -128,7 +140,7 @@ let ReactEditorView = class ReactEditorView extends _prosemirrorView.EditorView 
         this.domObserver = new _selectionDOMObserverJs.SelectionDOMObserver(this);
         // @ts-expect-error We're making use of knowledge of internal attributes here
         this.domObserver.start();
-        // updateCursorWrapper(this);
+        this.editable = getEditable(this);
         // Destroy the DOM created by the default
         // ProseMirror ViewDesc implementation; we
         // have a NodeViewDesc from React instead.
@@ -180,7 +192,7 @@ function useEditor(mount, options) {
         componentEventListenersPlugin,
         setCursorWrapper
     ]);
-    function dispatchTransaction(tr) {
+    const dispatchTransaction = (0, _react.useCallback)(function dispatchTransaction(tr) {
         (0, _reactDom.flushSync)(()=>{
             if (!options.state) {
                 setState((s)=>s.apply(tr));
@@ -189,9 +201,14 @@ function useEditor(mount, options) {
                 options.dispatchTransaction.call(this, tr);
             }
         });
-    }
+    }, [
+        options.dispatchTransaction,
+        options.state
+    ]);
     const tempDom = document.createElement("div");
-    const docViewDescRef = (0, _react.useRef)(new _viewdescJs.NodeViewDesc(undefined, [], state.doc, [], _prosemirrorView.DecorationSet.empty, tempDom, null, tempDom, ()=>false));
+    const docViewDescRef = (0, _react.useRef)(new _viewdescJs.NodeViewDesc(undefined, [], ()=>-1, state.doc, [], _prosemirrorView.DecorationSet.empty, tempDom, null, tempDom, ()=>false, ()=>{
+    /* The doc node can't have a node selection*/ }, ()=>{
+    /* The doc node can't have a node selection*/ }));
     const directEditorProps = {
         ...options,
         state,
@@ -245,18 +262,20 @@ function useEditor(mount, options) {
         }
     });
     view?.pureSetProps(directEditorProps);
-    return (0, _react.useMemo)(()=>({
+    const editor = (0, _react.useMemo)(()=>({
             view: view,
-            state: state,
             registerEventListener,
             unregisterEventListener,
             cursorWrapper,
             docViewDescRef
         }), [
         view,
-        state,
         registerEventListener,
         unregisterEventListener,
         cursorWrapper
     ]);
+    return {
+        editor,
+        state
+    };
 }

@@ -47,7 +47,7 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-const ForwardedOutputSpec = /*#__PURE__*/ (0, _react.forwardRef)(function OutputSpec(param, ref) {
+const ForwardedOutputSpec = /*#__PURE__*/ (0, _react.memo)(/*#__PURE__*/ (0, _react.forwardRef)(function OutputSpec(param, ref) {
     let { outputSpec , children , ...propOverrides } = param;
     if (typeof outputSpec === "string") {
         return /*#__PURE__*/ _react.default.createElement(_react.default.Fragment, null, outputSpec);
@@ -77,9 +77,8 @@ const ForwardedOutputSpec = /*#__PURE__*/ (0, _react.forwardRef)(function Output
             return /*#__PURE__*/ (0, _react.createElement)(tagName, props, children);
         }
         content.push(/*#__PURE__*/ _react.default.createElement(ForwardedOutputSpec, {
-            ref: undefined,
             outputSpec: child
         }, children));
     }
     return /*#__PURE__*/ (0, _react.createElement)(tagName, props, ...content);
-});
+}));

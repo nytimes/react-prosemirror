@@ -60,8 +60,8 @@ export function tempEditor(param) {
     } : {
         defaultState: state
     }, props), /*#__PURE__*/ React.createElement(Test, null), /*#__PURE__*/ React.createElement(ProseMirrorDoc, null)));
-    function rerenderEditor(param) {
-        let { ...newProps } = param;
+    function rerenderEditor() {
+        let { ...newProps } = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
         rerender(/*#__PURE__*/ React.createElement(ProseMirror, _extends({}, controlled ? {
             state
         } : {
@@ -72,9 +72,27 @@ export function tempEditor(param) {
         }), /*#__PURE__*/ React.createElement(Test, null), /*#__PURE__*/ React.createElement(ProseMirrorDoc, null)));
         return view;
     }
+    // We need two renders for the hasContentDOM state to settle
+    rerenderEditor();
     return {
         view: view,
         rerender: rerenderEditor,
         unmount
     };
+}
+function findTextNodeInner(node, text) {
+    if (node.nodeType == 3) {
+        if (node.nodeValue == text) return node;
+    } else if (node.nodeType == 1) {
+        for(let ch = node.firstChild; ch; ch = ch.nextSibling){
+            const found = findTextNodeInner(ch, text);
+            if (found) return found;
+        }
+    }
+    return undefined;
+}
+export function findTextNode(node, text) {
+    const found = findTextNodeInner(node, text);
+    if (found) return found;
+    throw new Error("Unable to find matching text node");
 }

@@ -63,7 +63,7 @@ function _interopRequireWildcard(obj, nodeInterop) {
     return newObj;
 }
 const CursorWrapper = /*#__PURE__*/ (0, _react.forwardRef)(function CursorWrapper(param, ref) {
-    let { widget , pos , ...props } = param;
+    let { widget , getPos , ...props } = param;
     const [shouldRender, setShouldRender] = (0, _react.useState)(true);
     const innerRef = (0, _react.useRef)(null);
     (0, _react.useImperativeHandle)(ref, ()=>{

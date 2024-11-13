@@ -1,16 +1,28 @@
 // TODO: I must be missing something, but I do not know why
 // this linting rule is only broken in this file
-/* eslint-disable react/prop-types */ import React, { cloneElement, createElement, forwardRef, useImperativeHandle, useRef } from "react";
+/* eslint-disable react/prop-types */ import React, { cloneElement, createElement, forwardRef, memo, useImperativeHandle, useMemo, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
-export const DocNodeView = /*#__PURE__*/ forwardRef(function DocNodeView(param, ref) {
+const getPos = {
+    current () {
+        return -1;
+    }
+};
+export const DocNodeView = /*#__PURE__*/ memo(/*#__PURE__*/ forwardRef(function DocNodeView(param, ref) {
     let { className , node , innerDeco , outerDeco , as , viewDesc , ...elementProps } = param;
     const innerRef = useRef(null);
     useImperativeHandle(ref, ()=>{
         return innerRef.current;
     }, []);
-    const { childDescriptors  } = useNodeViewDescriptor(node, innerRef, innerRef, innerDeco, outerDeco, viewDesc);
+    const { childDescriptors , nodeViewDescRef  } = useNodeViewDescriptor(node, ()=>getPos.current(), innerRef, innerRef, innerDeco, outerDeco, viewDesc);
+    const childContextValue = useMemo(()=>({
+            parentRef: nodeViewDescRef,
+            siblingsRef: childDescriptors
+        }), [
+        childDescriptors,
+        nodeViewDescRef
+    ]);
     const props = {
         ...elementProps,
         ref: innerRef,
@@ -18,15 +30,15 @@ export const DocNodeView = /*#__PURE__*/ forwardRef(function DocNodeView(param, 
         suppressContentEditableWarning: true
     };
     const element = as ? /*#__PURE__*/ cloneElement(as, props, /*#__PURE__*/ React.createElement(ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, /*#__PURE__*/ React.createElement(ChildNodeViews, {
-        pos: -1,
+        getPos: getPos,
         node: node,
         innerDecorations: innerDeco
     }))) : /*#__PURE__*/ createElement("div", props, /*#__PURE__*/ React.createElement(ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, /*#__PURE__*/ React.createElement(ChildNodeViews, {
-        pos: -1,
+        getPos: getPos,
         node: node,
         innerDecorations: innerDeco
     })));
@@ -38,4 +50,4 @@ export const DocNodeView = /*#__PURE__*/ forwardRef(function DocNodeView(param, 
     }
     const wrapped = nodeDecorations.reduce(wrapInDeco, element);
     return wrapped;
-});
+}));

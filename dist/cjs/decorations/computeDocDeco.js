@@ -7,6 +7,7 @@ Object.defineProperty(exports, "computeDocDeco", {
     get: ()=>computeDocDeco
 });
 const _prosemirrorView = require("prosemirror-view");
+const DocDecorationsCache = new WeakMap();
 function computeDocDeco(view) {
     const attrs = Object.create(null);
     attrs.class = "ProseMirror";
@@ -20,7 +21,22 @@ function computeDocDeco(view) {
         }
     });
     if (!attrs.translate) attrs.translate = "no";
-    return [
+    const next = [
         _prosemirrorView.Decoration.node(0, view.state.doc.content.size, attrs)
     ];
+    const previous = DocDecorationsCache.get(view);
+    if (!previous) {
+        DocDecorationsCache.set(view, next);
+        return next;
+    }
+    if (previous[0].to !== view.state.doc.content.size) {
+        DocDecorationsCache.set(view, next);
+        return next;
+    }
+    // @ts-expect-error Internal property (Decoration.type)
+    if (!previous[0].type.eq(next[0].type)) {
+        DocDecorationsCache.set(view, next);
+        return next;
+    }
+    return previous;
 }

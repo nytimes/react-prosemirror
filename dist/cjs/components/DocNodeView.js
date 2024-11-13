@@ -51,13 +51,25 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-const DocNodeView = /*#__PURE__*/ (0, _react.forwardRef)(function DocNodeView(param, ref) {
+const getPos = {
+    current () {
+        return -1;
+    }
+};
+const DocNodeView = /*#__PURE__*/ (0, _react.memo)(/*#__PURE__*/ (0, _react.forwardRef)(function DocNodeView(param, ref) {
     let { className , node , innerDeco , outerDeco , as , viewDesc , ...elementProps } = param;
     const innerRef = (0, _react.useRef)(null);
     (0, _react.useImperativeHandle)(ref, ()=>{
         return innerRef.current;
     }, []);
-    const { childDescriptors  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, innerRef, innerRef, innerDeco, outerDeco, viewDesc);
+    const { childDescriptors , nodeViewDescRef  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, ()=>getPos.current(), innerRef, innerRef, innerDeco, outerDeco, viewDesc);
+    const childContextValue = (0, _react.useMemo)(()=>({
+            parentRef: nodeViewDescRef,
+            siblingsRef: childDescriptors
+        }), [
+        childDescriptors,
+        nodeViewDescRef
+    ]);
     const props = {
         ...elementProps,
         ref: innerRef,
@@ -65,15 +77,15 @@ const DocNodeView = /*#__PURE__*/ (0, _react.forwardRef)(function DocNodeView(pa
         suppressContentEditableWarning: true
     };
     const element = as ? /*#__PURE__*/ (0, _react.cloneElement)(as, props, /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, /*#__PURE__*/ _react.default.createElement(_childNodeViewsJs.ChildNodeViews, {
-        pos: -1,
+        getPos: getPos,
         node: node,
         innerDecorations: innerDeco
     }))) : /*#__PURE__*/ (0, _react.createElement)("div", props, /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, /*#__PURE__*/ _react.default.createElement(_childNodeViewsJs.ChildNodeViews, {
-        pos: -1,
+        getPos: getPos,
         node: node,
         innerDecorations: innerDeco
     })));
@@ -85,4 +97,4 @@ const DocNodeView = /*#__PURE__*/ (0, _react.forwardRef)(function DocNodeView(pa
     }
     const wrapped = nodeDecorations.reduce(_childNodeViewsJs.wrapInDeco, element);
     return wrapped;
-});
+}));

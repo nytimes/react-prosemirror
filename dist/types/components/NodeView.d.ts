@@ -1,10 +1,11 @@
 import { Node } from "prosemirror-model";
 import { Decoration, DecorationSource } from "prosemirror-view";
+import React, { MutableRefObject } from "react";
 type NodeViewProps = {
     outerDeco: readonly Decoration[];
-    pos: number;
+    getPos: MutableRefObject<() => number>;
     node: Node;
     innerDeco: DecorationSource;
 };
-export declare function NodeView({ outerDeco, pos, node, innerDeco, ...props }: NodeViewProps): JSX.Element;
+export declare const NodeView: React.NamedExoticComponent<NodeViewProps>;
 export {};

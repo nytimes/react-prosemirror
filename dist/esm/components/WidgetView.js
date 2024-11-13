@@ -1,20 +1,44 @@
 import React, { useContext, useLayoutEffect, useRef } from "react";
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
-import { WidgetViewDesc } from "../viewdesc.js";
+import { WidgetViewDesc, sortViewDescs } from "../viewdesc.js";
 export function WidgetView(param) {
-    let { widget , pos  } = param;
-    const siblingDescriptors = useContext(ChildDescriptorsContext);
+    let { widget , getPos  } = param;
+    const { siblingsRef , parentRef  } = useContext(ChildDescriptorsContext);
+    const viewDescRef = useRef(null);
+    const getPosFunc = useRef(()=>getPos.current()).current;
     const domRef = useRef(null);
     useLayoutEffect(()=>{
+        const siblings = siblingsRef.current;
+        return ()=>{
+            if (!viewDescRef.current) return;
+            if (siblings.includes(viewDescRef.current)) {
+                const index = siblings.indexOf(viewDescRef.current);
+                siblings.splice(index, 1);
+            }
+        };
+    }, [
+        siblingsRef
+    ]);
+    useLayoutEffect(()=>{
         if (!domRef.current) return;
-        const desc = new WidgetViewDesc(undefined, widget, domRef.current);
-        siblingDescriptors.push(desc);
+        if (!viewDescRef.current) {
+            viewDescRef.current = new WidgetViewDesc(parentRef.current, ()=>getPos.current(), widget, domRef.current);
+        } else {
+            viewDescRef.current.parent = parentRef.current;
+            viewDescRef.current.widget = widget;
+            viewDescRef.current.getPos = ()=>getPos.current();
+            viewDescRef.current.dom = domRef.current;
+        }
+        if (!siblingsRef.current.includes(viewDescRef.current)) {
+            siblingsRef.current.push(viewDescRef.current);
+        }
+        siblingsRef.current.sort(sortViewDescs);
     });
     const { Component  } = widget.type;
     return Component && /*#__PURE__*/ React.createElement(Component, {
         ref: domRef,
         widget: widget,
-        pos: pos,
+        getPos: getPosFunc,
         contentEditable: false
     });
 }

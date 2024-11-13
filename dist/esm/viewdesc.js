@@ -13,6 +13,11 @@ import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
 //   given node
 //
 // They form a doubly-linked mutable tree, starting at `view.docView`.
+export function sortViewDescs(a, b) {
+    if (a instanceof TrailingHackViewDesc) return 1;
+    if (b instanceof TrailingHackViewDesc) return -1;
+    return a.getPos() - b.getPos();
+}
 const NOT_DIRTY = 0, CHILD_DIRTY = 1, CONTENT_DIRTY = 2, NODE_DIRTY = 3;
 // Superclass for the various kinds of descriptions. Defines their
 // basic structure and shared methods.
@@ -405,9 +410,10 @@ export class ViewDesc {
     get ignoreForCoords() {
         return false;
     }
-    constructor(parent, children, dom, contentDOM){
+    constructor(parent, children, getPos, dom, contentDOM){
         this.parent = parent;
         this.children = children;
+        this.getPos = getPos;
         this.dom = dom;
         this.contentDOM = contentDOM;
         this.dirty = NOT_DIRTY;
@@ -442,8 +448,8 @@ export class WidgetViewDesc extends ViewDesc {
     get side() {
         return this.widget.type.side;
     }
-    constructor(parent, widget, dom){
-        super(parent, [], dom, null);
+    constructor(parent, getPos, widget, dom){
+        super(parent, [], getPos, dom, null);
         this.widget = widget;
         this.widget = widget;
     }
@@ -465,8 +471,8 @@ export class CompositionViewDesc extends ViewDesc {
     ignoreMutation(mut) {
         return mut.type === "characterData" && mut.target.nodeValue == mut.oldValue;
     }
-    constructor(parent, dom, textDOM, text){
-        super(parent, [], dom, null);
+    constructor(parent, getPos, dom, textDOM, text){
+        super(parent, [], getPos, dom, null);
         this.textDOM = textDOM;
         this.text = text;
     }
@@ -498,8 +504,8 @@ export class MarkViewDesc extends ViewDesc {
             this.dirty = NOT_DIRTY;
         }
     }
-    constructor(parent, children, mark, dom, contentDOM){
-        super(parent, children, dom, contentDOM);
+    constructor(parent, children, getPos, mark, dom, contentDOM){
+        super(parent, children, getPos, dom, contentDOM);
         this.mark = mark;
     }
 }
@@ -557,28 +563,18 @@ export class NodeViewDesc extends ViewDesc {
     update(_node, _outerDeco, _innerDeco, _view) {
         return true;
     }
-    // Mark this node as being the selected node.
-    selectNode() {
-        if (this.nodeDOM.nodeType == 1) this.nodeDOM.classList.add("ProseMirror-selectednode");
-        if (this.contentDOM || !this.node.type.spec.draggable) this.dom.draggable = true;
-    }
-    // Remove selected node marking from this node.
-    deselectNode() {
-        if (this.nodeDOM.nodeType == 1) {
-            this.nodeDOM.classList.remove("ProseMirror-selectednode");
-            if (this.contentDOM || !this.node.type.spec.draggable) this.dom.removeAttribute("draggable");
-        }
-    }
     get domAtom() {
         return this.node.isAtom;
     }
-    constructor(parent, children, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent){
-        super(parent, children, dom, contentDOM);
+    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, contentDOM, nodeDOM, stopEvent, selectNode, deselectNode){
+        super(parent, children, getPos, dom, contentDOM);
         this.node = node;
         this.outerDeco = outerDeco;
         this.innerDeco = innerDeco;
         this.nodeDOM = nodeDOM;
         this.stopEvent = stopEvent;
+        this.selectNode = selectNode;
+        this.deselectNode = deselectNode;
     }
 }
 export class TextViewDesc extends NodeViewDesc {
@@ -617,8 +613,10 @@ export class TextViewDesc extends NodeViewDesc {
     get domAtom() {
         return false;
     }
-    constructor(parent, children, node, outerDeco, innerDeco, dom, nodeDOM){
-        super(parent, children, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false);
+    constructor(parent, children, getPos, node, outerDeco, innerDeco, dom, nodeDOM){
+        super(parent, children, getPos, node, outerDeco, innerDeco, dom, null, nodeDOM, ()=>false, ()=>{
+        /* Text nodes can't have node selections */ }, ()=>{
+        /* Text nodes can't have node selections */ });
     }
 }
 // A dummy desc used to tag trailing BR or IMG nodes created to work

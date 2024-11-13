@@ -49,29 +49,62 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-const MarkView = /*#__PURE__*/ (0, _react.forwardRef)(function MarkView(param, ref) {
-    let { mark , children  } = param;
-    const siblingDescriptors = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
-    const childDescriptors = [];
+const MarkView = /*#__PURE__*/ (0, _react.memo)(/*#__PURE__*/ (0, _react.forwardRef)(function MarkView(param, ref) {
+    let { mark , getPos , children  } = param;
+    const { siblingsRef , parentRef  } = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
+    const viewDescRef = (0, _react.useRef)(undefined);
+    const childDescriptors = (0, _react.useRef)([]);
     const domRef = (0, _react.useRef)(null);
     (0, _react.useImperativeHandle)(ref, ()=>{
         return domRef.current;
     }, []);
-    const outputSpec = mark.type.spec.toDOM?.(mark, true);
+    const outputSpec = (0, _react.useMemo)(()=>mark.type.spec.toDOM?.(mark, true), [
+        mark
+    ]);
     if (!outputSpec) throw new Error(`Mark spec for ${mark.type.name} is missing toDOM`);
     (0, _react.useLayoutEffect)(()=>{
+        const siblings = siblingsRef.current;
+        return ()=>{
+            if (!viewDescRef.current) return;
+            if (siblings.includes(viewDescRef.current)) {
+                const index = siblings.indexOf(viewDescRef.current);
+                siblings.splice(index, 1);
+            }
+        };
+    }, [
+        siblingsRef
+    ]);
+    (0, _react.useLayoutEffect)(()=>{
         if (!domRef.current) return;
-        const firstChildDesc = childDescriptors[0];
-        const desc = new _viewdescJs.MarkViewDesc(undefined, childDescriptors, mark, domRef.current, firstChildDesc?.dom.parentElement ?? domRef.current);
-        siblingDescriptors.push(desc);
-        for (const childDesc of childDescriptors){
-            childDesc.parent = desc;
+        const firstChildDesc = childDescriptors.current[0];
+        if (!viewDescRef.current) {
+            viewDescRef.current = new _viewdescJs.MarkViewDesc(parentRef.current, childDescriptors.current, ()=>getPos.current(), mark, domRef.current, firstChildDesc?.dom.parentElement ?? domRef.current);
+        } else {
+            viewDescRef.current.parent = parentRef.current;
+            viewDescRef.current.dom = domRef.current;
+            viewDescRef.current.contentDOM = firstChildDesc?.dom.parentElement ?? domRef.current;
+            viewDescRef.current.mark = mark;
+            viewDescRef.current.getPos = ()=>getPos.current();
+        }
+        if (!siblingsRef.current.includes(viewDescRef.current)) {
+            siblingsRef.current.push(viewDescRef.current);
+        }
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
+        for (const childDesc of childDescriptors.current){
+            childDesc.parent = viewDescRef.current;
         }
     });
+    const childContextValue = (0, _react.useMemo)(()=>({
+            parentRef: viewDescRef,
+            siblingsRef: childDescriptors
+        }), [
+        childDescriptors,
+        viewDescRef
+    ]);
     return /*#__PURE__*/ _react.default.createElement(_outputSpecJs.OutputSpec, {
         ref: domRef,
         outputSpec: outputSpec
     }, /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, children));
-});
+}));

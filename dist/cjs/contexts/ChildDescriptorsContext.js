@@ -7,4 +7,11 @@ Object.defineProperty(exports, "ChildDescriptorsContext", {
     get: ()=>ChildDescriptorsContext
 });
 const _react = require("react");
-const ChildDescriptorsContext = (0, _react.createContext)([]);
+const ChildDescriptorsContext = (0, _react.createContext)({
+    parentRef: {
+        current: undefined
+    },
+    siblingsRef: {
+        current: []
+    }
+});

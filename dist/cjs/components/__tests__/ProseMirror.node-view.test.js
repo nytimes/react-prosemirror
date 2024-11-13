@@ -7,6 +7,7 @@ const _prosemirrorState = require("prosemirror-state");
 const _prosemirrorTestBuilder = require("prosemirror-test-builder");
 const _prosemirrorView = require("prosemirror-view");
 const _react1 = /*#__PURE__*/ _interopRequireWildcard(require("react"));
+const _useEditorStateJs = require("../../hooks/useEditorState.js");
 const _useStopEventJs = require("../../hooks/useStopEvent.js");
 const _editorViewTestHelpersJs = require("../../testing/editorViewTestHelpers.js");
 function _extends() {
@@ -88,9 +89,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(view.dom.querySelector("p").textContent).toBe("FOO");
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(view.dom.querySelector("p").textContent).toBe("AFOO");
     });
     // React makes this more or less trivial; the render
@@ -153,9 +152,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         const para = view.dom.querySelector("p");
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(view.dom.querySelector("p")).toBe(para);
         expect(para.textContent).toBe("afoo");
     });
@@ -179,9 +176,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(destroyed).toBeFalsy();
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.delete(3, 5));
-        });
+        view.dispatch(view.state.tr.delete(3, 5));
         expect(destroyed).toBeTruthy();
     });
     it("can query its own position", async ()=>{
@@ -189,18 +184,20 @@ describe("nodeViews prop", ()=>{
         const { view  } = (0, _editorViewTestHelpersJs.tempEditor)({
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.blockquote)((0, _prosemirrorTestBuilder.p)("abc"), (0, _prosemirrorTestBuilder.p)("foo", (0, _prosemirrorTestBuilder.br)()))),
             nodeViews: {
-                hard_break: /*#__PURE__*/ (0, _react1.forwardRef)(function BR(props, ref) {
-                    pos = props.nodeProps.pos;
-                    return /*#__PURE__*/ _react1.default.createElement("br", {
+                hard_break: /*#__PURE__*/ (0, _react1.forwardRef)(function BR(param, ref) {
+                    let { nodeProps , children , ...props } = param;
+                    // trigger a re-render on every updated, otherwise we won't
+                    // re-render when an updated doesn't directly affect us
+                    (0, _useEditorStateJs.useEditorState)();
+                    pos = nodeProps.getPos();
+                    return /*#__PURE__*/ _react1.default.createElement("br", _extends({
                         ref: ref
-                    });
+                    }, props));
                 })
             }
         });
         expect(pos).toBe(10);
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(pos).toBe(11);
     });
     it("has access to outer decorations", async ()=>{
@@ -238,13 +235,9 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(view.dom.querySelector("var").textContent).toBe("[]");
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.setMeta("setDeco", "foo"));
-        });
+        view.dispatch(view.state.tr.setMeta("setDeco", "foo"));
         expect(view.dom.querySelector("var").textContent).toBe("foo");
-        (0, _react.act)(()=>{
-            view.dispatch(view.state.tr.setMeta("setDeco", "bar"));
-        });
+        view.dispatch(view.state.tr.setMeta("setDeco", "bar"));
         expect(view.dom.querySelector("var").textContent).toBe("bar");
     });
     it("provides access to inner decorations in the constructor", async ()=>{

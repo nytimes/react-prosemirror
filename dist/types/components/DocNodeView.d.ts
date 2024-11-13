@@ -10,11 +10,11 @@ export type DocNodeViewProps = {
     as?: ReactElement;
     viewDesc?: NodeViewDesc;
 } & Omit<DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref">;
-export declare const DocNodeView: React.ForwardRefExoticComponent<{
+export declare const DocNodeView: React.MemoExoticComponent<React.ForwardRefExoticComponent<{
     className?: string | undefined;
     node: Node | undefined;
     innerDeco: DecorationSource;
     outerDeco: Decoration[];
     as?: React.ReactElement<any, string | React.JSXElementConstructor<any>> | undefined;
     viewDesc?: NodeViewDesc | undefined;
-} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement | null>>;
+} & Omit<React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLDivElement>, "ref"> & React.RefAttributes<HTMLDivElement | null>>>;

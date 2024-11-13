@@ -56,10 +56,12 @@ export interface UseEditorOptions extends EditorProps {
  * `useEditorViewLayoutEffect` hooks.
  */
 export declare function useEditor<T extends HTMLElement = HTMLElement>(mount: T | null, options: UseEditorOptions): {
-    view: EditorView | null;
+    editor: {
+        view: EditorView | null;
+        registerEventListener: (eventType: keyof import("prosemirror-view").DOMEventMap, handler: import("../plugins/componentEventListeners.js").EventHandler<keyof import("prosemirror-view").DOMEventMap>) => void;
+        unregisterEventListener: (eventType: keyof import("prosemirror-view").DOMEventMap, handler: import("../plugins/componentEventListeners.js").EventHandler<keyof import("prosemirror-view").DOMEventMap>) => void;
+        cursorWrapper: Decoration | null;
+        docViewDescRef: import("react").MutableRefObject<NodeViewDesc>;
+    };
     state: EditorState;
-    registerEventListener: (eventType: keyof import("prosemirror-view").DOMEventMap, handler: import("../plugins/componentEventListeners.js").EventHandler<keyof import("prosemirror-view").DOMEventMap>) => void;
-    unregisterEventListener: (eventType: keyof import("prosemirror-view").DOMEventMap, handler: import("../plugins/componentEventListeners.js").EventHandler<keyof import("prosemirror-view").DOMEventMap>) => void;
-    cursorWrapper: Decoration | null;
-    docViewDescRef: import("react").MutableRefObject<NodeViewDesc>;
 };

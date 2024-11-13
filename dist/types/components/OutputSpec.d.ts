@@ -4,5 +4,5 @@ type Props = HTMLProps<HTMLElement> & {
     outputSpec: DOMOutputSpec;
     children?: ReactNode;
 };
-declare const ForwardedOutputSpec: React.ForwardRefExoticComponent<Omit<Props, "ref"> & React.RefAttributes<HTMLElement>>;
+declare const ForwardedOutputSpec: React.MemoExoticComponent<React.ForwardRefExoticComponent<Omit<Props, "ref"> & React.RefAttributes<HTMLElement>>>;
 export { ForwardedOutputSpec as OutputSpec };

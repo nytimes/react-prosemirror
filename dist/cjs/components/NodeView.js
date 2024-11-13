@@ -6,14 +6,13 @@ Object.defineProperty(exports, "NodeView", {
     enumerable: true,
     get: ()=>NodeView
 });
-const _prosemirrorState = require("prosemirror-state");
 const _react = /*#__PURE__*/ _interopRequireWildcard(require("react"));
 const _reactDom = require("react-dom");
 const _childDescriptorsContextJs = require("../contexts/ChildDescriptorsContext.js");
 const _editorContextJs = require("../contexts/EditorContext.js");
 const _nodeViewContextJs = require("../contexts/NodeViewContext.js");
+const _selectNodeContextJs = require("../contexts/SelectNodeContext.js");
 const _stopEventContextJs = require("../contexts/StopEventContext.js");
-const _useEditorStateJs = require("../hooks/useEditorState.js");
 const _useNodeViewDescriptorJs = require("../hooks/useNodeViewDescriptor.js");
 const _childNodeViewsJs = require("./ChildNodeViews.js");
 const _markViewJs = require("./MarkView.js");
@@ -71,24 +70,26 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-function NodeView(param) {
-    let { outerDeco , pos , node , innerDeco , ...props } = param;
+const NodeView = /*#__PURE__*/ (0, _react.memo)(function NodeView(param) {
+    let { outerDeco , getPos , node , innerDeco , ...props } = param;
     const domRef = (0, _react.useRef)(null);
     const nodeDomRef = (0, _react.useRef)(null);
     const contentDomRef = (0, _react.useRef)(null);
+    const getPosFunc = (0, _react.useRef)(()=>getPos.current()).current;
     // this is ill-conceived; should revisit
     const initialNode = (0, _react.useRef)(node);
     const initialOuterDeco = (0, _react.useRef)(outerDeco);
     const initialInnerDeco = (0, _react.useRef)(innerDeco);
-    const posRef = (0, _react.useRef)(pos);
-    posRef.current = pos;
     const customNodeViewRootRef = (0, _react.useRef)(null);
     const customNodeViewRef = (0, _react.useRef)(null);
-    const state = (0, _useEditorStateJs.useEditorState)();
+    // const state = useEditorState();
     const { nodeViews  } = (0, _react.useContext)(_nodeViewContextJs.NodeViewContext);
     const { view  } = (0, _react.useContext)(_editorContextJs.EditorContext);
     let element = null;
     const Component = nodeViews[node.type.name];
+    const outputSpec = (0, _react.useMemo)(()=>node.type.spec.toDOM?.(node), [
+        node
+    ]);
     // TODO: Would be great to pull all of the custom node view stuff into
     // a hook
     const customNodeView = view?.someProp("nodeViews", (nodeViews)=>nodeViews?.[node.type.name]);
@@ -114,7 +115,7 @@ function NodeView(param) {
         customNodeViewRef.current = customNodeView(initialNode.current, // customNodeView will only be set if view is set, and we can only reach
         // this line if customNodeView is set
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        view, ()=>posRef.current, initialOuterDeco.current, initialInnerDeco.current);
+        view, ()=>getPos.current(), initialOuterDeco.current, initialInnerDeco.current);
         const { dom  } = customNodeViewRef.current;
         nodeDomRef.current = customNodeViewRootRef.current;
         customNodeViewRootRef.current.appendChild(dom);
@@ -123,21 +124,33 @@ function NodeView(param) {
         view,
         innerDeco,
         node,
+        outerDeco,
+        getPos
+    ]);
+    const { hasContentDOM , childDescriptors , setStopEvent , setSelectNode , nodeViewDescRef  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, ()=>getPos.current(), domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
+    const finalProps = {
+        ...props,
+        ...!hasContentDOM && {
+            contentEditable: false
+        }
+    };
+    const nodeProps = (0, _react.useMemo)(()=>({
+            node: node,
+            getPos: getPosFunc,
+            decorations: outerDeco,
+            innerDecorations: innerDeco
+        }), [
+        getPosFunc,
+        innerDeco,
+        node,
         outerDeco
     ]);
-    const { childDescriptors , setStopEvent  } = (0, _useNodeViewDescriptorJs.useNodeViewDescriptor)(node, domRef, nodeDomRef, innerDeco, outerDeco, undefined, contentDomRef);
     if (Component) {
-        element = /*#__PURE__*/ _react.default.createElement(Component, _extends({}, props, {
+        element = /*#__PURE__*/ _react.default.createElement(Component, _extends({}, finalProps, {
             ref: nodeDomRef,
-            nodeProps: {
-                node: node,
-                pos: pos,
-                decorations: outerDeco,
-                innerDecorations: innerDeco,
-                isSelected: state.selection instanceof _prosemirrorState.NodeSelection && state.selection.node === node
-            }
+            nodeProps: nodeProps
         }), /*#__PURE__*/ _react.default.createElement(_childNodeViewsJs.ChildNodeViews, {
-            pos: pos,
+            getPos: getPos,
             node: node,
             innerDecorations: innerDeco
         }));
@@ -146,7 +159,7 @@ function NodeView(param) {
             customNodeViewRef.current = customNodeView(initialNode.current, // customNodeView will only be set if view is set, and we can only reach
             // this line if customNodeView is set
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            view, ()=>posRef.current, initialOuterDeco.current, initialInnerDeco.current);
+            view, ()=>getPos.current(), initialOuterDeco.current, initialInnerDeco.current);
         }
         const { contentDOM  } = customNodeViewRef.current;
         contentDomRef.current = contentDOM ?? null;
@@ -155,18 +168,17 @@ function NodeView(param) {
             contentEditable: !!contentDOM,
             suppressContentEditableWarning: true
         }, contentDOM && /*#__PURE__*/ (0, _reactDom.createPortal)(/*#__PURE__*/ _react.default.createElement(_childNodeViewsJs.ChildNodeViews, {
-            pos: pos,
+            getPos: getPos,
             node: node,
             innerDecorations: innerDeco
         }), contentDOM));
     } else {
-        const outputSpec = node.type.spec.toDOM?.(node);
         if (outputSpec) {
-            element = /*#__PURE__*/ _react.default.createElement(_outputSpecJs.OutputSpec, _extends({}, props, {
+            element = /*#__PURE__*/ _react.default.createElement(_outputSpecJs.OutputSpec, _extends({}, finalProps, {
                 ref: nodeDomRef,
                 outputSpec: outputSpec
             }), /*#__PURE__*/ _react.default.createElement(_childNodeViewsJs.ChildNodeViews, {
-                pos: pos,
+                getPos: getPos,
                 node: node,
                 innerDecorations: innerDeco
             }));
@@ -184,16 +196,26 @@ function NodeView(param) {
     // TODO: Should we only be wrapping non-inline elements? Inline elements have
     // already been wrapped in ChildNodeViews/InlineView?
     const markedElement = node.marks.reduce((element, mark)=>/*#__PURE__*/ _react.default.createElement(_markViewJs.MarkView, {
+            getPos: getPos,
             mark: mark
         }, element), decoratedElement);
-    return /*#__PURE__*/ _react.default.createElement(_stopEventContextJs.StopEventContext.Provider, {
+    const childContextValue = (0, _react.useMemo)(()=>({
+            parentRef: nodeViewDescRef,
+            siblingsRef: childDescriptors
+        }), [
+        childDescriptors,
+        nodeViewDescRef
+    ]);
+    return /*#__PURE__*/ _react.default.createElement(_selectNodeContextJs.SelectNodeContext.Provider, {
+        value: setSelectNode
+    }, /*#__PURE__*/ _react.default.createElement(_stopEventContextJs.StopEventContext.Provider, {
         value: setStopEvent
     }, /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
-        value: childDescriptors
+        value: childContextValue
     }, /*#__PURE__*/ (0, _react.cloneElement)(markedElement, node.marks.length || // eslint-disable-next-line @typescript-eslint/no-explicit-any
     outerDeco.some((d)=>d.type.attrs.nodeName) ? {
         ref: domRef
     } : // we've already passed the domRef to the NodeView component
     // as a prop
-    undefined)));
-}
+    undefined))));
+});

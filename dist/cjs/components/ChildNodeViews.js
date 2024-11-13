@@ -16,7 +16,6 @@ const _react = /*#__PURE__*/ _interopRequireWildcard(require("react"));
 const _childDescriptorsContextJs = require("../contexts/ChildDescriptorsContext.js");
 const _editorContextJs = require("../contexts/EditorContext.js");
 const _iterDecoJs = require("../decorations/iterDeco.js");
-const _useEditorStateJs = require("../hooks/useEditorState.js");
 const _useReactKeysJs = require("../hooks/useReactKeys.js");
 const _propsJs = require("../props.js");
 const _markViewJs = require("./MarkView.js");
@@ -76,11 +75,73 @@ function wrapInDeco(reactNode, deco) {
     }
     return /*#__PURE__*/ (0, _react.cloneElement)(reactNode, (0, _propsJs.mergeReactProps)(reactNode.props, props));
 }
-function InlineView(param) {
-    let { innerPos , childViews  } = param;
+function areChildrenEqual(a, b) {
+    return a.type === b.type && a.marks.every((mark)=>mark.isInSet(b.marks)) && b.marks.every((mark)=>mark.isInSet(a.marks)) && a.key === b.key && (a.type === "node" ? a.outerDeco?.length === b.outerDeco?.length && a.outerDeco?.every((prevDeco)=>b.outerDeco?.some((nextDeco)=>prevDeco.from === nextDeco.from && prevDeco.to && nextDeco.to && prevDeco.type.eq(nextDeco.type))) && a.innerDeco.eq(b.innerDeco) : true) && a.node === b.node && a.widget === b.widget;
+}
+const ChildView = /*#__PURE__*/ (0, _react.memo)(function ChildView(param) {
+    let { child , getInnerPos  } = param;
     const { view  } = (0, _react.useContext)(_editorContextJs.EditorContext);
-    const editorState = (0, _useEditorStateJs.useEditorState)();
-    const reactKeys = (0, _useReactKeysJs.useReactKeys)();
+    const getChildPos = (0, _react.useRef)(()=>getInnerPos.current() + child.offset);
+    getChildPos.current = ()=>getInnerPos.current() + child.offset;
+    return child.type === "widget" ? /*#__PURE__*/ _react.default.createElement(_widgetViewJs.WidgetView, {
+        key: child.key,
+        widget: child.widget,
+        getPos: getChildPos
+    }) : child.type === "native-widget" ? /*#__PURE__*/ _react.default.createElement(_nativeWidgetViewJs.NativeWidgetView, {
+        key: child.key,
+        widget: child.widget,
+        getPos: getChildPos
+    }) : child.node.isText ? /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Consumer, {
+        key: child.key
+    }, (param)=>/*#__PURE__*/ {
+        let { siblingsRef , parentRef  } = param;
+        return _react.default.createElement(_textNodeViewJs.TextNodeView, {
+            view: view,
+            node: child.node,
+            getPos: getChildPos,
+            siblingsRef: siblingsRef,
+            parentRef: parentRef,
+            decorations: child.outerDeco
+        });
+    }) : /*#__PURE__*/ _react.default.createElement(_nodeViewJs.NodeView, {
+        key: child.key,
+        node: child.node,
+        getPos: getChildPos,
+        outerDeco: child.outerDeco,
+        innerDeco: child.innerDeco
+    });
+});
+const InlinePartition = /*#__PURE__*/ (0, _react.memo)(function InlinePartition(param) {
+    let { childViews , getInnerPos  } = param;
+    const firstChild = childViews[0];
+    const getFirstChildPos = (0, _react.useRef)(()=>getInnerPos.current() + firstChild.offset);
+    getFirstChildPos.current = ()=>getInnerPos.current() + firstChild.offset;
+    const firstMark = firstChild.marks[0];
+    if (!firstMark) {
+        return /*#__PURE__*/ _react.default.createElement(_react.default.Fragment, null, childViews.map((child)=>{
+            return /*#__PURE__*/ _react.default.createElement(ChildView, {
+                key: child.key,
+                child: child,
+                getInnerPos: getInnerPos
+            });
+        }));
+    }
+    return /*#__PURE__*/ _react.default.createElement(_markViewJs.MarkView, {
+        getPos: getFirstChildPos,
+        key: firstChild.key,
+        mark: firstMark
+    }, /*#__PURE__*/ _react.default.createElement(InlineView, {
+        key: firstChild.key,
+        getInnerPos: getInnerPos,
+        childViews: childViews.map((child)=>({
+                ...child,
+                marks: child.marks.slice(1)
+            }))
+    }));
+});
+const InlineView = /*#__PURE__*/ (0, _react.memo)(function InlineView(param) {
+    let { getInnerPos , childViews  } = param;
+    // const editorState = useEditorState();
     const partitioned = childViews.reduce((acc, child)=>{
         const lastPartition = acc[acc.length - 1];
         if (!lastPartition) {
@@ -119,177 +180,188 @@ function InlineView(param) {
     return /*#__PURE__*/ _react.default.createElement(_react.default.Fragment, null, partitioned.map((childViews)=>{
         const firstChild = childViews[0];
         if (!firstChild) return null;
-        const firstMark = firstChild.marks[0];
-        if (!firstMark) {
-            return childViews.map((child)=>{
-                const childPos = innerPos + child.offset;
-                const childElement = child.type === "widget" ? /*#__PURE__*/ _react.default.createElement(_widgetViewJs.WidgetView, {
-                    widget: child.widget,
-                    pos: childPos
-                }) : child.type === "native-widget" ? /*#__PURE__*/ _react.default.createElement(_nativeWidgetViewJs.NativeWidgetView, {
-                    widget: child.widget,
-                    pos: childPos
-                }) : child.node.isText ? /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Consumer, null, (siblingDescriptors)=>/*#__PURE__*/ _react.default.createElement(_textNodeViewJs.TextNodeView, {
-                        view: view,
-                        node: child.node,
-                        pos: childPos,
-                        siblingDescriptors: siblingDescriptors,
-                        decorations: child.outerDeco
-                    })) : /*#__PURE__*/ _react.default.createElement(_nodeViewJs.NodeView, {
-                    node: child.node,
-                    pos: childPos,
-                    outerDeco: child.outerDeco,
-                    innerDeco: child.innerDeco
-                });
-                return /*#__PURE__*/ (0, _react.cloneElement)(childElement, {
-                    key: createKey(editorState.doc, innerPos, child, reactKeys?.posToKey)
-                });
-            });
-        }
-        return /*#__PURE__*/ _react.default.createElement(_markViewJs.MarkView, {
-            key: createKey(editorState?.doc, innerPos, firstChild, reactKeys?.posToKey),
-            mark: firstMark
-        }, /*#__PURE__*/ _react.default.createElement(InlineView, {
-            key: createKey(editorState?.doc, innerPos, firstChild, reactKeys?.posToKey),
-            innerPos: innerPos,
-            childViews: childViews.map((child)=>({
-                    ...child,
-                    marks: child.marks.slice(1)
-                }))
-        }));
+        return /*#__PURE__*/ _react.default.createElement(InlinePartition, {
+            key: firstChild.key,
+            childViews: childViews,
+            getInnerPos: getInnerPos
+        });
     }));
-}
-function createKey(doc, innerPos, child, posToKey) {
-    const pos = innerPos + child.offset;
+});
+function createKey(innerPos, offset, type, posToKey, widget, index) {
+    const pos = innerPos + offset;
     const key = posToKey?.get(pos);
-    if (child.type === "widget" || child.type === "native-widget") {
+    if (type === "widget" || type === "native-widget") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (child.widget.type.spec.key) // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return child.widget.type.spec.key;
+        if (widget.type.spec.key) // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return widget.type.spec.key;
         // eslint-disable-next-line no-console
-        console.warn(`Widget at position ${pos} doesn't have a key specified. This has negative performance implications.`);
-        return `${key}-${child.index}`;
+        console.warn(`Widget at position ${pos} doesn't have a key specified. This may cause issues.`);
+        return `${key}-${index}`;
     }
     if (key) return key;
-    if (!doc) return pos;
-    const parentPos = doc.resolve(pos).start() - 1;
+    // if (!doc) return pos;
+    const parentPos = innerPos - 1;
     const parentKey = posToKey?.get(parentPos);
-    if (parentKey) return `${parentKey}-${child.offset}`;
+    if (parentKey) return `${parentKey}-${offset}`;
     return pos;
 }
-function adjustWidgetMarksForward(children) {
-    const lastChild = children[children.length - 1];
-    if (lastChild?.type !== "widget" && lastChild?.type !== "native-widget" || // Using internal Decoration property, "type"
+function adjustWidgetMarksForward(lastNodeChild, widgetChild) {
+    if (!widgetChild || // Using internal Decoration property, "type"
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    lastChild.widget.type.side >= 0) return;
-    let lastNodeChild = null;
-    for(let i = children.length - 2; i >= 0; i--){
-        const child = children[i];
-        if (child?.type === "node") {
-            lastNodeChild = child;
-            break;
-        }
-    }
+    widgetChild.widget.type.side >= 0) return;
     if (!lastNodeChild || !lastNodeChild.node.isInline) return;
     const marksToSpread = lastNodeChild.marks;
-    lastChild.marks = lastChild.marks.reduce((acc, mark)=>mark.addToSet(acc), marksToSpread);
+    widgetChild.marks = widgetChild.marks.reduce((acc, mark)=>mark.addToSet(acc), marksToSpread);
 }
-function adjustWidgetMarksBack(children) {
-    const lastChild = children[children.length - 1];
-    if (lastChild?.type !== "node" || !lastChild.node.isInline) return;
-    const marksToSpread = lastChild.marks;
-    for(let i = children.length - 2; i >= 0; i--){
-        const child = children[i];
-        if (child?.type !== "widget" && child?.type !== "native-widget" || // Using internal Decoration property, "type"
+function adjustWidgetMarksBack(widgetChildren, nodeChild) {
+    if (!nodeChild.node.isInline) return;
+    const marksToSpread = nodeChild.marks;
+    for(let i = widgetChildren.length - 1; i >= 0; i--){
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const child = widgetChildren[i];
+        if (// Using internal Decoration property, "type"
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        child.widget.type.side < 0) break;
+        child.widget.type.side < 0) {
+            continue;
+        }
         child.marks = child.marks.reduce((acc, mark)=>mark.addToSet(acc), marksToSpread);
     }
 }
-function createChildElements(children, innerPos, doc, posToKey) {
+const ChildElement = /*#__PURE__*/ (0, _react.memo)(function ChildElement(param) {
+    let { child , getInnerPos  } = param;
+    const getNodePos = (0, _react.useRef)(()=>getInnerPos.current() + child.offset);
+    getNodePos.current = ()=>getInnerPos.current() + child.offset;
+    if (child.type === "node") {
+        return /*#__PURE__*/ _react.default.createElement(_nodeViewJs.NodeView, {
+            key: child.key,
+            outerDeco: child.outerDeco,
+            node: child.node,
+            innerDeco: child.innerDeco,
+            getPos: getNodePos
+        });
+    } else {
+        return /*#__PURE__*/ _react.default.createElement(InlineView, {
+            key: child.key,
+            childViews: [
+                child
+            ],
+            getInnerPos: getInnerPos
+        });
+    }
+});
+function createChildElements(children, getInnerPos) {
     if (!children.length) return [];
     if (children.every((child)=>child.type !== "node" || child.node.isInline)) {
         return [
             /*#__PURE__*/ _react.default.createElement(InlineView, {
-                key: createKey(doc, innerPos, // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                children[0], posToKey),
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                key: children[0].key,
                 childViews: children,
-                innerPos: innerPos
+                getInnerPos: getInnerPos
             })
         ];
     }
     return children.map((child)=>{
-        if (child.type === "node") {
-            const pos = innerPos + child.offset;
-            const key = posToKey?.get(pos) ?? pos;
-            return /*#__PURE__*/ _react.default.createElement(_nodeViewJs.NodeView, {
-                key: key,
-                outerDeco: child.outerDeco,
-                node: child.node,
-                innerDeco: child.innerDeco,
-                pos: pos
-            });
-        } else {
-            return /*#__PURE__*/ _react.default.createElement(InlineView, {
-                key: createKey(doc, innerPos, // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                child, posToKey),
-                childViews: [
-                    child
-                ],
-                innerPos: innerPos
-            });
-        }
+        return /*#__PURE__*/ _react.default.createElement(ChildElement, {
+            key: child.key,
+            child: child,
+            getInnerPos: getInnerPos
+        });
     });
 }
-function ChildNodeViews(param) {
-    let { pos , node , innerDecorations  } = param;
-    const editorState = (0, _useEditorStateJs.useEditorState)();
+const ChildNodeViews = /*#__PURE__*/ (0, _react.memo)(function ChildNodeViews(param) {
+    let { getPos , node , innerDecorations  } = param;
+    // const editorState = useEditorState();
     const reactKeys = (0, _useReactKeysJs.useReactKeys)();
+    const getInnerPos = (0, _react.useRef)(()=>getPos.current() + 1);
+    const childMap = (0, _react.useRef)(new Map()).current;
     if (!node) return null;
-    const innerPos = pos + 1;
-    const children = [];
+    const keysSeen = new Set();
+    let widgetChildren = [];
+    let lastNodeChild = null;
     (0, _iterDecoJs.iterDeco)(node, innerDecorations, (widget, isNative, offset, index)=>{
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const widgetMarks = widget.type.spec.marks ?? [];
+        let key;
         if (isNative) {
-            children.push({
+            key = createKey(getInnerPos.current(), offset, "native-widget", reactKeys?.posToKey, widget, index);
+            const child = {
                 type: "native-widget",
-                widget: widget,
+                widget,
                 marks: widgetMarks,
                 offset,
-                index
-            });
+                index,
+                key
+            };
+            const prevChild = childMap.get(key);
+            if (prevChild && areChildrenEqual(prevChild, child)) {
+                prevChild.offset = offset;
+            } else {
+                childMap.set(key, child);
+            }
+            keysSeen.add(key);
         } else {
-            children.push({
+            key = createKey(getInnerPos.current(), offset, "widget", reactKeys?.posToKey, widget, index);
+            const child = {
                 type: "widget",
                 widget: widget,
                 marks: widgetMarks,
                 offset,
-                index
-            });
+                index,
+                key
+            };
+            const prevChild = childMap.get(key);
+            if (prevChild && areChildrenEqual(prevChild, child)) {
+                prevChild.offset = offset;
+            } else {
+                childMap.set(key, child);
+            }
+            keysSeen.add(key);
         }
-        adjustWidgetMarksForward(children);
+        const child = childMap.get(key);
+        widgetChildren.push(child);
+        adjustWidgetMarksForward(lastNodeChild, childMap.get(key));
     }, (childNode, outerDeco, innerDeco, offset)=>{
-        children.push({
+        const key = createKey(getInnerPos.current(), offset, "node", reactKeys?.posToKey);
+        const child = {
             type: "node",
             node: childNode,
             marks: childNode.marks,
             innerDeco,
             outerDeco,
-            offset
-        });
-        adjustWidgetMarksBack(children);
+            offset,
+            key
+        };
+        const prevChild = childMap.get(key);
+        if (prevChild && areChildrenEqual(prevChild, child)) {
+            prevChild.offset = offset;
+            lastNodeChild = prevChild;
+        } else {
+            childMap.set(key, child);
+            lastNodeChild = child;
+        }
+        keysSeen.add(key);
+        adjustWidgetMarksBack(widgetChildren, lastNodeChild);
+        widgetChildren = [];
     });
-    const childElements = createChildElements(children, innerPos, editorState.doc, reactKeys?.posToKey);
+    for (const key of childMap.keys()){
+        if (!keysSeen.has(key)) {
+            childMap.delete(key);
+        }
+    }
+    const children = Array.from(childMap.values()).sort((a, b)=>a.offset - b.offset);
+    const childElements = createChildElements(children, getInnerPos);
     const lastChild = children[children.length - 1];
     if (!lastChild || lastChild.type !== "node" || lastChild.node.isInline && !lastChild.node.isText || // RegExp.test actually handles undefined just fine
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     /\n$/.test(lastChild.node.text)) {
         childElements.push(/*#__PURE__*/ _react.default.createElement(_separatorHackViewJs.SeparatorHackView, {
+            getPos: getInnerPos,
             key: "trailing-hack-img"
         }), /*#__PURE__*/ _react.default.createElement(_trailingHackViewJs.TrailingHackView, {
+            getPos: getInnerPos,
             key: "trailing-hack-br"
         }));
     }
     return /*#__PURE__*/ _react.default.createElement(_react.default.Fragment, null, childElements);
-}
+});

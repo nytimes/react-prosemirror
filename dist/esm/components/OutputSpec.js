@@ -1,6 +1,6 @@
-import React, { createElement, forwardRef } from "react";
+import React, { createElement, forwardRef, memo } from "react";
 import { htmlAttrsToReactProps, mergeReactProps } from "../props.js";
-const ForwardedOutputSpec = /*#__PURE__*/ forwardRef(function OutputSpec(param, ref) {
+const ForwardedOutputSpec = /*#__PURE__*/ memo(/*#__PURE__*/ forwardRef(function OutputSpec(param, ref) {
     let { outputSpec , children , ...propOverrides } = param;
     if (typeof outputSpec === "string") {
         return /*#__PURE__*/ React.createElement(React.Fragment, null, outputSpec);
@@ -30,10 +30,9 @@ const ForwardedOutputSpec = /*#__PURE__*/ forwardRef(function OutputSpec(param, 
             return /*#__PURE__*/ createElement(tagName, props, children);
         }
         content.push(/*#__PURE__*/ React.createElement(ForwardedOutputSpec, {
-            ref: undefined,
             outputSpec: child
         }, children));
     }
     return /*#__PURE__*/ createElement(tagName, props, ...content);
-});
+}));
 export { ForwardedOutputSpec as OutputSpec };

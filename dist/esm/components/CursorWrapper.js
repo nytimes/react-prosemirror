@@ -16,7 +16,7 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from "react"
 import { domIndex } from "../dom.js";
 import { useEditorEffect } from "../hooks/useEditorEffect.js";
 export const CursorWrapper = /*#__PURE__*/ forwardRef(function CursorWrapper(param, ref) {
-    let { widget , pos , ...props } = param;
+    let { widget , getPos , ...props } = param;
     const [shouldRender, setShouldRender] = useState(true);
     const innerRef = useRef(null);
     useImperativeHandle(ref, ()=>{

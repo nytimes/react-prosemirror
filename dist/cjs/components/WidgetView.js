@@ -49,19 +49,43 @@ function _interopRequireWildcard(obj, nodeInterop) {
     return newObj;
 }
 function WidgetView(param) {
-    let { widget , pos  } = param;
-    const siblingDescriptors = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
+    let { widget , getPos  } = param;
+    const { siblingsRef , parentRef  } = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
+    const viewDescRef = (0, _react.useRef)(null);
+    const getPosFunc = (0, _react.useRef)(()=>getPos.current()).current;
     const domRef = (0, _react.useRef)(null);
     (0, _react.useLayoutEffect)(()=>{
+        const siblings = siblingsRef.current;
+        return ()=>{
+            if (!viewDescRef.current) return;
+            if (siblings.includes(viewDescRef.current)) {
+                const index = siblings.indexOf(viewDescRef.current);
+                siblings.splice(index, 1);
+            }
+        };
+    }, [
+        siblingsRef
+    ]);
+    (0, _react.useLayoutEffect)(()=>{
         if (!domRef.current) return;
-        const desc = new _viewdescJs.WidgetViewDesc(undefined, widget, domRef.current);
-        siblingDescriptors.push(desc);
+        if (!viewDescRef.current) {
+            viewDescRef.current = new _viewdescJs.WidgetViewDesc(parentRef.current, ()=>getPos.current(), widget, domRef.current);
+        } else {
+            viewDescRef.current.parent = parentRef.current;
+            viewDescRef.current.widget = widget;
+            viewDescRef.current.getPos = ()=>getPos.current();
+            viewDescRef.current.dom = domRef.current;
+        }
+        if (!siblingsRef.current.includes(viewDescRef.current)) {
+            siblingsRef.current.push(viewDescRef.current);
+        }
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     });
     const { Component  } = widget.type;
     return Component && /*#__PURE__*/ _react.default.createElement(Component, {
         ref: domRef,
         widget: widget,
-        pos: pos,
+        getPos: getPosFunc,
         contentEditable: false
     });
 }

@@ -71,13 +71,22 @@ function _interopRequireWildcard(obj, nodeInterop) {
 const DocNodeViewContext = /*#__PURE__*/ (0, _react.createContext)(null);
 function ProseMirrorDoc(param, ref) {
     let { as , ...props } = param;
+    const childDescriptors = (0, _react.useRef)([]);
     const innerRef = (0, _react.useRef)(null);
     const { setMount , ...docProps } = (0, _react.useContext)(DocNodeViewContext);
+    const viewDescRef = (0, _react.useRef)(undefined);
     (0, _react.useImperativeHandle)(ref, ()=>{
         return innerRef.current;
     }, []);
+    const childContextValue = (0, _react.useMemo)(()=>({
+            parentRef: viewDescRef,
+            siblingsRef: childDescriptors
+        }), [
+        childDescriptors,
+        viewDescRef
+    ]);
     return /*#__PURE__*/ _react.default.createElement(_childDescriptorsContextJs.ChildDescriptorsContext.Provider, {
-        value: []
+        value: childContextValue
     }, /*#__PURE__*/ _react.default.createElement(_docNodeViewJs.DocNodeView, _extends({
         ref: (el)=>{
             innerRef.current = el;

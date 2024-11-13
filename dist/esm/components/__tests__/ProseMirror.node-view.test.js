@@ -12,11 +12,12 @@
     };
     return _extends.apply(this, arguments);
 }
-import { act, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { Plugin } from "prosemirror-state";
 import { blockquote, br, doc, p } from "prosemirror-test-builder";
 import { Decoration, DecorationSet } from "prosemirror-view";
 import React, { forwardRef, useEffect } from "react";
+import { useEditorState } from "../../hooks/useEditorState.js";
 import { useStopEvent } from "../../hooks/useStopEvent.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 describe("nodeViews prop", ()=>{
@@ -45,9 +46,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(view.dom.querySelector("p").textContent).toBe("FOO");
-        act(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(view.dom.querySelector("p").textContent).toBe("AFOO");
     });
     // React makes this more or less trivial; the render
@@ -110,9 +109,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         const para = view.dom.querySelector("p");
-        act(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(view.dom.querySelector("p")).toBe(para);
         expect(para.textContent).toBe("afoo");
     });
@@ -136,9 +133,7 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(destroyed).toBeFalsy();
-        act(()=>{
-            view.dispatch(view.state.tr.delete(3, 5));
-        });
+        view.dispatch(view.state.tr.delete(3, 5));
         expect(destroyed).toBeTruthy();
     });
     it("can query its own position", async ()=>{
@@ -146,18 +141,20 @@ describe("nodeViews prop", ()=>{
         const { view  } = tempEditor({
             doc: doc(blockquote(p("abc"), p("foo", br()))),
             nodeViews: {
-                hard_break: /*#__PURE__*/ forwardRef(function BR(props, ref) {
-                    pos = props.nodeProps.pos;
-                    return /*#__PURE__*/ React.createElement("br", {
+                hard_break: /*#__PURE__*/ forwardRef(function BR(param, ref) {
+                    let { nodeProps , children , ...props } = param;
+                    // trigger a re-render on every updated, otherwise we won't
+                    // re-render when an updated doesn't directly affect us
+                    useEditorState();
+                    pos = nodeProps.getPos();
+                    return /*#__PURE__*/ React.createElement("br", _extends({
                         ref: ref
-                    });
+                    }, props));
                 })
             }
         });
         expect(pos).toBe(10);
-        act(()=>{
-            view.dispatch(view.state.tr.insertText("a"));
-        });
+        view.dispatch(view.state.tr.insertText("a"));
         expect(pos).toBe(11);
     });
     it("has access to outer decorations", async ()=>{
@@ -195,13 +192,9 @@ describe("nodeViews prop", ()=>{
             }
         });
         expect(view.dom.querySelector("var").textContent).toBe("[]");
-        act(()=>{
-            view.dispatch(view.state.tr.setMeta("setDeco", "foo"));
-        });
+        view.dispatch(view.state.tr.setMeta("setDeco", "foo"));
         expect(view.dom.querySelector("var").textContent).toBe("foo");
-        act(()=>{
-            view.dispatch(view.state.tr.setMeta("setDeco", "bar"));
-        });
+        view.dispatch(view.state.tr.setMeta("setDeco", "bar"));
         expect(view.dom.querySelector("var").textContent).toBe("bar");
     });
     it("provides access to inner decorations in the constructor", async ()=>{

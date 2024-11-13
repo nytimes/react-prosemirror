@@ -9,6 +9,7 @@ Object.defineProperty(exports, "ProseMirror", {
 const _prosemirrorView = require("prosemirror-view");
 const _react = /*#__PURE__*/ _interopRequireWildcard(require("react"));
 const _editorContextJs = require("../contexts/EditorContext.js");
+const _editorStateContextJs = require("../contexts/EditorStateContext.js");
 const _nodeViewContextJs = require("../contexts/NodeViewContext.js");
 const _computeDocDecoJs = require("../decorations/computeDocDeco.js");
 const _viewDecorationsJs = require("../decorations/viewDecorations.js");
@@ -68,31 +69,44 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
+const EMPTY_OUTER_DECOS = [];
 function ProseMirrorInner(param) {
-    let { className , children , nodeViews ={} , customNodeViews , ...props } = param;
+    let { className , children , nodeViews , customNodeViews , ...props } = param;
     const [mount, setMount] = (0, _react.useState)(null);
-    const editor = (0, _useEditorJs.useEditor)(mount, {
+    const { editor , state  } = (0, _useEditorJs.useEditor)(mount, {
         ...props,
         nodeViews: customNodeViews
     });
     const innerDecos = editor.view ? (0, _viewDecorationsJs.viewDecorations)(editor.view, editor.cursorWrapper) : _prosemirrorView.DecorationSet.empty;
-    const outerDecos = editor.view ? (0, _computeDocDecoJs.computeDocDeco)(editor.view) : [];
-    return /*#__PURE__*/ _react.default.createElement(_editorContextJs.EditorContext.Provider, {
-        value: editor
-    }, /*#__PURE__*/ _react.default.createElement(_nodeViewContextJs.NodeViewContext.Provider, {
-        value: {
-            nodeViews
-        }
-    }, /*#__PURE__*/ _react.default.createElement(_proseMirrorDocJs.DocNodeViewContext.Provider, {
-        value: {
+    const outerDecos = editor.view ? (0, _computeDocDecoJs.computeDocDeco)(editor.view) : EMPTY_OUTER_DECOS;
+    const nodeViewContextValue = (0, _react.useMemo)(()=>({
+            nodeViews: nodeViews ?? {}
+        }), [
+        nodeViews
+    ]);
+    const docNodeViewContextValue = (0, _react.useMemo)(()=>({
             className: className,
             setMount: setMount,
             node: editor.view?.state.doc,
             innerDeco: innerDecos,
             outerDeco: outerDecos,
             viewDesc: editor.docViewDescRef.current
-        }
-    }, children)));
+        }), [
+        className,
+        editor.docViewDescRef,
+        editor.view?.state.doc,
+        innerDecos,
+        outerDecos
+    ]);
+    return /*#__PURE__*/ _react.default.createElement(_editorContextJs.EditorContext.Provider, {
+        value: editor
+    }, /*#__PURE__*/ _react.default.createElement(_editorStateContextJs.EditorStateContext.Provider, {
+        value: state
+    }, /*#__PURE__*/ _react.default.createElement(_nodeViewContextJs.NodeViewContext.Provider, {
+        value: nodeViewContextValue
+    }, /*#__PURE__*/ _react.default.createElement(_proseMirrorDocJs.DocNodeViewContext.Provider, {
+        value: docNodeViewContextValue
+    }, children))));
 }
 function ProseMirror(props) {
     return /*#__PURE__*/ _react.default.createElement(_layoutGroupJs.LayoutGroup, null, /*#__PURE__*/ _react.default.createElement(ProseMirrorInner, _extends({}, props)));

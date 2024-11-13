@@ -48,13 +48,36 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-function TrailingHackView() {
-    const siblingDescriptors = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
+function TrailingHackView(param) {
+    let { getPos  } = param;
+    const { siblingsRef , parentRef  } = (0, _react.useContext)(_childDescriptorsContextJs.ChildDescriptorsContext);
+    const viewDescRef = (0, _react.useRef)(null);
     const ref = (0, _react.useRef)(null);
     (0, _react.useLayoutEffect)(()=>{
+        const siblings = siblingsRef.current;
+        return ()=>{
+            if (!viewDescRef.current) return;
+            if (siblings.includes(viewDescRef.current)) {
+                const index = siblings.indexOf(viewDescRef.current);
+                siblings.splice(index, 1);
+            }
+        };
+    }, [
+        siblingsRef
+    ]);
+    (0, _react.useLayoutEffect)(()=>{
         if (!ref.current) return;
-        const desc = new _viewdescJs.TrailingHackViewDesc(undefined, [], ref.current, null);
-        siblingDescriptors.push(desc);
+        if (!viewDescRef.current) {
+            viewDescRef.current = new _viewdescJs.TrailingHackViewDesc(parentRef.current, [], ()=>getPos.current(), ref.current, null);
+        } else {
+            viewDescRef.current.parent = parentRef.current;
+            viewDescRef.current.dom = ref.current;
+            viewDescRef.current.getPos = ()=>getPos.current();
+        }
+        if (!siblingsRef.current.includes(viewDescRef.current)) {
+            siblingsRef.current.push(viewDescRef.current);
+        }
+        siblingsRef.current.sort(_viewdescJs.sortViewDescs);
     });
     return /*#__PURE__*/ _react.default.createElement("br", {
         ref: ref,

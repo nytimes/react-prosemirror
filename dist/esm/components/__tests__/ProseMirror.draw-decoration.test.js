@@ -27,7 +27,8 @@ import React, { forwardRef, useEffect } from "react";
 import { widget } from "../../decorations/ReactWidgetType.js";
 import { useEditorEffect } from "../../hooks/useEditorEffect.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
-const Widget = /*#__PURE__*/ forwardRef(function Widget(props, ref) {
+const Widget = /*#__PURE__*/ forwardRef(function Widget(param, ref) {
+    let { widget , getPos , ...props } = param;
     return /*#__PURE__*/ React.createElement("button", _extends({
         ref: ref
     }, props), "ω");
@@ -84,8 +85,8 @@ describe("Decoration drawing", ()=>{
             ]
         });
         const found = view.dom.querySelector(".foo");
-        expect(found).not.toBeNull();
-        expect(found.textContent).toBe("oob");
+        await expect(found).not.toBeNull();
+        await expect(found.textContent).toBe("oob");
     });
     it("draws wrapping decorations", async ()=>{
         const { view  } = tempEditor({
@@ -190,14 +191,16 @@ describe("Decoration drawing", ()=>{
             doc: doc(p("foobar")),
             plugins: [
                 decoPlugin([
-                    widget(4, /*#__PURE__*/ forwardRef(function B(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function B(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("span", _extends({
                             ref: ref
                         }, props), "B");
                     }), {
                         key: "widget-b"
                     }),
-                    widget(4, /*#__PURE__*/ forwardRef(function A(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function A(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("span", _extends({
                             ref: ref
                         }, props), "A");
@@ -205,7 +208,8 @@ describe("Decoration drawing", ()=>{
                         side: -100,
                         key: "widget-a"
                     }),
-                    widget(4, /*#__PURE__*/ forwardRef(function C(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function C(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("span", _extends({
                             ref: ref
                         }, props), "C");
@@ -256,7 +260,8 @@ describe("Decoration drawing", ()=>{
     });
     it("calls widget destroy methods", async ()=>{
         let destroyed = false;
-        const DestroyableWidget = /*#__PURE__*/ forwardRef(function DestroyableWidget(props, ref) {
+        const DestroyableWidget = /*#__PURE__*/ forwardRef(function DestroyableWidget(param, ref) {
+            let { widget , getPos , ...props } = param;
             useEffect(()=>{
                 destroyed = true;
             });
@@ -688,7 +693,8 @@ describe("Decoration drawing", ()=>{
             doc: doc(p("foobar")),
             plugins: [
                 decoPlugin([
-                    widget(4, /*#__PURE__*/ forwardRef(function Img(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -708,7 +714,8 @@ describe("Decoration drawing", ()=>{
             doc: doc(p(em("foo"), strong("bar"))),
             plugins: [
                 decoPlugin([
-                    widget(4, /*#__PURE__*/ forwardRef(function Img(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -718,7 +725,8 @@ describe("Decoration drawing", ()=>{
                     })
                 ]),
                 decoPlugin([
-                    widget(4, /*#__PURE__*/ forwardRef(function BR(props, ref) {
+                    widget(4, /*#__PURE__*/ forwardRef(function BR(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("br", _extends({}, props, {
                             ref: ref
                         }));
@@ -727,7 +735,8 @@ describe("Decoration drawing", ()=>{
                     })
                 ]),
                 decoPlugin([
-                    widget(7, /*#__PURE__*/ forwardRef(function Span(props, ref) {
+                    widget(7, /*#__PURE__*/ forwardRef(function Span(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("span", _extends({}, props, {
                             ref: ref
                         }));
@@ -757,7 +766,8 @@ describe("Decoration drawing", ()=>{
             },
             plugins: [
                 decoPlugin([
-                    widget(2, /*#__PURE__*/ forwardRef(function Img(props, ref) {
+                    widget(2, /*#__PURE__*/ forwardRef(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ React.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -774,7 +784,8 @@ describe("Decoration drawing", ()=>{
             doc: doc(p("hi")),
             decorations (state) {
                 return DecorationSet.create(state.doc, [
-                    widget(3, /*#__PURE__*/ forwardRef(function Span(props, ref) {
+                    widget(3, /*#__PURE__*/ forwardRef(function Span(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         useEditorEffect((view)=>{
                             expect(view.state).toBe(state);
                         });
@@ -795,8 +806,8 @@ describe("Decoration drawing", ()=>{
             decorations (state) {
                 return DecorationSet.create(state.doc, [
                     widget(3, /*#__PURE__*/ forwardRef(function Widget(param, ref) {
-                        let { pos , ...props } = param;
-                        expect(pos).toBe(3);
+                        let { widget , getPos , ...props } = param;
+                        expect(getPos()).toBe(3);
                         return /*#__PURE__*/ React.createElement("button", _extends({
                             ref: ref
                         }, props), "ω");

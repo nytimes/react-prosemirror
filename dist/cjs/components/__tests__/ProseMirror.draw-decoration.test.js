@@ -70,7 +70,8 @@ function _interopRequireWildcard(obj, nodeInterop) {
     }
     return newObj;
 }
-const Widget = /*#__PURE__*/ (0, _react.forwardRef)(function Widget(props, ref) {
+const Widget = /*#__PURE__*/ (0, _react.forwardRef)(function Widget(param, ref) {
+    let { widget , getPos , ...props } = param;
     return /*#__PURE__*/ _react.default.createElement("button", _extends({
         ref: ref
     }, props), "ω");
@@ -127,8 +128,8 @@ describe("Decoration drawing", ()=>{
             ]
         });
         const found = view.dom.querySelector(".foo");
-        expect(found).not.toBeNull();
-        expect(found.textContent).toBe("oob");
+        await expect(found).not.toBeNull();
+        await expect(found.textContent).toBe("oob");
     });
     it("draws wrapping decorations", async ()=>{
         const { view  } = (0, _editorViewTestHelpersJs.tempEditor)({
@@ -233,14 +234,16 @@ describe("Decoration drawing", ()=>{
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)("foobar")),
             plugins: [
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function B(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function B(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("span", _extends({
                             ref: ref
                         }, props), "B");
                     }), {
                         key: "widget-b"
                     }),
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function A(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function A(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("span", _extends({
                             ref: ref
                         }, props), "A");
@@ -248,7 +251,8 @@ describe("Decoration drawing", ()=>{
                         side: -100,
                         key: "widget-a"
                     }),
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function C(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function C(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("span", _extends({
                             ref: ref
                         }, props), "C");
@@ -299,7 +303,8 @@ describe("Decoration drawing", ()=>{
     });
     it("calls widget destroy methods", async ()=>{
         let destroyed = false;
-        const DestroyableWidget = /*#__PURE__*/ (0, _react.forwardRef)(function DestroyableWidget(props, ref) {
+        const DestroyableWidget = /*#__PURE__*/ (0, _react.forwardRef)(function DestroyableWidget(param, ref) {
+            let { widget , getPos , ...props } = param;
             (0, _react.useEffect)(()=>{
                 destroyed = true;
             });
@@ -731,7 +736,8 @@ describe("Decoration drawing", ()=>{
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)("foobar")),
             plugins: [
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function Img(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -751,7 +757,8 @@ describe("Decoration drawing", ()=>{
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)((0, _prosemirrorTestBuilder.em)("foo"), (0, _prosemirrorTestBuilder.strong)("bar"))),
             plugins: [
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function Img(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -761,7 +768,8 @@ describe("Decoration drawing", ()=>{
                     })
                 ]),
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function BR(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(4, /*#__PURE__*/ (0, _react.forwardRef)(function BR(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("br", _extends({}, props, {
                             ref: ref
                         }));
@@ -770,7 +778,8 @@ describe("Decoration drawing", ()=>{
                     })
                 ]),
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(7, /*#__PURE__*/ (0, _react.forwardRef)(function Span(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(7, /*#__PURE__*/ (0, _react.forwardRef)(function Span(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("span", _extends({}, props, {
                             ref: ref
                         }));
@@ -800,7 +809,8 @@ describe("Decoration drawing", ()=>{
             },
             plugins: [
                 decoPlugin([
-                    (0, _reactWidgetTypeJs.widget)(2, /*#__PURE__*/ (0, _react.forwardRef)(function Img(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(2, /*#__PURE__*/ (0, _react.forwardRef)(function Img(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         return /*#__PURE__*/ _react.default.createElement("img", _extends({}, props, {
                             ref: ref
                         }));
@@ -817,7 +827,8 @@ describe("Decoration drawing", ()=>{
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)("hi")),
             decorations (state) {
                 return _prosemirrorView.DecorationSet.create(state.doc, [
-                    (0, _reactWidgetTypeJs.widget)(3, /*#__PURE__*/ (0, _react.forwardRef)(function Span(props, ref) {
+                    (0, _reactWidgetTypeJs.widget)(3, /*#__PURE__*/ (0, _react.forwardRef)(function Span(param, ref) {
+                        let { widget , getPos , ...props } = param;
                         (0, _useEditorEffectJs.useEditorEffect)((view)=>{
                             expect(view.state).toBe(state);
                         });
@@ -838,8 +849,8 @@ describe("Decoration drawing", ()=>{
             decorations (state) {
                 return _prosemirrorView.DecorationSet.create(state.doc, [
                     (0, _reactWidgetTypeJs.widget)(3, /*#__PURE__*/ (0, _react.forwardRef)(function Widget(param, ref) {
-                        let { pos , ...props } = param;
-                        expect(pos).toBe(3);
+                        let { widget , getPos , ...props } = param;
+                        expect(getPos()).toBe(3);
                         return /*#__PURE__*/ _react.default.createElement("button", _extends({
                             ref: ref
                         }, props), "ω");

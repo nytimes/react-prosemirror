@@ -119,6 +119,7 @@ function insertAhead(array, i, deco) {
     while(i < array.length && byPos(deco, array[i]) > 0)i++;
     array.splice(i, 0, deco);
 }
+const ViewDecorationsCache = new WeakMap();
 function viewDecorations(view, cursorWrapper) {
     const found = [];
     view.someProp("decorations", (f)=>{
@@ -133,5 +134,27 @@ function viewDecorations(view, cursorWrapper) {
             cursorWrapper
         ]));
     }
-    return DecorationGroup.from(found);
+    const previous = ViewDecorationsCache.get(view);
+    if (!previous) {
+        const result = DecorationGroup.from(found);
+        ViewDecorationsCache.set(view, result);
+        return result;
+    }
+    let numPrevious = 0;
+    let areSetsEqual = true;
+    previous.forEachSet((set)=>{
+        const next = found[numPrevious++];
+        if (next !== set) {
+            areSetsEqual = false;
+        }
+    });
+    if (numPrevious !== found.length) {
+        areSetsEqual = false;
+    }
+    if (!areSetsEqual) {
+        const result = DecorationGroup.from(found);
+        ViewDecorationsCache.set(view, result);
+        return result;
+    }
+    return previous;
 }

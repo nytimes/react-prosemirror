@@ -6,9 +6,10 @@ Object.defineProperty(exports, "useReactKeys", {
     enumerable: true,
     get: ()=>useReactKeys
 });
+const _react = require("react");
+const _editorContextJs = require("../contexts/EditorContext.js");
 const _reactKeysJs = require("../plugins/reactKeys.js");
-const _useEditorStateJs = require("./useEditorState.js");
 function useReactKeys() {
-    const state = (0, _useEditorStateJs.useEditorState)();
-    return _reactKeysJs.reactKeysPluginKey.getState(state);
+    const { view  } = (0, _react.useContext)(_editorContextJs.EditorContext);
+    return view && _reactKeysJs.reactKeysPluginKey.getState(view.state);
 }

@@ -199,12 +199,10 @@ describe("EditorView draw", ()=>{
             doc: (0, _prosemirrorTestBuilder.doc)((0, _prosemirrorTestBuilder.p)()),
             editable: ()=>false
         });
-        rerender({});
         expect(view.dom.contentEditable).toBe("false");
         rerender({
             editable: ()=>true
         });
-        rerender({});
         expect(view.dom.contentEditable).toBe("true");
     });
     it("doesn't redraw following paragraphs when a paragraph is split", async ()=>{

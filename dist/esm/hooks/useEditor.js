@@ -27,6 +27,15 @@ function changedNodeViews(a, b) {
     for(const _ in b)nB++;
     return nA != nB;
 }
+function changedProps(a, b) {
+    for (const prop of Object.keys(a)){
+        if (a[prop] !== b[prop]) return true;
+    }
+    return false;
+}
+function getEditable(view) {
+    return !view.someProp("editable", (value)=>value(view.state) === false);
+}
 // @ts-expect-error We're making use of knowledge of internal methods here
 export class ReactEditorView extends EditorView {
     /**
@@ -60,15 +69,18 @@ export class ReactEditorView extends EditorView {
             ...props
         };
         this.state = this._props.state;
+        this.editable = getEditable(this);
     }
     /**
    * Triggers any side effects that have been queued by previous
    * calls to pureSetProps.
    */ runPendingEffects() {
-        const newProps = this.props;
-        this._props = this.oldProps;
-        this.state = this._props.state;
-        this.update(newProps);
+        if (changedProps(this.props, this.oldProps)) {
+            const newProps = this.props;
+            this._props = this.oldProps;
+            this.state = this._props.state;
+            this.update(newProps);
+        }
     }
     update(props) {
         super.update(props);
@@ -115,7 +127,7 @@ export class ReactEditorView extends EditorView {
         this.domObserver = new SelectionDOMObserver(this);
         // @ts-expect-error We're making use of knowledge of internal attributes here
         this.domObserver.start();
-        // updateCursorWrapper(this);
+        this.editable = getEditable(this);
         // Destroy the DOM created by the default
         // ProseMirror ViewDesc implementation; we
         // have a NodeViewDesc from React instead.
@@ -175,7 +187,7 @@ let didWarnValueDefaultValue = false;
         componentEventListenersPlugin,
         setCursorWrapper
     ]);
-    function dispatchTransaction(tr) {
+    const dispatchTransaction = useCallback(function dispatchTransaction(tr) {
         flushSync(()=>{
             if (!options.state) {
                 setState((s)=>s.apply(tr));
@@ -184,9 +196,14 @@ let didWarnValueDefaultValue = false;
                 options.dispatchTransaction.call(this, tr);
             }
         });
-    }
+    }, [
+        options.dispatchTransaction,
+        options.state
+    ]);
     const tempDom = document.createElement("div");
-    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false));
+    const docViewDescRef = useRef(new NodeViewDesc(undefined, [], ()=>-1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false, ()=>{
+    /* The doc node can't have a node selection*/ }, ()=>{
+    /* The doc node can't have a node selection*/ }));
     const directEditorProps = {
         ...options,
         state,
@@ -240,18 +257,20 @@ let didWarnValueDefaultValue = false;
         }
     });
     view?.pureSetProps(directEditorProps);
-    return useMemo(()=>({
+    const editor = useMemo(()=>({
             view: view,
-            state: state,
             registerEventListener,
             unregisterEventListener,
             cursorWrapper,
             docViewDescRef
         }), [
         view,
-        state,
         registerEventListener,
         unregisterEventListener,
         cursorWrapper
     ]);
+    return {
+        editor,
+        state
+    };
 }

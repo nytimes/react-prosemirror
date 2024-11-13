@@ -1,6 +1,7 @@
+import { useContext } from "react";
+import { EditorContext } from "../contexts/EditorContext.js";
 import { reactKeysPluginKey } from "../plugins/reactKeys.js";
-import { useEditorState } from "./useEditorState.js";
 export function useReactKeys() {
-    const state = useEditorState();
-    return reactKeysPluginKey.getState(state);
+    const { view  } = useContext(EditorContext);
+    return view && reactKeysPluginKey.getState(view.state);
 }

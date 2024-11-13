@@ -12,12 +12,13 @@
     };
     return _extends.apply(this, arguments);
 }
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
 import { EditorState, Plugin } from "prosemirror-state";
 import { doc, em, hr, li, p, schema, strong, ul } from "prosemirror-test-builder";
 import React, { forwardRef, useEffect, useState } from "react";
 import { useEditorEffect } from "../../hooks/useEditorEffect.js";
+import { useStopEvent } from "../../hooks/useStopEvent.js";
 import { reactKeys } from "../../plugins/reactKeys.js";
 import { tempEditor } from "../../testing/editorViewTestHelpers.js";
 import { ProseMirror } from "../ProseMirror.js";
@@ -81,7 +82,7 @@ describe("ProseMirror", ()=>{
             ]);
             return /*#__PURE__*/ React.createElement(ProseMirror, {
                 state: editorState,
-                dispatchTransaction: (tr)=>act(()=>setEditorState(editorState.apply(tr)))
+                dispatchTransaction: (tr)=>setEditorState(editorState.apply(tr))
             }, /*#__PURE__*/ React.createElement(ProseMirrorDoc, {
                 "data-testid": "editor"
             }));
@@ -313,5 +314,26 @@ describe("ProseMirror", ()=>{
         expect(firstView).not.toBeNull();
         expect(secondView).not.toBeNull();
         expect(firstView === secondView).toBeFalsy();
+    });
+    it("supports focusing interactive controls", async ()=>{
+        tempEditor({
+            doc: doc(hr()),
+            nodeViews: {
+                horizontal_rule: /*#__PURE__*/ forwardRef(function Button(param, ref) {
+                    let { nodeProps , ...props } = param;
+                    useStopEvent(()=>{
+                        return true;
+                    });
+                    return /*#__PURE__*/ React.createElement("button", _extends({
+                        id: "button",
+                        ref: ref,
+                        type: "button"
+                    }, props), "Click me");
+                })
+            }
+        });
+        const button = screen.getByText("Click me");
+        await $("#button").click();
+        expect(document.activeElement === button).toBeTruthy();
     });
 });

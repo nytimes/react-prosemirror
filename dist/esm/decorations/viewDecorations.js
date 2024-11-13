@@ -111,7 +111,18 @@ function insertAhead(array, i, deco) {
     while(i < array.length && byPos(deco, array[i]) > 0)i++;
     array.splice(i, 0, deco);
 }
-export function viewDecorations(view, cursorWrapper) {
+const ViewDecorationsCache = new WeakMap();
+/**
+ * Produces the DecorationSource for the current state, based
+ * on the decorations editor prop.
+ *
+ * The return value of this function is memoized; if it is to
+ * return an equivalent value to the last time it was called for
+ * a given EditorView, it will return exactly that previous value.
+ *
+ * This makes it safe to call in a React render function, even
+ * if its result is used in a dependencies array for a hook.
+ */ export function viewDecorations(view, cursorWrapper) {
     const found = [];
     view.someProp("decorations", (f)=>{
         const result = f(view.state);
@@ -125,5 +136,27 @@ export function viewDecorations(view, cursorWrapper) {
             cursorWrapper
         ]));
     }
-    return DecorationGroup.from(found);
+    const previous = ViewDecorationsCache.get(view);
+    if (!previous) {
+        const result = DecorationGroup.from(found);
+        ViewDecorationsCache.set(view, result);
+        return result;
+    }
+    let numPrevious = 0;
+    let areSetsEqual = true;
+    previous.forEachSet((set)=>{
+        const next = found[numPrevious++];
+        if (next !== set) {
+            areSetsEqual = false;
+        }
+    });
+    if (numPrevious !== found.length) {
+        areSetsEqual = false;
+    }
+    if (!areSetsEqual) {
+        const result = DecorationGroup.from(found);
+        ViewDecorationsCache.set(view, result);
+        return result;
+    }
+    return previous;
 }

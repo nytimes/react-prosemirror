@@ -7,8 +7,8 @@ Object.defineProperty(exports, "useEditorState", {
     get: ()=>useEditorState
 });
 const _react = require("react");
-const _editorContextJs = require("../contexts/EditorContext.js");
+const _editorStateContextJs = require("../contexts/EditorStateContext.js");
 function useEditorState() {
-    const { state: editorState  } = (0, _react.useContext)(_editorContextJs.EditorContext);
+    const editorState = (0, _react.useContext)(_editorStateContextJs.EditorStateContext);
     return editorState;
 }

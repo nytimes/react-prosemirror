@@ -15,7 +15,7 @@ _export(exports, {
 });
 const _prosemirrorState = require("prosemirror-state");
 function createNodeKey() {
-    const key = Math.floor(Math.random() * 0xffffff).toString(16);
+    const key = Math.floor(Math.random() * 0xffffffffffff).toString(16);
     return key;
 }
 const reactKeysPluginKey = new _prosemirrorState.PluginKey("@nytimes/react-prosemirror/reactKeys");
@@ -38,11 +38,12 @@ function reactKeys() {
                 return next;
             },
             /**
-       * Keeps node keys (mostly) stable across transactions.
+       * Keeps node keys stable across transactions.
        *
-       * To accomplish this, we map each node position backwards
-       * through the transaction to identify its previous position,
-       * and thereby retrieve its previous key.
+       * To accomplish this, we map each node position forwards
+       * through the transaction to identify its current position,
+       * and assign its key to that new position, dropping it if the
+       * node was deleted.
        */ apply (tr, value, _, newState) {
                 if (!tr.docChanged || composing) return value;
                 const meta = tr.getMeta(reactKeysPluginKey);
