@@ -153,30 +153,30 @@ we can use `useEditorEffect`.
 
 ```tsx
 // SelectionWidget.tsx
-import { useRef } from "react"
-import { useEditorEffect } from "@nytimes/react-prosemirror"
+import { useRef } from "react";
+import { useEditorEffect } from "@nytimes/react-prosemirror";
 
 export function SelectionWidget() {
-  const ref = useRef()
+  const ref = useRef();
 
   useEditorEffect((view) => {
-    if (!ref.current) return
+    if (!ref.current) return;
 
-    const viewClientRect = view.dom.getBoundingClientRect()
-    const coords = view.coordsAtPos(view.state.selection.anchor)
+    const viewClientRect = view.dom.getBoundingClientRect();
+    const coords = view.coordsAtPos(view.state.selection.anchor);
 
     ref.current.style.top = coords.top - viewClientRect.top;
     ref.current.style.left = coords.left - viewClientRect.left;
-  })
+  });
 
   return (
     <div
       ref={ref}
       style={{
-        position: "absolute"
+        position: "absolute",
       }}
     />
-  )
+  );
 }
 
 // ProseMirrorEditor.tsx
@@ -187,14 +187,14 @@ import { SelectionWidget } from "./SelectionWidget.tsx";
 
 export function ProseMirrorEditor() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
-  const [state, setState] = useState(() => EditorState.create({ schema }))
+  const [state, setState] = useState(() => EditorState.create({ schema }));
 
   return (
     <ProseMirror
       mount={mount}
       state={state}
       dispatchTransaction={(tr) => {
-        setState(s => s.apply(tr))
+        setState((s) => s.apply(tr));
       }}
     >
       {/*
@@ -204,7 +204,7 @@ export function ProseMirrorEditor() {
       <SelectionWidget />
       <div ref={setMount} />
     </ProseMirror>
-  )
+  );
 }
 ```
 
@@ -473,30 +473,30 @@ EditorView lives in an ancestor component.
 Example usage:
 
 ```tsx
-import { useRef } from "react"
-import { useEditorEffect } from "@nytimes/react-prosemirror"
+import { useRef } from "react";
+import { useEditorEffect } from "@nytimes/react-prosemirror";
 
 export function SelectionWidget() {
-  const ref = useRef()
+  const ref = useRef();
 
   useEditorEffect((view) => {
-    if (!ref.current) return
+    if (!ref.current) return;
 
-    const viewClientRect = view.dom.getBoundingClientRect()
-    const coords = view.coordsAtPos(view.state.selection.anchor)
+    const viewClientRect = view.dom.getBoundingClientRect();
+    const coords = view.coordsAtPos(view.state.selection.anchor);
 
     ref.current.style.top = coords.top - viewClientRect.top;
     ref.current.style.left = coords.left - viewClientRect.left;
-  })
+  });
 
   return (
     <div
       ref={ref}
       style={{
-        position: "absolute"
+        position: "absolute",
       }}
     />
-  )
+  );
 }
 ```
 
