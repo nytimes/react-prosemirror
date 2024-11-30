@@ -163,7 +163,7 @@ export function SelectionWidget() {
     if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
-    const coords = view.coordsAtPos(view.state.selection.anchor))
+    const coords = view.coordsAtPos(view.state.selection.anchor)
 
     ref.current.style.top = coords.top - viewClientRect.top;
     ref.current.style.left = coords.left - viewClientRect.left;
@@ -483,7 +483,7 @@ export function SelectionWidget() {
     if (!ref.current) return
 
     const viewClientRect = view.dom.getBoundingClientRect()
-    const coords = view.coordsAtPos(view.state.selection.anchor))
+    const coords = view.coordsAtPos(view.state.selection.anchor)
 
     ref.current.style.top = coords.top - viewClientRect.top;
     ref.current.style.left = coords.left - viewClientRect.left;
