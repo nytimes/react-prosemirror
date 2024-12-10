@@ -31,7 +31,8 @@ export function useEditorEventListener<EventType extends keyof DOMEventMap>(
     event: DOMEventMap[EventType]
   ) {
     return ref.current.call(this, view, event);
-  }, []);
+  },
+  []);
 
   useEditorEffect(() => {
     registerEventListener(eventType, eventHandler);

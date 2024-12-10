@@ -1,19 +1,21 @@
 import type { DOMEventMap } from "prosemirror-view";
 import { useCallback, useMemo, useState } from "react";
 
-import { componentEventListeners } from "../plugins/componentEventListeners.js";
-import type { EventHandler } from "../plugins/componentEventListeners.js";
+import {
+  EventHandler,
+  componentEventListeners,
+} from "../plugins/componentEventListeners.js";
 
 /**
  * Produces a plugin that can be used with ProseMirror to handle DOM
  * events at the EditorView.dom element.
  *
- * - `componentEventListenersPlugin` is a ProseMirror plugin for handling DOM events
+ * - `reactEventsPlugin` is a ProseMirror plugin for handling DOM events
  * at the EditorView.dom element. It should be passed to `useEditorView`,
  * along with any other plugins.
  *
  * - `registerEventListener` and `unregisterEventListener` should be
- * passed to `EditorProvider`.
+ * passed to `EditorContext.Provider`.
  *
  * @privateRemarks
  *

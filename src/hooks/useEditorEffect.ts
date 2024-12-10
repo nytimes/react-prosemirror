@@ -3,7 +3,8 @@ import { useContext } from "react";
 import type { DependencyList } from "react";
 
 import { EditorContext } from "../contexts/EditorContext.js";
-import { useLayoutGroupEffect } from "../hooks/useLayoutGroupEffect.js";
+
+import { useLayoutGroupEffect } from "./useLayoutGroupEffect.js";
 
 /**
  * Registers a layout effect to run after the EditorView has
@@ -23,7 +24,7 @@ export function useEditorEffect(
   effect: (editorView: EditorView) => void | (() => void),
   dependencies?: DependencyList
 ) {
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
 
   // The rules of hooks want `effect` to be included in the
   // dependency list, but dependency issues for `effect` will
@@ -34,14 +35,14 @@ export function useEditorEffect(
   // be defined inline and run on every re-render.
   useLayoutGroupEffect(
     () => {
-      if (editorView) {
-        return effect(editorView);
+      if (view) {
+        return effect(view);
       }
     },
     // The rules of hooks want to be able to statically
     // verify the dependencies for the effect, but this will
     // have already happened at the call-site.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    dependencies && [editorView, ...dependencies]
+    dependencies && [view, ...dependencies]
   );
 }

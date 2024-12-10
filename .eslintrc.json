@@ -16,28 +16,24 @@
     "node": false
   },
   "rules": {
-    "@typescript-eslint/consistent-type-imports": "error",
     "no-console": ["error", { "allow": ["error"] }],
-    "no-inner-declarations": "off",
-    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-    "import/extensions": ["error", "ignorePackages"],
-    "import/no-duplicates": ["error"],
-    "import/no-unresolved": "off", // Typescript does this better!
-    "import/order": [
-      "error",
-      {
-        "alphabetize": {
-          "order": "asc",
-          "orderImportKind": "desc"
-        },
-        "newlines-between": "always",
-        "warnOnUnassignedImports": true
-      }
-    ],
+    "react/prop-types": "off",
     "react-hooks/exhaustive-deps": [
       "warn",
       {
         "additionalHooks": "(useEditorEffect|useLayoutGroupEffect$)"
+      }
+    ],
+    "import/extensions": ["error", "ignorePackages"],
+    "import/order": [
+      "error",
+      {
+        "alphabetize": {
+          "order": "asc"
+        },
+        "groups": ["builtin", "external", "parent", "sibling", "index"],
+        "newlines-between": "always",
+        "warnOnUnassignedImports": true
       }
     ],
     "sort-imports": [
@@ -46,11 +42,14 @@
         "allowSeparatedGroups": true,
         "ignoreDeclarationSort": true
       }
-    ]
+    ],
+    "no-inner-declarations": "off",
+    "import/no-unresolved": "off", // Typescript does this better!
+    "@typescript-eslint/no-unused-vars": "off" // Let the TS compiler do this, too
   },
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx"],
-    "import/external-module-folders": [".yarn"],
+    "import/external-module-folders": ["node_modules"],
     "import/parsers": {
       "@typescript-eslint/parser": [".ts", ".tsx"]
     },

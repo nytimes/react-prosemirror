@@ -14,7 +14,7 @@ import { useEditorEffect } from "./useEditorEffect.js";
  *
  * This hook is dependent on both the
  * `EditorViewContext.Provider` and the
- * `LayoutGroup` provider. It can only be used in a
+ * `DeferredLayoutEffectProvider`. It can only be used in a
  * component that is mounted as a child of both of these
  * providers.
  */
@@ -22,7 +22,7 @@ export function useEditorEventCallback<T extends unknown[], R>(
   callback: (view: EditorView, ...args: T) => R
 ) {
   const ref = useRef(callback);
-  const { editorView } = useContext(EditorContext);
+  const { view } = useContext(EditorContext);
 
   useEditorEffect(() => {
     ref.current = callback;
@@ -30,11 +30,11 @@ export function useEditorEventCallback<T extends unknown[], R>(
 
   return useCallback(
     (...args: T) => {
-      if (editorView) {
-        return ref.current(editorView, ...args);
+      if (view) {
+        return ref.current(view, ...args);
       }
       return;
     },
-    [editorView]
+    [view]
   );
 }

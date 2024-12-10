@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-
 import { render } from "@testing-library/react";
 import type { EditorState } from "prosemirror-state";
 import type { EditorView } from "prosemirror-view";
@@ -7,6 +6,7 @@ import React from "react";
 
 import { LayoutGroup } from "../../components/LayoutGroup.js";
 import { EditorContext } from "../../contexts/EditorContext.js";
+import { EditorStateContext } from "../../contexts/EditorStateContext.js";
 import { useEditorEffect } from "../useEditorEffect.js";
 
 function TestComponent({
@@ -16,7 +16,8 @@ function TestComponent({
   effect: () => void;
   dependencies?: unknown[];
 }) {
-  useEditorEffect(effect, [effect, ...dependencies]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEditorEffect(effect, dependencies);
   return null;
 }
 
@@ -32,13 +33,14 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -54,32 +56,28 @@ describe("useEditorViewLayoutEffect", () => {
     const registerEventListener = () => {};
     const unregisterEventListener = () => {};
 
+    const contextValue = {
+      view: editorView,
+      registerEventListener,
+      unregisterEventListener,
+    };
+
     const { rerender } = render(
       <LayoutGroup>
-        <EditorContext.Provider
-          value={{
-            editorView,
-            editorState,
-            registerEventListener,
-            unregisterEventListener,
-          }}
-        >
-          <TestComponent effect={effect} dependencies={[]} />
+        <EditorContext.Provider value={contextValue}>
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={[]} />
+          </EditorStateContext.Provider>{" "}
         </EditorContext.Provider>
       </LayoutGroup>
     );
 
     rerender(
       <LayoutGroup>
-        <EditorContext.Provider
-          value={{
-            editorView,
-            editorState,
-            registerEventListener,
-            unregisterEventListener,
-          }}
-        >
-          <TestComponent effect={effect} dependencies={[]} />
+        <EditorContext.Provider value={contextValue}>
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={[]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -98,13 +96,14 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={["one"]} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={["one"]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );
@@ -113,13 +112,14 @@ describe("useEditorViewLayoutEffect", () => {
       <LayoutGroup>
         <EditorContext.Provider
           value={{
-            editorView,
-            editorState,
+            view: editorView,
             registerEventListener,
             unregisterEventListener,
           }}
         >
-          <TestComponent effect={effect} dependencies={["two"]} />
+          <EditorStateContext.Provider value={editorState}>
+            <TestComponent effect={effect} dependencies={["two"]} />
+          </EditorStateContext.Provider>
         </EditorContext.Provider>
       </LayoutGroup>
     );

@@ -17,4 +17,4 @@ if (existsSync(absPnpApiPath)) {
 }
 
 // Defer to the real prettier/index.js your application uses
-module.exports = absRequire(`prettier/index.cjs`);
+module.exports = absRequire(`prettier/index.js`);
