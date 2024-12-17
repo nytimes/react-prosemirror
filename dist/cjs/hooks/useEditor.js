@@ -23,6 +23,7 @@ const _react = require("react");
 const _reactdom = require("react-dom");
 const _beforeInputPlugin = require("../plugins/beforeInputPlugin.js");
 const _SelectionDOMObserver = require("../selection/SelectionDOMObserver.js");
+const _ssr = require("../ssr.js");
 const _viewdesc = require("../viewdesc.js");
 const _useComponentEventListeners = require("./useComponentEventListeners.js");
 const _useForceUpdate = require("./useForceUpdate.js");
@@ -62,15 +63,7 @@ let ReactEditorView = class ReactEditorView extends _prosemirrorview.EditorView 
         // Call the superclass constructor with an empty
         // document and limited props. We'll set everything
         // else ourselves.
-        const prevWindow = globalThis.window;
-        // @ts-expect-error HACK - EditorView checks for window.MutationObserver
-        // in its constructor, which breaks SSR. We temporarily set window
-        // to an empty object to prevent an error from being thrown, and then
-        // clean it up so that other isomorphic code doesn't get confused about
-        // whether there's a functioning global window object
-        globalThis.window ??= {
-            visualViewport: null
-        };
+        const cleanup = (0, _ssr.setSsrStubs)();
         super(place, {
             state: _prosemirrorstate.EditorState.create({
                 schema: props.state.schema,
@@ -78,9 +71,7 @@ let ReactEditorView = class ReactEditorView extends _prosemirrorview.EditorView 
             }),
             plugins: props.plugins
         });
-        if (globalThis.window !== prevWindow) {
-            globalThis.window = prevWindow;
-        }
+        cleanup();
         this.shouldUpdatePluginViews = true;
         this._props = props;
         this.oldProps = {
