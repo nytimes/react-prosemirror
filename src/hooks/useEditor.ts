@@ -281,7 +281,9 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     [options.dispatchTransaction, options.state]
   );
 
+  const cleanup = setSsrStubs();
   const tempDom = document.createElement("div");
+  cleanup();
 
   const docViewDescRef = useRef<NodeViewDesc>(
     new NodeViewDesc(
