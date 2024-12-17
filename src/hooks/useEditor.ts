@@ -87,7 +87,9 @@ export class ReactEditorView extends EditorView {
       }),
       plugins: props.plugins,
     });
-    globalThis.window = prevWindow;
+    if (globalThis.window !== prevWindow) {
+      globalThis.window = prevWindow;
+    }
 
     this.shouldUpdatePluginViews = true;
 
