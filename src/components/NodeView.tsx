@@ -9,14 +9,12 @@ import React, {
   MutableRefObject,
   RefAttributes,
   cloneElement,
-  createElement,
   memo,
   useContext,
   useLayoutEffect,
   useMemo,
   useRef,
 } from "react";
-import { createPortal } from "react-dom";
 
 import { ChildDescriptorsContext } from "../contexts/ChildDescriptorsContext.js";
 import { EditorContext } from "../contexts/EditorContext.js";
@@ -26,6 +24,7 @@ import { StopEventContext } from "../contexts/StopEventContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
+import { CustomNodeView } from "./CustomNodeView.js";
 import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
@@ -168,36 +167,19 @@ export const NodeView = memo(function NodeView({
       </Component>
     );
   } else if (customNodeView) {
-    if (!customNodeViewRef.current) {
-      customNodeViewRef.current = customNodeView(
-        initialNode.current,
-        // customNodeView will only be set if view is set, and we can only reach
-        // this line if customNodeView is set
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        view!,
-        () => getPos.current(),
-        initialOuterDeco.current,
-        initialInnerDeco.current
-      );
-    }
-    const { contentDOM } = customNodeViewRef.current;
-    contentDomRef.current = contentDOM ?? null;
-    element = createElement(
-      node.isInline ? "span" : "div",
-      {
-        ref: customNodeViewRootRef,
-        contentEditable: !!contentDOM,
-        suppressContentEditableWarning: true,
-      },
-      contentDOM &&
-        createPortal(
-          <ChildNodeViews
-            getPos={getPos}
-            node={node}
-            innerDecorations={innerDeco}
-          />,
-          contentDOM
-        )
+    element = (
+      <CustomNodeView
+        contentDomRef={contentDomRef}
+        customNodeView={customNodeView}
+        customNodeViewRef={customNodeViewRef}
+        customNodeViewRootRef={customNodeViewRootRef}
+        initialInnerDeco={initialInnerDeco}
+        initialNode={initialNode}
+        initialOuterDeco={initialOuterDeco}
+        node={node}
+        getPos={getPos}
+        innerDeco={innerDeco}
+      />
     );
   } else {
     if (outputSpec) {
