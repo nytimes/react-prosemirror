@@ -4,7 +4,7 @@ import { screen } from "@testing-library/react";
 import { Plugin } from "prosemirror-state";
 import { blockquote, br, doc, p } from "prosemirror-test-builder";
 import { Decoration, DecorationSet } from "prosemirror-view";
-import React, { LegacyRef, forwardRef, useEffect } from "react";
+import React, { forwardRef, useEffect } from "react";
 
 import { useEditorState } from "../../hooks/useEditorState.js";
 import { useStopEvent } from "../../hooks/useStopEvent.js";
@@ -31,16 +31,13 @@ describe("nodeViews prop", () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>}>
-              {props.nodeProps.node.textContent.toUpperCase()}
-            </p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(props, ref) {
+            return (
+              <p ref={ref}>{props.nodeProps.node.textContent.toUpperCase()}</p>
+            );
+          }
+        ),
       },
     });
     expect(view.dom.querySelector("p")!.textContent).toBe("FOO");
@@ -56,16 +53,13 @@ describe("nodeViews prop", () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>}>
-              {props.nodeProps.node.textContent.toUpperCase()}
-            </p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(props, ref) {
+            return (
+              <p ref={ref}>{props.nodeProps.node.textContent.toUpperCase()}</p>
+            );
+          }
+        ),
       },
     });
     const para = view.dom.querySelector("p")!;
@@ -78,16 +72,15 @@ describe("nodeViews prop", () => {
     const { view, rerender } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          { children, nodeProps, ...props }: NodeViewComponentProps,
-          ref
-        ) {
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>} {...props}>
-              {children}
-            </p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph({ children, nodeProps, ...props }, ref) {
+            return (
+              <p ref={ref} {...props}>
+                {children}
+              </p>
+            );
+          }
+        ),
       },
     });
 
@@ -108,15 +101,14 @@ describe("nodeViews prop", () => {
     const { view } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          return (
-            // ContentDOM is inferred from where props.children is rendered
-            <p ref={ref as LegacyRef<HTMLParagraphElement>}>{props.children}</p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(props, ref) {
+            return (
+              // ContentDOM is inferred from where props.children is rendered
+              <p ref={ref}>{props.children}</p>
+            );
+          }
+        ),
       },
     });
     const para = view.dom.querySelector("p")!;
@@ -126,28 +118,30 @@ describe("nodeViews prop", () => {
   });
 
   it("has its destroy method called", async () => {
-    let destroyed = false;
+    let destroyed = 0;
     const { view } = tempEditor({
       doc: doc(p("foo", br())),
       nodeViews: {
-        hard_break: forwardRef(function BR(
-          _props: NodeViewComponentProps,
-          ref
-        ) {
-          // React implements "destroy methods" with effect
-          // hooks
-          useEffect(() => {
-            return () => {
-              destroyed = true;
-            };
-          }, []);
-          return <br ref={ref as LegacyRef<HTMLBRElement>} />;
-        }),
+        hard_break: forwardRef<HTMLBRElement, NodeViewComponentProps>(
+          function BR(_props, ref) {
+            // React implements "destroy methods" with effect
+            // hooks
+            useEffect(() => {
+              return () => {
+                destroyed++;
+              };
+            }, []);
+            return <br ref={ref} />;
+          }
+        ),
       },
     });
-    expect(destroyed).toBeFalsy();
+    // TODO: This gets destroyed once essentially
+    // immediately, due to the dummy EditorView that
+    // we create and then immediately destroy for SSR
+    expect(destroyed).toBe(1);
     view.dispatch(view.state.tr.delete(3, 5));
-    expect(destroyed).toBeTruthy();
+    expect(destroyed).toBe(2);
   });
 
   it("can query its own position", async () => {
@@ -155,16 +149,15 @@ describe("nodeViews prop", () => {
     const { view } = tempEditor({
       doc: doc(blockquote(p("abc"), p("foo", br()))),
       nodeViews: {
-        hard_break: forwardRef(function BR(
-          { nodeProps, children, ...props }: NodeViewComponentProps,
-          ref
-        ) {
-          // trigger a re-render on every updated, otherwise we won't
-          // re-render when an updated doesn't directly affect us
-          useEditorState();
-          pos = nodeProps.getPos();
-          return <br ref={ref as LegacyRef<HTMLBRElement>} {...props} />;
-        }),
+        hard_break: forwardRef<HTMLBRElement, NodeViewComponentProps>(
+          function BR({ nodeProps, children, ...props }, ref) {
+            // trigger a re-render on every update, otherwise we won't
+            // re-render when an updated doesn't directly affect us
+            useEditorState();
+            pos = nodeProps.getPos();
+            return <br ref={ref} {...props} />;
+          }
+        ),
       },
     });
     expect(pos).toBe(10);
@@ -225,20 +218,17 @@ describe("nodeViews prop", () => {
     tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          expect(
-            (props.nodeProps.innerDecorations as DecorationSet)
-              .find()
-              .map((d) => `${d.from}-${d.to}`)
-              .join()
-          ).toBe("1-2");
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>}>{props.children}</p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(props, ref) {
+            expect(
+              (props.nodeProps.innerDecorations as DecorationSet)
+                .find()
+                .map((d) => `${d.from}-${d.to}`)
+                .join()
+            ).toBe("1-2");
+            return <p ref={ref}>{props.children}</p>;
+          }
+        ),
       },
       decorations(state) {
         return DecorationSet.create(state.doc, [
@@ -254,17 +244,14 @@ describe("nodeViews prop", () => {
     const { rerender } = tempEditor({
       doc: doc(p("foo")),
       nodeViews: {
-        paragraph: forwardRef(function Paragraph(
-          props: NodeViewComponentProps,
-          ref
-        ) {
-          innerDecos = (props.nodeProps.innerDecorations as DecorationSet)
-            .find()
-            .map((d) => `${d.from}-${d.to}`);
-          return (
-            <p ref={ref as LegacyRef<HTMLParagraphElement>}>{props.children}</p>
-          );
-        }),
+        paragraph: forwardRef<HTMLParagraphElement, NodeViewComponentProps>(
+          function Paragraph(props, ref) {
+            innerDecos = (props.nodeProps.innerDecorations as DecorationSet)
+              .find()
+              .map((d) => `${d.from}-${d.to}`);
+            return <p ref={ref}>{props.children}</p>;
+          }
+        ),
       },
     });
 
