@@ -79,7 +79,9 @@ export class ReactEditorView extends EditorView {
     // to an empty object to prevent an error from being thrown, and then
     // clean it up so that other isomorphic code doesn't get confused about
     // whether there's a functioning global window object
-    globalThis.window ??= {};
+    globalThis.window ??= {
+      visualViewport: null,
+    };
     super(place, {
       state: EditorState.create({
         schema: props.state.schema,
