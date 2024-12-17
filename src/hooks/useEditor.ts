@@ -14,6 +14,7 @@ import { flushSync } from "react-dom";
 
 import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
 import { SelectionDOMObserver } from "../selection/SelectionDOMObserver.js";
+import { setSsrStubs } from "../ssr.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { useComponentEventListeners } from "./useComponentEventListeners.js";
@@ -73,15 +74,7 @@ export class ReactEditorView extends EditorView {
     // Call the superclass constructor with an empty
     // document and limited props. We'll set everything
     // else ourselves.
-    const prevWindow = globalThis.window;
-    // @ts-expect-error HACK - EditorView checks for window.MutationObserver
-    // in its constructor, which breaks SSR. We temporarily set window
-    // to an empty object to prevent an error from being thrown, and then
-    // clean it up so that other isomorphic code doesn't get confused about
-    // whether there's a functioning global window object
-    globalThis.window ??= {
-      visualViewport: null,
-    };
+    const cleanup = setSsrStubs();
     super(place, {
       state: EditorState.create({
         schema: props.state.schema,
@@ -89,9 +82,7 @@ export class ReactEditorView extends EditorView {
       }),
       plugins: props.plugins,
     });
-    if (globalThis.window !== prevWindow) {
-      globalThis.window = prevWindow;
-    }
+    cleanup();
 
     this.shouldUpdatePluginViews = true;
 
