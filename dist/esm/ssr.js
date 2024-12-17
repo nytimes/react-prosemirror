@@ -31,7 +31,7 @@ let ElementStub = class ElementStub {
         return new ClassList();
     }
     get ownerDocument() {
-        return new Document();
+        return new DocumentStub();
     }
     style = {};
     addEventListener() {}

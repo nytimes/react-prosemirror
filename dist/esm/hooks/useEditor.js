@@ -204,7 +204,9 @@ let didWarnValueDefaultValue = false;
         options.dispatchTransaction,
         options.state
     ]);
+    const cleanup = setSsrStubs();
     const tempDom = document.createElement("div");
+    cleanup();
     const docViewDescRef = useRef(new NodeViewDesc(undefined, [], ()=>-1, state.doc, [], DecorationSet.empty, tempDom, null, tempDom, ()=>false, ()=>{
     /* The doc node can't have a node selection*/ }, ()=>{
     /* The doc node can't have a node selection*/ }));

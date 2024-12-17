@@ -213,7 +213,9 @@ function useEditor(mount, options) {
         options.dispatchTransaction,
         options.state
     ]);
+    const cleanup = (0, _ssr.setSsrStubs)();
     const tempDom = document.createElement("div");
+    cleanup();
     const docViewDescRef = (0, _react.useRef)(new _viewdesc.NodeViewDesc(undefined, [], ()=>-1, state.doc, [], _prosemirrorview.DecorationSet.empty, tempDom, null, tempDom, ()=>false, ()=>{
     /* The doc node can't have a node selection*/ }, ()=>{
     /* The doc node can't have a node selection*/ }));
