@@ -241,12 +241,16 @@ function useEditor(mount, options) {
             setView(null);
             return;
         }
-        if (!view || view.dom !== mount || view?.needsRedraw) {
+        if (!view || view.dom !== mount) {
             const newView = new ReactEditorView({
                 mount
             }, directEditorProps);
             setView(newView);
             newView.dom.addEventListener("compositionend", forceUpdate);
+            return;
+        }
+        if (view.needsRedraw) {
+            setView(null);
             return;
         }
         // @ts-expect-error Internal property - domObserver
