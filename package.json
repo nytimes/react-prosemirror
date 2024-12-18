@@ -84,8 +84,8 @@
     "prosemirror-model": "^1.0.0",
     "prosemirror-state": "^1.0.0",
     "prosemirror-view": "^1.0.0",
-    "react": ">=16.8",
-    "react-dom": ">=16.8"
+    "react": "17 - 19",
+    "react-dom": "17 - 19"
   },
   "packageManager": "yarn@3.4.1",
   "engines": {
