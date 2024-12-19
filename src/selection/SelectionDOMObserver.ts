@@ -199,15 +199,6 @@ export class SelectionDOMObserver {
     }
   }
 
-  selectionChanged(sel: DOMSelectionRange) {
-    return (
-      !this.suppressingSelectionUpdates &&
-      !this.currentSelection.eq(sel) &&
-      hasFocusAndSelection(this.view) &&
-      !this.ignoreSelectionChange(sel)
-    );
-  }
-
   forceFlush() {
     if (this.flushingSoon > -1) {
       window.clearTimeout(this.flushingSoon);

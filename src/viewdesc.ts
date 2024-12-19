@@ -8,6 +8,15 @@ import { InternalDecorationSource } from "./decorations/internalTypes.js";
 import { DOMNode } from "./dom.js";
 import { domIndex, isEquivalentPosition } from "./selection/selectionToDOM.js";
 
+/// A ViewMutationRecord represents a DOM
+/// [mutation](https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver)
+/// or a selection change happens within the view. When the change is
+/// a selection change, the record will have a `type` property of
+/// `"selection"` (which doesn't occur for native mutation records).
+export type ViewMutationRecord =
+  | MutationRecord
+  | { type: "selection"; target: DOMNode };
+
 // View descriptions are data structures that describe the DOM that is
 // used to represent the editor's content. They are used for:
 //
@@ -440,7 +449,7 @@ export class ViewDesc {
   setSelection(
     anchor: number,
     head: number,
-    root: Document | ShadowRoot,
+    view: EditorView,
     force = false
   ): void {
     // If the selection falls entirely in a child, give it to that child
@@ -453,7 +462,7 @@ export class ViewDesc {
         return child.setSelection(
           anchor - offset - child.border,
           head - offset - child.border,
-          root,
+          view,
           force
         );
       offset = end;
@@ -463,7 +472,9 @@ export class ViewDesc {
     let headDOM =
       head == anchor ? anchorDOM : this.domFromPos(head, head ? -1 : 1);
 
-    const domSel = (root as Document).getSelection()!;
+    const domSel = (view.root as Document).getSelection()!;
+    // @ts-expect-error - Internal method domSelectionRange
+    const selRange = view.domSelectionRange();
 
     let brKludge = false;
     // On Firefox, using Selection.collapse to put the cursor after a
@@ -507,11 +518,11 @@ export class ViewDesc {
     // uneditable node. See #1163 and https://bugzilla.mozilla.org/show_bug.cgi?id=1709536
     if (
       browser.gecko &&
-      domSel.focusNode &&
-      domSel.focusNode != headDOM.node &&
-      domSel.focusNode.nodeType == 1
+      selRange.focusNode &&
+      selRange.focusNode != headDOM.node &&
+      selRange.focusNode.nodeType == 1
     ) {
-      const after = domSel.focusNode.childNodes[domSel.focusOffset];
+      const after = selRange.focusNode.childNodes[selRange.focusOffset];
       if (after && (after as HTMLElement).contentEditable == "false")
         force = true;
     }
@@ -521,14 +532,14 @@ export class ViewDesc {
       isEquivalentPosition(
         anchorDOM.node,
         anchorDOM.offset,
-        domSel.anchorNode!,
-        domSel.anchorOffset
+        selRange.anchorNode!,
+        selRange.anchorOffset
       ) &&
       isEquivalentPosition(
         headDOM.node,
         headDOM.offset,
-        domSel.focusNode!,
-        domSel.focusOffset
+        selRange.focusNode!,
+        selRange.focusOffset
       )
     )
       return;
@@ -565,8 +576,8 @@ export class ViewDesc {
     }
   }
 
-  ignoreMutation(mutation: MutationRecord): boolean {
-    return !this.contentDOM && (mutation.type as any) != "selection";
+  ignoreMutation(mutation: ViewMutationRecord): boolean {
+    return !this.contentDOM && mutation.type != "selection";
   }
 
   get contentLost() {
@@ -659,10 +670,8 @@ export class WidgetViewDesc extends ViewDesc {
     return stop ? stop(event) : false;
   }
 
-  ignoreMutation(mutation: MutationRecord) {
-    return (
-      (mutation.type as any) != "selection" || this.widget.spec.ignoreSelection
-    );
+  ignoreMutation(mutation: ViewMutationRecord) {
+    return mutation.type != "selection" || this.widget.spec.ignoreSelection;
   }
 
   get domAtom() {
@@ -698,9 +707,34 @@ export class CompositionViewDesc extends ViewDesc {
     return { node: this.textDOM, offset: pos };
   }
 
-  ignoreMutation(mut: MutationRecord) {
+  ignoreMutation(mut: ViewMutationRecord) {
     return mut.type === "characterData" && mut.target.nodeValue == mut.oldValue;
   }
+}
+
+/// By default, document marks are rendered using the result of the
+/// [`toDOM`](#model.MarkSpec.toDOM) method of their spec, and managed entirely
+/// by the editor. For some use cases, you want more control over the behavior
+/// of a mark's in-editor representation, and need to
+/// [define](#view.EditorProps.markViews) a custom mark view.
+///
+/// Objects returned as mark views must conform to this interface.
+export interface MarkView {
+  /// The outer DOM node that represents the document node.
+  dom: DOMNode;
+
+  /// The DOM node that should hold the mark's content. When this is not
+  /// present, the `dom` property is used as the content DOM.
+  contentDOM?: HTMLElement | null;
+
+  /// Called when a [mutation](#view.ViewMutationRecord) happens within the
+  /// view. Return false if the editor should re-read the selection or re-parse
+  /// the range around the mutation, true if it can safely be ignored.
+  ignoreMutation?: (mutation: ViewMutationRecord) => boolean;
+
+  /// Called when the mark view is removed from the editor or the whole
+  /// editor is destroyed.
+  destroy?: () => void;
 }
 
 // A mark desc represents a mark. May have multiple children,
@@ -715,7 +749,8 @@ export class MarkViewDesc extends ViewDesc {
     getPos: () => number,
     public mark: Mark,
     dom: DOMNode,
-    contentDOM: HTMLElement
+    contentDOM: HTMLElement,
+    public spec: MarkView
   ) {
     super(parent, children, getPos, dom, contentDOM);
   }
@@ -743,6 +778,17 @@ export class MarkViewDesc extends ViewDesc {
       if (parent.dirty < this.dirty) parent.dirty = this.dirty;
       this.dirty = NOT_DIRTY;
     }
+  }
+
+  ignoreMutation(mutation: ViewMutationRecord) {
+    return this.spec.ignoreMutation
+      ? this.spec.ignoreMutation(mutation)
+      : super.ignoreMutation(mutation);
+  }
+
+  destroy() {
+    if (this.spec.destroy) this.spec.destroy();
+    super.destroy();
   }
 }
 
@@ -906,10 +952,8 @@ export class TextViewDesc extends NodeViewDesc {
     return super.localPosFromDOM(dom, offset, bias);
   }
 
-  ignoreMutation(mutation: MutationRecord) {
-    return (
-      mutation.type != "characterData" && (mutation.type as any) != "selection"
-    );
+  ignoreMutation(mutation: ViewMutationRecord) {
+    return mutation.type != "characterData" && mutation.type != "selection";
   }
 
   markDirty(from: number, to: number) {
