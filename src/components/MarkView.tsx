@@ -68,12 +68,16 @@ export const MarkView = memo(
           () => getPos.current(),
           mark,
           domRef.current,
-          firstChildDesc?.dom.parentElement ?? domRef.current
+          firstChildDesc?.dom.parentElement ?? domRef.current,
+          {
+            dom: domRef.current,
+            contentDOM: firstChildDesc?.dom.parentElement ?? domRef.current,
+          }
         );
       } else {
         viewDescRef.current.parent = parentRef.current;
-        viewDescRef.current.dom = domRef.current;
-        viewDescRef.current.contentDOM =
+        viewDescRef.current.spec.dom = viewDescRef.current.dom = domRef.current;
+        viewDescRef.current.spec.contentDOM = viewDescRef.current.contentDOM =
           firstChildDesc?.dom.parentElement ?? domRef.current;
         viewDescRef.current.mark = mark;
         viewDescRef.current.getPos = () => getPos.current();
