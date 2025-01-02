@@ -12,9 +12,9 @@ import {
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { DOMNode } from "../dom.js";
 import { beforeInputPlugin } from "../plugins/beforeInputPlugin.js";
 import { SelectionDOMObserver } from "../selection/SelectionDOMObserver.js";
+import { setSsrStubs } from "../ssr.js";
 import { NodeViewDesc } from "../viewdesc.js";
 
 import { useComponentEventListeners } from "./useComponentEventListeners.js";
@@ -68,16 +68,13 @@ export class ReactEditorView extends EditorView {
   private _props: DirectEditorProps;
 
   constructor(
-    place:
-      | null
-      | DOMNode
-      | ((editor: HTMLElement) => void)
-      | { mount: HTMLElement },
+    place: { mount: HTMLElement } | null,
     props: DirectEditorProps & { docView: NodeViewDesc }
   ) {
     // Call the superclass constructor with an empty
     // document and limited props. We'll set everything
     // else ourselves.
+    const cleanup = setSsrStubs();
     super(place, {
       state: EditorState.create({
         schema: props.state.schema,
@@ -85,6 +82,7 @@ export class ReactEditorView extends EditorView {
       }),
       plugins: props.plugins,
     });
+    cleanup();
 
     this.shouldUpdatePluginViews = true;
 
@@ -240,7 +238,6 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
       didWarnValueDefaultValue = true;
     }
   }
-  const [view, setView] = useState<ReactEditorView | null>(null);
   const [cursorWrapper, _setCursorWrapper] = useState<Decoration | null>(null);
   const forceUpdate = useForceUpdate();
 
@@ -284,7 +281,9 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     [options.dispatchTransaction, options.state]
   );
 
+  const cleanup = setSsrStubs();
   const tempDom = document.createElement("div");
+  cleanup();
 
   const docViewDescRef = useRef<NodeViewDesc>(
     new NodeViewDesc(
@@ -315,6 +314,13 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
     docView: docViewDescRef.current,
   };
 
+  const [view, setView] = useState<ReactEditorView | null>(
+    // During the initial render, we create something of a dummy
+    // EditorView. This allows us to ensure that the first render actually
+    // renders the document, which is necessary for SSR.
+    () => new ReactEditorView(null, directEditorProps)
+  );
+
   useLayoutEffect(() => {
     return () => {
       view?.destroy();
@@ -326,39 +332,31 @@ export function useEditor<T extends HTMLElement = HTMLElement>(
   // so this is not a concern.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
-    if (view && view.dom !== mount) {
-      setView(null);
-    }
-
     if (!mount) {
+      setView(null);
       return;
     }
 
-    if (!view) {
+    if (!view || view.dom !== mount) {
       const newView = new ReactEditorView({ mount }, directEditorProps);
       setView(newView);
       newView.dom.addEventListener("compositionend", forceUpdate);
       return;
     }
-  });
 
-  // This rule is concerned about infinite updates due to the
-  // call to setView. These calls are deliberately conditional,
-  // so this is not a concern.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
-    // If ProseMirror View is about to redraw the entire document's
-    // DOM, clear the EditorView and reconstruct another, instead.
-    // This only happens when a newly instantiated EditorState has
-    // been provided.
-    if (view?.needsRedraw) {
+    // TODO: We should be able to put this in previous branch,
+    // but we need to convince EditorView's constructor not to
+    // clear out the DOM when passed a mount that already has
+    // content in it, otherwise React blows up when it tries
+    // to clean up.
+    if (view.needsRedraw) {
       setView(null);
       return;
-    } else {
-      // @ts-expect-error Internal property - domObserver
-      view?.domObserver.selectionToDOM();
-      view?.runPendingEffects();
     }
+
+    // @ts-expect-error Internal property - domObserver
+    view?.domObserver.selectionToDOM();
+    view?.runPendingEffects();
   });
 
   view?.pureSetProps(directEditorProps);
