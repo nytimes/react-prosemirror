@@ -73,6 +73,7 @@ export const MarkView = memo(
       } else {
         viewDescRef.current.parent = parentRef.current;
         viewDescRef.current.dom = domRef.current;
+        viewDescRef.current.children = childDescriptors.current;
         viewDescRef.current.contentDOM =
           firstChildDesc?.dom.parentElement ?? domRef.current;
         viewDescRef.current.mark = mark;

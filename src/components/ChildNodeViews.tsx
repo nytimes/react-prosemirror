@@ -341,7 +341,12 @@ const ChildElement = memo(
     getNodePos.current = () => getInnerPos.current() + child.offset;
 
     if (child.type === "node") {
-      return (
+      return child.marks.reduce(
+        (element, mark) => (
+          <MarkView getPos={getNodePos} mark={mark}>
+            {element}
+          </MarkView>
+        ),
         <NodeView
           key={child.key}
           outerDeco={child.outerDeco}
