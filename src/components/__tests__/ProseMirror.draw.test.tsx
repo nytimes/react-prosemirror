@@ -2,6 +2,7 @@
 import { Schema } from "prosemirror-model";
 import { Plugin } from "prosemirror-state";
 import {
+  builders,
   doc,
   h1,
   hr,
@@ -257,5 +258,35 @@ describe("EditorView draw", () => {
     expect(strongDom?.tagName).toBe("STRONG");
     expect(strongDom?.firstElementChild?.tagName).toBe("IMG");
     expect(strongDom?.childNodes.item(1).textContent).toBe(" two");
+  });
+
+  it("correctly wraps blokc nodes with marks", async () => {
+    const testSchema = new Schema<"doc" | "image", "difficulty">({
+      nodes: schema.spec.nodes.update("image", {
+        ...schema.spec.nodes.get("image")!,
+        inline: false,
+        group: "block",
+      }),
+      marks: schema.spec.marks.addToEnd("difficulty", {
+        attrs: { level: { default: "beginner" } },
+        toDOM(mark) {
+          return ["div", { "data-difficulty": mark.attrs["level"] }, 0];
+        },
+      }),
+    });
+
+    const { doc, image, difficulty } = builders(testSchema);
+
+    const { view } = tempEditor({
+      doc: doc(difficulty(image({ src: "" }))),
+    });
+
+    const docDom = view.dom;
+    const difficultyDom = docDom.firstElementChild as HTMLElement;
+    const imageDom = difficultyDom.firstElementChild!;
+
+    expect(difficultyDom.tagName).toBe("DIV");
+    expect(difficultyDom.dataset["difficulty"]).toBe("beginner");
+    expect(imageDom.tagName).toBe("IMG");
   });
 });
