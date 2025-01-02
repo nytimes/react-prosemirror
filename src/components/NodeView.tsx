@@ -26,7 +26,6 @@ import { StopEventContext } from "../contexts/StopEventContext.js";
 import { useNodeViewDescriptor } from "../hooks/useNodeViewDescriptor.js";
 
 import { ChildNodeViews, wrapInDeco } from "./ChildNodeViews.js";
-import { MarkView } from "./MarkView.js";
 import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
 import { OutputSpec } from "./OutputSpec.js";
 
@@ -228,19 +227,6 @@ export const NodeView = memo(function NodeView({
         undefined
   );
 
-  // Inline nodes will already be wrapped in marks
-  // via the ChildNodeViews component
-  const markedElement = node.isInline
-    ? decoratedElement
-    : node.marks.reduce(
-        (element, mark) => (
-          <MarkView getPos={getPos} mark={mark}>
-            {element}
-          </MarkView>
-        ),
-        decoratedElement
-      );
-
   const childContextValue = useMemo(
     () => ({
       parentRef: nodeViewDescRef,
@@ -253,17 +239,7 @@ export const NodeView = memo(function NodeView({
     <SelectNodeContext.Provider value={setSelectNode}>
       <StopEventContext.Provider value={setStopEvent}>
         <ChildDescriptorsContext.Provider value={childContextValue}>
-          {cloneElement(
-            markedElement,
-            (node.marks.length && !node.isInline) ||
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              outerDeco.some((d) => (d as any).type.attrs.nodeName)
-              ? { ref: domRef }
-              : // If all of the node decorations were attr-only, then
-                // we've already passed the domRef to the NodeView component
-                // as a prop
-                undefined
-          )}
+          {decoratedElement}
         </ChildDescriptorsContext.Provider>
       </StopEventContext.Provider>
     </SelectNodeContext.Provider>
