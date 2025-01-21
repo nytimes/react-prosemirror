@@ -9,6 +9,25 @@
 
 [![Join the chat at https://gitter.im/nytimes/react-prosemirror](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/nytimes/react-prosemirror?utm_source=badge&utm_medium=badge&utm_content=badge)
 
+## Active development has moved to `@handlewithcare/react-prosemirror`
+
+As of Jan. 17, 2025, active development on the v2 release of this library
+(a.k.a. the `react-editor-view` branch) has moved to the
+[handlewithcarecollective/react-prosemirror](https://github.com/handlewithcarecollective/react-prosemirror)
+repository, and has been published under the
+[`@handlewithcare/react-prosemirror`](https://npmjs.com/package/@handlewithcare/react-prosemirror)
+NPM package.
+
+Bug fixes and patches may still be applied to the `1.x` branch in this
+repository and published to `@nytimes/react-prosemirror`.
+
+Our intent had been to focus on the upcoming v2 release, previously the
+`react-editor-view` branch, in the `main` branch of this repo. Instead, we've
+decided to fork that version into its own repository and NPM package.
+
+To try out the new version, install `@handlewithcare/react-prosemirror`. We'd
+love to hear your thoughts!
+
 ## Installation
 
 npm:
