@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { Schema } from "prosemirror-model";
-import { EditorState } from "prosemirror-state";
+import { EditorState, Plugin } from "prosemirror-state";
+import { Decoration, DecorationSet } from "prosemirror-view";
 import React, { createContext, useContext, useState } from "react";
 
 import { ProseMirror } from "../../components/ProseMirror.js";
@@ -20,6 +21,7 @@ const schema = new Schema({
     list: { group: "block", content: "list_item+" },
     list_item: { content: "inline*" },
     text: { group: "inline" },
+    textblock: { group: "block", content: "inline*" },
   },
 });
 
@@ -130,5 +132,67 @@ describe("useNodeViews", () => {
     render(<TestEditor />);
 
     expect(screen.getByText("overriden")).toBeTruthy();
+  });
+
+  it("should handle widget decorations in nodeviews with a contentDOM", () => {
+    const plugin = new Plugin({
+      props: {
+        decorations: (state) => {
+          return DecorationSet.create(state.doc, [
+            Decoration.widget(1, () => {
+              const div = document.createElement("div");
+              return div;
+            }),
+          ]);
+        },
+      },
+    });
+
+    const schema = new Schema({
+      nodes: {
+        doc: { content: "block+" },
+        text: { group: "inline" },
+        textblock: { group: "block", content: "inline*" },
+      },
+    });
+
+    const state = EditorState.create({
+      doc: schema.topNodeType.create(null, schema.nodes.textblock.create()),
+      schema,
+      plugins: [plugin, react()],
+    });
+
+    function TextBlock({ children }: NodeViewComponentProps) {
+      return (
+        <>
+          <span contentEditable={false}>textblock item</span>
+          <div>{children}</div>
+        </>
+      );
+    }
+
+    const reactNodeViews = {
+      textblock: () => ({
+        component: TextBlock,
+        dom: document.createElement("div"),
+        contentDOM: document.createElement("div"),
+      }),
+    };
+
+    function TestEditor() {
+      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
+      const [mount, setMount] = useState<HTMLDivElement | null>(null);
+
+      return (
+        <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
+          <div ref={setMount} />
+          {renderNodeViews()}
+        </ProseMirror>
+      );
+    }
+
+    render(<TestEditor />);
+
+    expect(screen.getByText("textblock item")).toBeTruthy();
   });
 });
