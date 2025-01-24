@@ -13,8 +13,6 @@ export { useEditorState } from "./hooks/useEditorState.js";
 
 export { useNodePos } from "./hooks/useNodePos.js";
 
-export { useNodeViews } from "./hooks/useNodeViews.js";
-
 export type {
   NodeViewComponentProps,
   ReactNodeView,

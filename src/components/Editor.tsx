@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { EditorContext } from "../contexts/EditorContext.js";
 import { useEditorView } from "../hooks/useEditorView.js";
 import type { UseEditorViewOptions } from "../hooks/useEditorView.js";
+import { useNodeViews } from "../hooks/useNodeViews.js";
 
 export interface EditorProps extends UseEditorViewOptions {
   mount: HTMLElement | null;
@@ -11,8 +12,12 @@ export interface EditorProps extends UseEditorViewOptions {
 }
 
 export function Editor({ mount, children, ...options }: EditorProps) {
-  const value = useEditorView(mount, options);
+  const { nodeViews, nodeViewsComponent } = useNodeViews(options.nodeViews);
+  const value = useEditorView(mount, { ...options, nodeViews });
   return (
-    <EditorContext.Provider value={value}>{children}</EditorContext.Provider>
+    <EditorContext.Provider value={value}>
+      {children}
+      {nodeViewsComponent}
+    </EditorContext.Provider>
   );
 }

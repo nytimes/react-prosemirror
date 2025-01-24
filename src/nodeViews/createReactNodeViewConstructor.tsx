@@ -67,16 +67,8 @@ export type RegisterPortal = (
   portal: ReactPortal
 ) => UnregisterElement;
 
-type _ReactNodeView = NodeView & {
-  component: ComponentType<NodeViewComponentProps>;
-};
-
-// We use a mapped type to improve LSP information for this type.
-// The language server will actually spell out the properties and
-// corresponding types of the mapped type, rather than repeating
-// the ugly Omit<...> & { component: ... } type above.
-export type ReactNodeView = {
-  [Property in keyof _ReactNodeView]: _ReactNodeView[Property];
+export type ReactNodeView = NodeView & {
+  component?: ComponentType<NodeViewComponentProps>;
 };
 
 export type ReactNodeViewConstructor = (
@@ -88,6 +80,8 @@ export type ReactNodeViewConstructor = (
  * by @nytimes/react-prosemirror
  */
 export const REACT_NODE_VIEW = Symbol("react node view");
+
+let didWarnReactPlugin = false;
 
 /**
  * Searches upward for the nearest node with a node key,
@@ -123,7 +117,7 @@ export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
  * Factory function for creating nodeViewConstructors that
  * render as React components.
  *
- * `ReactComponent` can be any React component that takes
+ * `NodeView` can be any React component that takes
  * `NodeViewComponentProps`. It will be passed all of the
  * arguments to the `nodeViewConstructor` except for
  * `editorView`. NodeView components that need access
@@ -136,17 +130,17 @@ export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
  * ProseMirror will render content nodes into this element.
  */
 export function createReactNodeViewConstructor(
-  reactNodeViewConstructor: ReactNodeViewConstructor,
+  nodeViewConstructor: ReactNodeViewConstructor,
   registerPortal: RegisterPortal
 ) {
-  function nodeViewConstructor(
+  function nodeViewConstructorWrapper(
     node: Node,
     editorView: EditorView,
     getPos: () => number,
     decorations: readonly Decoration[],
     innerDecorations: DecorationSource
   ): NodeView {
-    const reactNodeView = reactNodeViewConstructor(
+    const nodeView = nodeViewConstructor(
       node,
       editorView,
       getPos,
@@ -154,9 +148,24 @@ export function createReactNodeViewConstructor(
       innerDecorations
     );
 
-    let componentRef: NodeViewWrapperRef | null = null;
+    const { component: NodeView } = nodeView;
+    if (!NodeView) {
+      return nodeView;
+    }
 
-    const { dom, contentDOM, component: ReactComponent } = reactNodeView;
+    const reactPluginState = reactPluginKey.getState(editorView.state);
+    if (!reactPluginState) {
+      if (!didWarnReactPlugin) {
+        console.error(
+          "The React ProseMirror plugin is required to use React node views. " +
+            "Make sure to add it to the ProseMirror editor state."
+        );
+        didWarnReactPlugin = true;
+      }
+      return nodeView;
+    }
+
+    const { dom, contentDOM } = nodeView;
 
     // Use a span if the provided contentDOM is in the "phrasing" content
     // category. Otherwise use a div. This is our best attempt at not
@@ -169,11 +178,6 @@ export function createReactNodeViewConstructor(
         ? "span"
         : "div");
 
-    const reactPluginState = reactPluginKey.getState(editorView.state);
-    if (!reactPluginState)
-      throw new Error(
-        "Can't find the react() ProseMirror plugin, required for useNodeViews(). Was it added to the EditorState.plugins?"
-      );
     const nodeKey = reactPluginState.posToKey.get(getPos()) ?? createNodeKey();
 
     /**
@@ -230,7 +234,7 @@ export function createReactNodeViewConstructor(
       );
       return (
         <NodePosProvider nodeKey={nodeKey}>
-          <ReactComponent
+          <NodeView
             node={node}
             decorations={decorations}
             isSelected={isSelected}
@@ -252,15 +256,16 @@ export function createReactNodeViewConstructor(
                 }}
               />
             )}
-          </ReactComponent>
+          </NodeView>
         </NodePosProvider>
       );
     });
 
     NodeViewWrapper.displayName = `NodeView(${
-      ReactComponent.displayName ?? ReactComponent.name
+      NodeView.displayName ?? NodeView.name
     })`;
 
+    let componentRef: NodeViewWrapperRef | null = null;
     const element = (
       <NodeViewWrapper
         initialState={{ node, decorations, isSelected: false }}
@@ -306,14 +311,14 @@ export function createReactNodeViewConstructor(
       ignoreMutation(record: MutationRecord) {
         return !contentDOM?.contains(record.target);
       },
-      ...reactNodeView,
+      ...nodeView,
       selectNode() {
         componentRef?.setIsSelected(true);
-        reactNodeView.selectNode?.();
+        nodeView.selectNode?.();
       },
       deselectNode() {
         componentRef?.setIsSelected(false);
-        reactNodeView.deselectNode?.();
+        nodeView.deselectNode?.();
       },
       update(
         node: Node,
@@ -330,9 +335,7 @@ export function createReactNodeViewConstructor(
           return false;
         }
 
-        if (
-          reactNodeView.update?.(node, decorations, innerDecorations) === false
-        ) {
+        if (nodeView.update?.(node, decorations, innerDecorations) === false) {
           return false;
         }
         if (node.type === componentRef?.node.type) {
@@ -352,10 +355,10 @@ export function createReactNodeViewConstructor(
           this.dom.appendChild(componentRef.contentDOMParent);
         }
         unregisterPortal();
-        reactNodeView.destroy?.();
+        nodeView.destroy?.();
       },
     };
   }
 
-  return Object.assign(nodeViewConstructor, { [REACT_NODE_VIEW]: true });
+  return Object.assign(nodeViewConstructorWrapper, { [REACT_NODE_VIEW]: true });
 }

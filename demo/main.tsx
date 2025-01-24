@@ -16,7 +16,7 @@ import "prosemirror-view/style/prosemirror.css";
 import React, { useCallback, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { ProseMirror, useNodeViews } from "../src/index.js";
+import { ProseMirror } from "../src/index.js";
 import type { NodeViewComponentProps } from "../src/index.js";
 import type { ReactNodeViewConstructor } from "../src/nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../src/plugins/react.js";
@@ -87,7 +87,7 @@ function ListItem({ children }: NodeViewComponentProps) {
   return <li>{children}</li>;
 }
 
-const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
+const nodeViews: Record<string, ReactNodeViewConstructor> = {
   paragraph: () => ({
     component: Paragraph,
     dom: document.createElement("div"),
@@ -106,7 +106,6 @@ const reactNodeViews: Record<string, ReactNodeViewConstructor> = {
 };
 
 function DemoEditor() {
-  const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
   const [mount, setMount] = useState<HTMLDivElement | null>(null);
   const [state, setState] = useState(defaultState);
 
@@ -119,13 +118,12 @@ function DemoEditor() {
     <main>
       <ProseMirror
         mount={mount}
-        state={state}
         nodeViews={nodeViews}
+        state={state}
         dispatchTransaction={dispatchTransaction}
       >
         <Menu />
         <div ref={setMount} />
-        {renderNodeViews()}
       </ProseMirror>
     </main>
   );

@@ -6,7 +6,6 @@ import React, { createContext, useContext, useState } from "react";
 import { ProseMirror } from "../../components/ProseMirror.js";
 import type { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
-import { useNodeViews } from "../useNodeViews.js";
 
 // Mock `ReactDOM.flushSync` to call `act` to flush updates from DOM mutations.
 jest.mock("react-dom", () => ({
@@ -49,7 +48,7 @@ describe("useNodeViews", () => {
       );
     }
 
-    const reactNodeViews = {
+    const nodeViews = {
       list: () => ({
         component: List,
         dom: document.createElement("div"),
@@ -63,13 +62,11 @@ describe("useNodeViews", () => {
     };
 
     function TestEditor() {
-      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
         <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
           <div ref={setMount} />
-          {renderNodeViews()}
         </ProseMirror>
       );
     }
@@ -102,7 +99,7 @@ describe("useNodeViews", () => {
       );
     }
 
-    const reactNodeViews = {
+    const nodeViews = {
       list: () => ({
         component: List,
         dom: document.createElement("div"),
@@ -116,13 +113,11 @@ describe("useNodeViews", () => {
     };
 
     function TestEditor() {
-      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
 
       return (
         <ProseMirror mount={mount} nodeViews={nodeViews} defaultState={state}>
           <div ref={setMount} />
-          {renderNodeViews()}
         </ProseMirror>
       );
     }
