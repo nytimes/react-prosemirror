@@ -5,6 +5,7 @@ import { EditorState } from "prosemirror-state";
 import type { Transaction } from "prosemirror-state";
 import React, { useEffect, useState } from "react";
 
+import { useNodeViews } from "../../hooks/useNodeViews.js";
 import type { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
 import {
@@ -188,7 +189,7 @@ describe("ProseMirror", () => {
       return <p data-testid="paragraph">{children}</p>;
     }
 
-    const nodeViews = {
+    const reactNodeViews = {
       paragraph: () => ({
         component: Paragraph,
         dom: document.createElement("div"),
@@ -198,6 +199,7 @@ describe("ProseMirror", () => {
 
     function TestEditor() {
       const [mount, setMount] = useState<HTMLDivElement | null>(null);
+      const { nodeViews, renderNodeViews } = useNodeViews(reactNodeViews);
 
       return (
         <ProseMirror
@@ -206,6 +208,7 @@ describe("ProseMirror", () => {
           nodeViews={nodeViews}
         >
           <div data-testid="editor" ref={setMount} />
+          {renderNodeViews()}
         </ProseMirror>
       );
     }

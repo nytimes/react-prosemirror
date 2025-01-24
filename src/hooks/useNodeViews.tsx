@@ -14,7 +14,7 @@ import type {
 } from "../nodeViews/createReactNodeViewConstructor.js";
 
 export function useNodeViews(
-  nodeViews?: Record<string, ReactNodeViewConstructor>
+  nodeViews: Record<string, ReactNodeViewConstructor>
 ) {
   const [portals, setPortals] = useState({} as NodeViewsContextValue);
 
@@ -47,19 +47,17 @@ export function useNodeViews(
     []
   );
 
-  const wrappedNodeViews = useMemo(() => {
-    const nodeViewEntries = Object.entries(nodeViews ?? {});
-    const wrappedNodeViewEntries = nodeViewEntries.map(
-      ([name, constructor]) => [
-        name,
-        createReactNodeViewConstructor(constructor, registerPortal),
-      ]
-    );
-    return Object.fromEntries(wrappedNodeViewEntries);
+  const reactNodeViews = useMemo(() => {
+    const nodeViewEntries = Object.entries(nodeViews);
+    const reactNodeViewEntries = nodeViewEntries.map(([name, constructor]) => [
+      name,
+      createReactNodeViewConstructor(constructor, registerPortal),
+    ]);
+    return Object.fromEntries(reactNodeViewEntries);
   }, [nodeViews, registerPortal]);
 
   return {
-    nodeViews: wrappedNodeViews,
-    nodeViewsComponent: <NodeViews portals={portals} />,
+    nodeViews: reactNodeViews,
+    renderNodeViews: () => <NodeViews portals={portals} />,
   };
 }

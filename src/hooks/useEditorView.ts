@@ -7,7 +7,6 @@ import { useLayoutEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 
 import type { EditorContextValue } from "../contexts/EditorContext.js";
-import type { ReactNodeViewConstructor } from "../nodeViews/createReactNodeViewConstructor.js";
 
 import { useComponentEventListeners } from "./useComponentEventListeners.js";
 
@@ -25,7 +24,6 @@ const EMPTY_STATE = EditorState.create({
 let didWarnValueDefaultValue = false;
 
 export interface UseEditorViewOptions extends EditorProps {
-  nodeViews?: Record<string, ReactNodeViewConstructor>;
   defaultState?: EditorState;
   state?: EditorState;
   plugins?: Plugin[];
