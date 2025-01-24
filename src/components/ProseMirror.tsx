@@ -1,111 +1,36 @@
-import {
-  Decoration,
-  DecorationSet,
-  NodeViewConstructor,
-} from "prosemirror-view";
-import React, {
-  ForwardRefExoticComponent,
-  ReactNode,
-  RefAttributes,
-  useMemo,
-  useState,
-} from "react";
+import React from "react";
 
-import { EditorContext } from "../contexts/EditorContext.js";
-import { EditorStateContext } from "../contexts/EditorStateContext.js";
-import { NodeViewContext } from "../contexts/NodeViewContext.js";
-import { computeDocDeco } from "../decorations/computeDocDeco.js";
-import { viewDecorations } from "../decorations/viewDecorations.js";
-import { UseEditorOptions, useEditor } from "../hooks/useEditor.js";
-
+import { Editor } from "./Editor.js";
+import type { EditorProps } from "./Editor.js";
 import { LayoutGroup } from "./LayoutGroup.js";
-import { NodeViewComponentProps } from "./NodeViewComponentProps.js";
-import { DocNodeViewContext } from "./ProseMirrorDoc.js";
 
-export type Props = Omit<UseEditorOptions, "nodeViews"> & {
-  className?: string;
-  children?: ReactNode;
-  nodeViews?: {
-    [nodeType: string]: ForwardRefExoticComponent<
-      // We need to allow refs to any type of HTMLElement, but there's
-      // no way to express that that still allows consumers to correctly
-      // type their own refs. This is sufficient to ensure that there's
-      // a ref of _some_ kind, which is enough.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      NodeViewComponentProps & RefAttributes<any>
-    >;
-  };
-  customNodeViews?: {
-    [nodeType: string]: NodeViewConstructor;
-  };
-};
+export type { EditorProps as ProseMirrorProps };
 
-const EMPTY_OUTER_DECOS: Decoration[] = [];
-
-function ProseMirrorInner({
-  className,
-  children,
-  nodeViews,
-  customNodeViews,
-  ...props
-}: Props) {
-  const [mount, setMount] = useState<HTMLElement | null>(null);
-
-  const { editor, state } = useEditor(mount, {
-    ...props,
-    nodeViews: customNodeViews,
-  });
-
-  const innerDecos = editor.view
-    ? viewDecorations(editor.view, editor.cursorWrapper)
-    : (DecorationSet.empty as unknown as DecorationSet);
-
-  const outerDecos = editor.view
-    ? computeDocDeco(editor.view)
-    : EMPTY_OUTER_DECOS;
-
-  const nodeViewContextValue = useMemo(
-    () => ({
-      nodeViews: nodeViews ?? {},
-    }),
-    [nodeViews]
-  );
-
-  const docNodeViewContextValue = useMemo(
-    () => ({
-      className: className,
-      setMount: setMount,
-      node: editor.view?.state.doc,
-      innerDeco: innerDecos,
-      outerDeco: outerDecos,
-      viewDesc: editor.docViewDescRef.current,
-    }),
-    [
-      className,
-      editor.docViewDescRef,
-      editor.view?.state.doc,
-      innerDecos,
-      outerDecos,
-    ]
-  );
-
-  return (
-    <EditorContext.Provider value={editor}>
-      <EditorStateContext.Provider value={state}>
-        <NodeViewContext.Provider value={nodeViewContextValue}>
-          <DocNodeViewContext.Provider value={docNodeViewContextValue}>
-            {children}
-          </DocNodeViewContext.Provider>
-        </NodeViewContext.Provider>
-      </EditorStateContext.Provider>
-    </EditorContext.Provider>
-  );
-}
-
-export function ProseMirror(props: Props) {
+/**
+ * Renders the ProseMirror View onto a DOM mount.
+ *
+ * The `mount` prop must be an actual HTMLElement instance. The
+ * JSX element representing the mount should be passed as a child
+ * to the ProseMirror component.
+ *
+ * e.g.
+ *
+ * ```
+ * function MyProseMirrorField() {
+ *   const [mount, setMount] = useState(null);
+ *
+ *   return (
+ *     <ProseMirror mount={mount}>
+ *       <div ref={setMount} />
+ *     </ProseMirror>
+ *   );
+ * }
+ * ```
+ */
+export function ProseMirror(props: EditorProps) {
   return (
     <LayoutGroup>
-      <ProseMirrorInner {...props} />
+      <Editor {...props} />
     </LayoutGroup>
   );
 }
