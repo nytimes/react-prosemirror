@@ -1263,8 +1263,8 @@ __metadata:
     prosemirror-model: ^1.0.0
     prosemirror-state: ^1.0.0
     prosemirror-view: ^1.0.0
-    react: 17 - 19
-    react-dom: 17 - 19
+    react: ">=17"
+    react-dom: ">=17"
   languageName: unknown
   linkType: soft
 
