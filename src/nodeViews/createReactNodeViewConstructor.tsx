@@ -340,6 +340,14 @@ export function createReactNodeViewConstructor(
           componentRef?.setDecorations(decorations);
           return true;
         }
+        // Widget decorations can cause the NodeView's "update" hook to execute
+        // before the NodeViewWrapper component has mounted, and its ref set —
+        // in this situation, we tell ProseMirror that the update was successful
+        // in order to give time for React to propagate the ref, so that ProseMirror
+        // doesn't try to redraw this node forever.
+        if (componentRef === null) {
+          return true;
+        }
         return false;
       },
       destroy() {
