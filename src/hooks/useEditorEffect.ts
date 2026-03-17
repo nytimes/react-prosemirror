@@ -34,7 +34,7 @@ export function useEditorEffect(
   // be defined inline and run on every re-render.
   useLayoutGroupEffect(
     () => {
-      if (editorView) {
+      if (editorView && !editorView.isDestroyed) {
         return effect(editorView);
       }
     },
