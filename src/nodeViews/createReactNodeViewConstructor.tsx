@@ -94,7 +94,9 @@ export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
   const pluginState = reactPluginKey.getState(editorView.state);
   if (!pluginState) return ROOT_NODE_KEY;
 
-  if (pos < 0) return ROOT_NODE_KEY;
+  // -1 is the standard sentinel for nodes that are no longer part of the document
+  // since the node has no valid position, there are no ancestors to find
+  if (pos === -1) return ROOT_NODE_KEY;
 
   const $pos = editorView.state.doc.resolve(pos);
 
