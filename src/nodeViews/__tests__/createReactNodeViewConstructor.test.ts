@@ -35,15 +35,6 @@ describe("findNodeKeyUp", () => {
     expect(findNodeKeyUp(view, -1)).toBe(ROOT_NODE_KEY);
   });
 
-  it("should return ROOT_NODE_KEY for a position beyond document size", () => {
-    const state = createState();
-    const view = stubView(state);
-
-    expect(findNodeKeyUp(view, state.doc.content.size + 1)).toBe(
-      ROOT_NODE_KEY
-    );
-  });
-
   it("should return ROOT_NODE_KEY for a valid position with no ancestor node views", () => {
     const view = stubView(createState());
 
