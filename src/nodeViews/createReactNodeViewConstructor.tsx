@@ -94,6 +94,8 @@ export function findNodeKeyUp(editorView: EditorView, pos: number): NodeKey {
   const pluginState = reactPluginKey.getState(editorView.state);
   if (!pluginState) return ROOT_NODE_KEY;
 
+  if (pos < 0 || pos > editorView.state.doc.content.size) return ROOT_NODE_KEY;
+
   const $pos = editorView.state.doc.resolve(pos);
 
   for (let d = $pos.depth; d > 0; d--) {
