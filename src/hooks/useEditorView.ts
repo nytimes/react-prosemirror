@@ -28,6 +28,7 @@ export interface UseEditorViewOptions extends EditorProps {
   nodeViews?: Record<string, ReactNodeViewConstructor>;
   defaultState?: EditorState;
   state?: EditorState;
+  setState?: EditorContextValue["setEditorState"];
   plugins?: Plugin[];
   dispatchTransaction?(this: EditorView, tr: Transaction): void;
 }
@@ -63,8 +64,9 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   }
 
   const defaultState = options.defaultState ?? EMPTY_STATE;
-  const [_state, setState] = useState<EditorState>(defaultState);
+  const [_state, _setState] = useState<EditorState>(defaultState);
   const state = options.state ?? _state;
+  const setState = options.setState ?? _setState;
 
   const {
     componentEventListenersPlugin,
@@ -123,10 +125,11 @@ export function useEditorView<T extends HTMLElement = HTMLElement>(
   return useMemo(
     () => ({
       editorState: state,
+      setEditorState: setState,
       editorView: view,
       registerEventListener,
       unregisterEventListener,
     }),
-    [state, view, registerEventListener, unregisterEventListener]
+    [state, setState, view, registerEventListener, unregisterEventListener]
   );
 }
