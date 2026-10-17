@@ -270,13 +270,21 @@ export function createReactNodeViewConstructor(
     })`;
 
     let componentRef: NodeViewWrapperRef | null = null;
+    // ProseMirror may call selectNode or deselectNode before the
+    // component has mounted, so we track the latest value here and
+    // apply it once the component ref is available.
+    let isNodeSelected = false;
     const element = (
       <NodeViewWrapper
         initialState={{ node, decorations, isSelected: false }}
         ref={(c) => {
           componentRef = c;
 
-          if (!componentRef || componentRef.node.isLeaf) return;
+          if (!componentRef) return;
+
+          componentRef.setIsSelected(isNodeSelected);
+
+          if (componentRef.node.isLeaf) return;
 
           const contentDOMWrapper = componentRef.contentDOMWrapper;
           if (
@@ -317,10 +325,12 @@ export function createReactNodeViewConstructor(
       },
       ...nodeView,
       selectNode() {
+        isNodeSelected = true;
         componentRef?.setIsSelected(true);
         nodeView.selectNode?.();
       },
       deselectNode() {
+        isNodeSelected = false;
         componentRef?.setIsSelected(false);
         nodeView.deselectNode?.();
       },

@@ -1,10 +1,11 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Schema } from "prosemirror-model";
-import { EditorState } from "prosemirror-state";
+import { EditorState, NodeSelection } from "prosemirror-state";
 import type { Transaction } from "prosemirror-state";
 import React, { useEffect, useState } from "react";
 
+import { useEditorEventCallback } from "../../hooks/useEditorEventCallback.js";
 import type { NodeViewComponentProps } from "../../nodeViews/createReactNodeViewConstructor.js";
 import { react } from "../../plugins/react.js";
 import {
@@ -221,6 +222,70 @@ describe("ProseMirror", () => {
     // Ensure that ProseMirror really rendered our Paragraph
     // component, not just any old <p> tag
     expect(screen.getAllByTestId("paragraph").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("passes isSelected to a React NodeView selected in the transaction that inserts it", async () => {
+    const schema = new Schema({
+      nodes: {
+        text: {},
+        paragraph: {
+          group: "block",
+          content: "text*",
+          toDOM: () => ["p", 0],
+        },
+        image: { group: "block", atom: true },
+        doc: { content: "block+" },
+      },
+    });
+
+    const defaultState = EditorState.create({ schema, plugins: [react()] });
+
+    function Image({ isSelected }: NodeViewComponentProps) {
+      return (
+        <img
+          data-testid="image"
+          data-selected={isSelected ? "true" : "false"}
+        />
+      );
+    }
+
+    const nodeViews = {
+      image: () => ({
+        component: Image,
+        dom: document.createElement("div"),
+      }),
+    };
+
+    function TestEditor() {
+      const [mount, setMount] = useState<HTMLDivElement | null>(null);
+
+      return (
+        <ProseMirror
+          mount={mount}
+          defaultState={defaultState}
+          nodeViews={nodeViews}
+        >
+          <InsertImageButton />
+          <div data-testid="editor" ref={setMount} />
+        </ProseMirror>
+      );
+    }
+
+    function InsertImageButton() {
+      const onClick = useEditorEventCallback((view) => {
+        const tr = view.state.tr.insert(0, schema.nodes.image.create());
+        tr.setSelection(NodeSelection.create(tr.doc, 0));
+        view.dispatch(tr);
+      });
+      return <button onClick={onClick}>Insert image</button>;
+    }
+
+    const user = userEvent.setup();
+    render(<TestEditor />);
+
+    await user.click(screen.getByText("Insert image"));
+
+    expect(screen.getByTestId("image").dataset.selected).toBe("true");
   });
 
   afterAll(() => {
